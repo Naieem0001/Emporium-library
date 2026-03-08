@@ -4,8 +4,8 @@ const books = [
 title: "The Alchemist",
 author: "Paulo Coelho",
 genre: "fiction",
-cover: "Alchemist.jfif",
-file: "Alchemist pdf.pdf",
+cover: "https://m.media-amazon.com/images/I/81ioPZFMeUL._UF1000,1000_QL80_.jpg",
+file: "https://drive.google.com/file/d/1FgH8PwaR_ovyB1u3dPXf5NC9MifIs5iV/view?usp=sharing",
 trending: true
 },
 
@@ -13,7 +13,7 @@ trending: true
 title: "Atomic Habits",
 author: "James Clear",
 genre: "non-fiction",
-cover: "Atomic Habits.jpg",
+cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLY06_GqreCKmqE5n_4C3mItYp5fuVEmxQcg&s",
 file: "Atomic habits pdf.pdf",
 trending: true
 },
@@ -49,7 +49,7 @@ trending: false
 title: "Rich Dad Poor Dad",
 author: "Robert Kiyosaki",
 genre: "non-fiction",
-cover: "Rich Dad.jfif",
+cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-gVUgOqZ7aabPqsUXL5_OogJNzHBoCEUglQ&s",
 file: "Rich dad pdf.pdf",
 trending: false
 },
@@ -449,7 +449,7 @@ trending: false
 title: "Bell Jar",
 author: "Sylvia Plath",
 genre: "non-fiction",
-cover: "images/belljar.jpg",
+cover: "https://m.media-amazon.com/images/I/91163i7ah-L._AC_UF1000,1000_QL80_.jpg",
 file: "https://t.me/Database00001/430",
 trending: false
 },
@@ -458,7 +458,7 @@ trending: false
 title: "The Subtle Art of Not Giving a F*ck",
 author: "Mark Manson",
 genre: "non-fiction",
-cover: "images/subtleart.jpg",
+cover: "https://images-eu.ssl-images-amazon.com/images/I/81j59JOp6kL._AC_UL200_SR200,200_.jpg",
 file: "https://t.me/Database00001/347",
 trending: false
 },
@@ -916,4 +916,5 @@ trending: false
 
 
 ];
+
 
