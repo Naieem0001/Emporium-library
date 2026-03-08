@@ -210,6 +210,33 @@
       border-radius: 20px; font-weight: 500;
     }
 
+    /* ===== MOBILE FILTER DROPDOWN ===== */
+.filter-dropdown-wrap {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.filter-dropdown {
+  flex: 1;
+  background: #F8FAFC ;
+  color: var(--text);
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  font-family: 'Poppins', sans-serif;
+}
+
+.filter-dropdown:focus {
+  border-color: var(--orange);
+}
+  
+
     /* ===== SECTION HEADERS ===== */
     .section-header { text-align: center; margin-bottom: 40px; }
     .section-header h2 {
@@ -487,16 +514,32 @@
       .filter-inner { flex-direction: column; align-items: flex-start; }
       .upload-wrapper { padding: 28px 22px; }
     }
+    
     @media (max-width: 600px) {
-      .academic-hero { padding: 60px 20px; }
-      .academic-hero h1 { font-size: 28px; }
-      .hero-stats { gap: 28px; }
-      .filter-section { padding: 18px 20px; top: 58px; }
-      .resources-section, .upload-section, .contributors { padding: 50px 20px; }
-      .resources-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-      .footer-container { grid-template-columns: repeat(2, 1fr); }
-      .navbar { padding: 14px 20px; }
-    }
+  .academic-hero { padding: 60px 20px; }
+  .academic-hero h1 { font-size: 28px; }
+  .hero-stats { gap: 28px; }
+  .filter-section { 
+    padding: 14px 16px; 
+    top: 58px;
+    background: #1B2A41;
+  }
+  .resources-section, .upload-section, .contributors { padding: 50px 20px; }
+  .resources-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .footer-container { grid-template-columns: repeat(2, 1fr); }
+  .navbar { padding: 14px 20px; }
+  .category-tabs { display: none; }
+  .filter-label { display: none; }
+  .filter-count { 
+    background: rgba(255,255,255,0.1); 
+    color: white; 
+  }
+  .filter-dropdown-wrap { 
+    display: flex !important; 
+  }
+}
+
+
   </style>
 </head>
 
@@ -556,8 +599,19 @@
         <button class="category-btn" data-type="papers"><i class="fa-solid fa-scroll"></i> Question Papers</button>
         <button class="category-btn" data-type="assignments"><i class="fa-solid fa-pen-to-square"></i> Assignments</button>
       </div>
-      <span class="filter-count" id="filterCount">0 resources</span>
+      <span class="filter-count" id="filterCount"></span>
     </div>
+
+    <div class="filter-dropdown-wrap">
+  <i class="fa-solid fa-filter" style="color:white"></i>
+  <select id="filterDropdown" class="filter-dropdown">
+    <option value="all">All Resources</option>
+    <option value="notes">Notes</option>
+    <option value="books">Textbooks</option>
+    <option value="papers">Question Papers</option>
+    <option value="assignments">Assignments</option>
+  </select>
+</div>
   </section>
 
   <!-- ===== RESOURCES GRID ===== -->
@@ -712,7 +766,7 @@ if (hamburger && navMenu) {
   window.addEventListener("scroll", () => navMenu.classList.remove("active"));
 }
 
- /* ========== HIDE HERO + FILTER ON SCROLL ========== */
+// /* ========== HIDE HERO + FILTER ON SCROLL ========== */
 // const heroSection = document.querySelector(".academic-hero");
 // const filterBar   = document.querySelector(".filter-section");
 // let isHidden      = false;
@@ -754,7 +808,6 @@ if (hamburger && navMenu) {
 //     }
 //   }
 // });
-
 /* ========== TOAST ========== */
 function showToast(msg, isError = false) {
   const toast = document.getElementById("toast");
@@ -792,10 +845,21 @@ function createResourceCard(data, id) {
       </div>
       <div class="resource-card-body">
         <h3>${data.title}</h3>
-        <p class="resource-subject">
+       <p class="resource-subject">
           <i class="fa-solid fa-tag" style="font-size:11px;margin-right:4px;color:#9CA3AF"></i>
           ${data.subject}
         </p>
+        ${data.description ? `
+        <p style="
+          font-size:12px;
+          color:#6B7280;
+          line-height:1.5;
+          margin-bottom:10px;
+          display:-webkit-box;
+          -webkit-line-clamp:2;
+          -webkit-box-orient:vertical;
+          overflow:hidden;
+        ">${data.description}</p>` : ""}
         <div class="resource-meta">
           <span><i class="fa-solid fa-user"></i> ${data.uploader}</span>
           <span><i class="fa-solid fa-download"></i> ${data.downloads || 0}</span>
@@ -812,8 +876,8 @@ function createResourceCard(data, id) {
 /* ========== PAGINATION STATE ========== */
 let allResources = [];
 let currentPage = 1;
-const desktopPerPage = 9;
-const mobilePerPage = 6;
+const desktopPerPage = 8;
+const mobilePerPage = 4;
 
 function isMobile() {
   return window.innerWidth <= 600;
@@ -1013,6 +1077,13 @@ function loadResources(filter = "all") {
         </div>`;
     });
 }
+
+const filterDropdown = document.getElementById("filterDropdown");
+if (filterDropdown) {
+  filterDropdown.addEventListener("change", function() {
+    loadResources(this.value);
+  });
+}
 /* ========== INCREMENT DOWNLOAD COUNT ========== */
 function incrementDownload(id, el) {
   db.collection("resources").doc(id).update({
@@ -1066,12 +1137,15 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
   btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading...`;
 
   /* save resource to Firestore */
+  const desc = document.getElementById("resDesc").value.trim();
+
   db.collection("resources").add({
     title,
     subject,
     type,
     uploader,
     driveLink,
+    description: desc || "",
     downloads: 0,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   }).then(() => {
