@@ -713,47 +713,47 @@ if (hamburger && navMenu) {
 }
 
  /* ========== HIDE HERO + FILTER ON SCROLL ========== */
-const heroSection = document.querySelector(".academic-hero");
-const filterBar   = document.querySelector(".filter-section");
-let isHidden      = false;
+// const heroSection = document.querySelector(".academic-hero");
+// const filterBar   = document.querySelector(".filter-section");
+// let isHidden      = false;
 
-window.addEventListener("scroll", () => {
-  const currentScroll = window.scrollY;
+// window.addEventListener("scroll", () => {
+//   const currentScroll = window.scrollY;
 
-  if (currentScroll > 200 && !isHidden) {
-    isHidden = true;
-    if (heroSection) {
-      heroSection.style.visibility = "hidden";
-      heroSection.style.height     = "0";
-      heroSection.style.overflow   = "hidden";
-      heroSection.style.padding    = "0";
-      heroSection.style.margin     = "0";
-    }
-    if (filterBar) {
-      filterBar.style.visibility = "hidden";
-      filterBar.style.height     = "0";
-      filterBar.style.overflow   = "hidden";
-      filterBar.style.padding    = "0";
-      filterBar.style.margin     = "0";
-    }
-  } else if (currentScroll < 50 && isHidden) {
-    isHidden = false;
-    if (heroSection) {
-      heroSection.style.visibility = "";
-      heroSection.style.height     = "";
-      heroSection.style.overflow   = "";
-      heroSection.style.padding    = "";
-      heroSection.style.margin     = "";
-    }
-    if (filterBar) {
-      filterBar.style.visibility = "";
-      filterBar.style.height     = "";
-      filterBar.style.overflow   = "";
-      filterBar.style.padding    = "";
-      filterBar.style.margin     = "";
-    }
-  }
-});
+//   if (currentScroll > 200 && !isHidden) {
+//     isHidden = true;
+//     if (heroSection) {
+//       heroSection.style.visibility = "hidden";
+//       heroSection.style.height     = "0";
+//       heroSection.style.overflow   = "hidden";
+//       heroSection.style.padding    = "0";
+//       heroSection.style.margin     = "0";
+//     }
+//     if (filterBar) {
+//       filterBar.style.visibility = "hidden";
+//       filterBar.style.height     = "0";
+//       filterBar.style.overflow   = "hidden";
+//       filterBar.style.padding    = "0";
+//       filterBar.style.margin     = "0";
+//     }
+//   } else if (currentScroll < 50 && isHidden) {
+//     isHidden = false;
+//     if (heroSection) {
+//       heroSection.style.visibility = "";
+//       heroSection.style.height     = "";
+//       heroSection.style.overflow   = "";
+//       heroSection.style.padding    = "";
+//       heroSection.style.margin     = "";
+//     }
+//     if (filterBar) {
+//       filterBar.style.visibility = "";
+//       filterBar.style.height     = "";
+//       filterBar.style.overflow   = "";
+//       filterBar.style.padding    = "";
+//       filterBar.style.margin     = "";
+//     }
+//   }
+// });
 
 /* ========== TOAST ========== */
 function showToast(msg, isError = false) {
