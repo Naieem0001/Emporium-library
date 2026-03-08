@@ -712,32 +712,47 @@ if (hamburger && navMenu) {
   window.addEventListener("scroll", () => navMenu.classList.remove("active"));
 }
 
-/* ========== HIDE NAVBAR + HERO ON SCROLL ========== */
-const navbar      = document.querySelector(".navbar");
+ /* ========== HIDE HERO + FILTER ON SCROLL ========== */
 const heroSection = document.querySelector(".academic-hero");
-let lastScroll    = 0;
+const filterBar   = document.querySelector(".filter-section");
+let isHidden      = false;
 
 window.addEventListener("scroll", () => {
   const currentScroll = window.scrollY;
 
-  if (currentScroll > lastScroll && currentScroll > 100) {
-    navbar.style.transform    = "translateY(-100%)";
-    navbar.style.transition   = "transform 0.3s ease";
+  if (currentScroll > 200 && !isHidden) {
+    isHidden = true;
     if (heroSection) {
-      heroSection.style.maxHeight  = "0";
+      heroSection.style.visibility = "hidden";
+      heroSection.style.height     = "0";
       heroSection.style.overflow   = "hidden";
-      heroSection.style.transition = "max-height 0.4s ease, padding 0.4s ease";
       heroSection.style.padding    = "0";
+      heroSection.style.margin     = "0";
     }
-  } else {
-    navbar.style.transform = "translateY(0)";
+    if (filterBar) {
+      filterBar.style.visibility = "hidden";
+      filterBar.style.height     = "0";
+      filterBar.style.overflow   = "hidden";
+      filterBar.style.padding    = "0";
+      filterBar.style.margin     = "0";
+    }
+  } else if (currentScroll < 50 && isHidden) {
+    isHidden = false;
     if (heroSection) {
-      heroSection.style.maxHeight = "300px";
-      heroSection.style.padding   = "";
+      heroSection.style.visibility = "";
+      heroSection.style.height     = "";
+      heroSection.style.overflow   = "";
+      heroSection.style.padding    = "";
+      heroSection.style.margin     = "";
+    }
+    if (filterBar) {
+      filterBar.style.visibility = "";
+      filterBar.style.height     = "";
+      filterBar.style.overflow   = "";
+      filterBar.style.padding    = "";
+      filterBar.style.margin     = "";
     }
   }
-
-  lastScroll = currentScroll;
 });
 
 /* ========== TOAST ========== */
