@@ -786,12 +786,13 @@ text-align:center;
 font-size:12px;
 }
  /*FIX HERO TEXT OVERFLOW */
- .typewriter{
+.typewriter{
 white-space:normal;
 width:100% !important;
 font-size:22px;
-cursor: hidden;
-} 
+animation: none !important;
+border-right: none !important;
+}
 
 /* FIX HERO WIDTH */
 .hero-content{
@@ -811,5 +812,6 @@ gap:12px;
 height:200px;
 object-fit:cover;
 }
+
 
 }
