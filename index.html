@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Emporium Library</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+
+<header class="navbar">
+
+    <div class="nav-container">
+
+        <div class="logo">
+            Emporium Library
+        </div>
+
+        <nav class="nav-menu" id="navMenu">
+
+            <a href="index.html">Home</a>
+            <a href="#genres1">Genres</a>
+            <a href="#trending1">Trending</a>
+            <a href="academic.html">Academic Hub</a>
+            <a href="#feedbackForm">Feedback</a>
+
+        </nav>
+
+        <div class="nav-right">
+
+<div class="search-box">
+
+<i class="fa-solid fa-magnifying-glass"></i>
+
+<input type="text" id="searchInput" placeholder="Search books...">
+
+</div>
+
+<div class="hamburger" id="hamburger">
+<i class="fa-solid fa-bars"></i>
+</div>
+
+</div>
+
+</header>
+
+
+<!-- ================= HERO SECTION ================= -->
+
+<section class="hero">
+
+    <div class="hero-content">
+
+        <h1 class="typewriter">Welcome to Emporium Library</h1>
+
+        <p>
+            Discover thousands of books across literature, philosophy,
+            science, religion and academic studies.
+        </p>
+
+        <div class="hero-buttons">
+
+            <a href="genre.html?genre=all" class="btn-outline-primary">Explore Library</a>
+
+            <a href="#genres1" class="btn-outline-danger">Browse Genres</a>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ================= TRENDING BOOKS ================= -->
+
+<section id="trending1" class="trending">
+
+<div class="section-header">
+<h2>Trending Books</h2>
+<p>Discover what readers are downloading the most</p>
+</div>
+
+<div class="books-grid" id="trendingBooks"></div>
+
+</section>
+
+<!-- ================= GENRE EXPLORER ================= -->
+
+<section id="genres1" class="genres">
+
+    <div class="section-header">
+        <h2>Explore Genres</h2>
+        <p>Browse books across different categories</p>
+    </div>
+
+    <div class="genre-grid">
+
+        <a href="genre.html?genre=literature" class="genre-card" >Literature</a>
+
+        <a href="genre.html?genre=religion" class="genre-card" >Religion</a>
+
+        <a href="genre.html?genre=spirituality" class="genre-card" >Spirituality</a>
+
+        <a href="genre.html?genre=fiction" class="genre-card" >Fiction</a>
+
+        <a href="genre.html?genre=science-fiction" class="genre-card" >Science Fiction</a>
+
+        <a href="genre.html?genre=rom-com   " class="genre-card" >Rom-Com</a>
+
+        <a href="genre.html?genre=non-fiction" class="genre-card" >Non-Fiction</a>
+
+        <a href="genre.html?genre=horror-thriller" class="genre-card" >Horror & Thriller</a>
+
+        <a href="genre.html?genre=academic" class="genre-card" >Academic</a>
+
+        <a href="genre.html?genre=all" class="genre-card" >All Books</a>
+
+    </div>
+
+
+<!-- ================= POPULAR DOWNLOADS ================= -->
+
+<section class="popular-downloads">
+
+    <div class="section-header">
+        <h2>Popular Downloads</h2>
+        <p>Books readers are downloading the most</p>
+    </div>
+
+    <div class="books-grid">
+
+        <!-- Book Card -->
+        <div class="book-card">
+            <img src="images/Think grow rich.jfif" alt="Book Cover">
+            <h3>Think and Grow Rich</h3>
+            <p class="author">Napoleon Hill</p>
+            <a href="https://drive.google.com/file/d/1PVPBBe-rhaZQ3DIQoCjZ3fFkL1hcftbM/view?usp=drive_link" class="download-btn">Download</a>
+        </div>
+
+        <div class="book-card">
+            <img src="images/The psychology of money.jfif" alt="Book Cover">
+            <h3>The Psychology of Money</h3>
+            <p class="author">Morgan Housel</p>
+            <a href="https://drive.google.com/file/d/1xMGqZehm_8SCYwrG-zTsFr4ikmKVm7Pc/view?usp=drive_link" class="download-btn">Download</a>
+        </div>
+
+        <div class="book-card">
+            <img src="images/deep work.png" alt="Book Cover">
+            <h3>Deep Work</h3>
+            <p class="author">Cal Newport</p>
+            <a href="books/Deep Work pdf.pdf" class="download-btn">Download</a>
+        </div>
+
+        <div class="book-card">
+            <img src="images/Power of habits.jpg" alt="Book Cover">
+            <h3>The Power of Habit</h3>
+            <p class="author">Charles Duhigg</p>
+            <a href="https://drive.google.com/file/d/1UrIvGXwrrFmTxVimsjTw8gRf-psbL_W8/view?usp=drive_link" class="download-btn">Download</a>
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ================= ACADEMIC HUB ================= -->
+
+<section class="academic-hub">
+
+    <div class="academic-container">
+
+        <div class="academic-text">
+
+            <h2>Emporium Academic Hub</h2>
+
+            <p>
+                Share your study notes, assignments, and academic resources with
+                students around the world. Contribute knowledge and earn upload points.
+            </p>
+
+            <p>
+                Each upload earns <strong>5 points</strong>. Top contributors will be
+                featured on the platform.
+            </p>
+
+            <a href="academic.html" class="academic-btn">Enter Academic Hub</a>
+
+        </div>
+
+        <div class="academic-illustration">
+
+            <img src="images/Academic hub.jpg" alt="Academic Illustration">
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ================= FEEDBACK SECTION ================= -->
+
+<section id="feedbackForm" class="feedback">
+
+    <div class="section-header">
+        <h2>We Value Your Feedback</h2>
+        <p>Help us improve Emporium Library with your suggestions</p>
+    </div>
+
+    <div class="feedback-container">
+
+       <form id="feedbackForm"
+class="feedback-form"
+name="feedback"
+method="POST"
+data-netlify="true">
+
+<input type="hidden" name="form-name" value="feedback">
+
+<input type="text"
+id="name"
+name="name"
+placeholder="Your Name"
+required>
+
+<input type="email"
+id="email"
+name="email"
+placeholder="Your Email"
+required>
+
+<textarea
+id="message"
+name="message"
+placeholder="Write your feedback..."
+required></textarea>
+
+<button type="submit">Submit Feedback</button>
+
+</form>
+    </div>
+
+</section>
+
+<!-- ================= FOOTER ================= -->
+
+<footer class="footer">
+
+    <div class="footer-container">
+
+        <div class="footer-col">
+
+            <h3>Emporium Library</h3>
+
+            <p>
+                A digital space for readers and students to explore books across
+                multiple genres and access academic resources freely.
+            </p>
+
+        </div>
+
+        <div class="footer-col">
+
+            <h4>Quick Links</h4>
+
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="genre.html?genre=all">Genres</a></li>
+                <li><a href="#trending1">Trending</a></li>
+                <li><a href="academic.html">Academic Hub</a></li>
+            </ul>
+
+        </div>
+
+        <div class="footer-col">
+
+            <h4>Genres</h4>
+
+            <ul>
+                <li><a href="genre.html?genre=literature">Literature</a></li>
+                <li><a href="genre.html?genre=fiction">Fiction</a></li>
+                <li><a href="genre.html?genre=science-fiction">Science Fiction</a></li>
+                <li><a href="genre.html?genre=non-fiction">Non-Fiction</a></li>
+            </ul>
+
+        </div>
+
+        <div class="footer-col">
+
+            <h4>Connect</h4>
+
+            <div class="social-icons">
+                <a href="www.linkedin.com/in/naieem-qureshi-b02524255"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="https://t.me/Ebook_Emporium"><i class="fa-brands fa-telegram"></i></a>
+                <a href="https://www.instagram.com/naieem_qurashi/"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="footer-bottom">
+        <p>© 2026 Emporium Library. All rights reserved.</p>
+        <p>Developed by Naieem Qureshi</p>
+    </div>
+
+</footer>
+<script src="book.js" ></script>
+<script src="script.js"></script>
+
+
+</body>
+</html>
