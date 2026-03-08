@@ -4,8 +4,8 @@ const books = [
 title: "The Alchemist",
 author: "Paulo Coelho",
 genre: "fiction",
-cover: "alchemist.jfif",
-file: "alchemist pdf.pdf",
+cover: "Alchemist.jfif",
+file: "Alchemist pdf.pdf",
 trending: true
 },
 
@@ -916,3 +916,4 @@ trending: false
 
 
 ];
+
