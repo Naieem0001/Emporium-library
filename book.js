@@ -4,8 +4,8 @@ const books = [
 title: "The Alchemist",
 author: "Paulo Coelho",
 genre: "fiction",
-cover: "images/alchemist.jfif",
-file: "books/alchemist pdf.pdf",
+cover: "alchemist.jfif",
+file: "alchemist pdf.pdf",
 trending: true
 },
 
@@ -13,8 +13,8 @@ trending: true
 title: "Atomic Habits",
 author: "James Clear",
 genre: "non-fiction",
-cover: "images/Atomic Habits.jpg",
-file: "Books/Atomic habits pdf.pdf",
+cover: "Atomic Habits.jpg",
+file: "Atomic habits pdf.pdf",
 trending: true
 },
 
@@ -23,7 +23,7 @@ title: "1984",
 author: "George Orwell",
 genre: "fiction",
 cover: "https://m.media-amazon.com/images/I/71kXYs4tCvL._AC_UF1000,1000_QL80_.jpg",
-file: "books/pdf/1984.pdf",
+file: "1984.pdf",
 trending:false
 },
 
@@ -40,8 +40,8 @@ trending: false
 title: "The Silent Patient",
 author: "Alex Michaelides",
 genre: "horror-thriller",
-cover: "images/Silient Patient.jpg",
-file: "books/silent patient pdf.pdf",
+cover: "Silient Patient.jpg",
+file: "silent patient pdf.pdf",
 trending: false
 },
 
@@ -49,16 +49,16 @@ trending: false
 title: "Rich Dad Poor Dad",
 author: "Robert Kiyosaki",
 genre: "non-fiction",
-cover: "images/Rich Dad.jfif",
-file: "books/Rich dad pdf.pdf",
+cover: "Rich Dad.jfif",
+file: "Rich dad pdf.pdf",
 trending: false
 },
 {
 title: "Deep Work",
 author: "Cal Newport",
 genre: "non-fiction",
-cover: "images/deep work.png",
-file: "books/Deep Work pdf.pdf",
+cover: "deep work.png",
+file: "Deep Work pdf.pdf",
 trending: false
 },
 
@@ -168,7 +168,7 @@ title: "It Ends with Us",
 author: "Colleen Hoover",
 genre: "rom-com",
 cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUpxbM-IIARAqAF3YvZ6PlgfCjYygS9XVVpg&s",
-file: "Books/it_ends_with_us.pdf",
+file: "it_ends_with_us.pdf",
 trending: true
 },
 
@@ -257,8 +257,8 @@ trending: false
 title: "Let Us C",
 author: "Yashavant Kanetkar",
 genre: "academic",
-cover: "images/letcimg.jpeg",
-file: "Books/letusC.pdf",
+cover: "letcimg.jpeg",
+file: "letusC.pdf",
 trending: false
 },
 
@@ -266,8 +266,8 @@ trending: false
 title: "Data Structures Using C",
 author: "Reema Thareja",
 genre: "academic",
-cover: "images/reema.jpg",
-file: "Books/datastr.pdf",
+cover: "reema.jpg",
+file: "datastr.pdf",
 trending: false
 },
 
@@ -275,7 +275,7 @@ trending: false
 title: "Web Development",
 author: "Ayush Mauryawanshi",
 genre: "academic",
-cover: "images/web dev.jfif",
+cover: "web dev.jfif",
 file: "https://drive.google.com/file/d/13m8LWXBY-1dKNvjzgDQ5TIRyJtZqHwVS/view?usp=drive_link",
 trending: false
 },
@@ -284,7 +284,7 @@ trending: false
 title: "Python Tutorial for Beginners",
 author: "Tutorial",
 genre: "academic",
-cover: "images/python.jfif",
+cover: "python.jfif",
 file: "https://drive.google.com/file/d/14P3SwM0YVVzrI0Epe3vDnFx0Xa-Vw9Cw/view?usp=sharing",
 trending: false
 },
@@ -801,7 +801,6 @@ trending: false
 title: "Aab e Hayat",
 author: "Umera Ahmad",
 genre: "religion",
-// genre: "fiction",
 cover: "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1420365972i/23486520.jpg",
 file: "https://drive.google.com/file/d/1smvHR_v93RJgaS5it9Dx83K1aFVxCKZz/view?usp=sharing",
 trending: false
@@ -865,7 +864,7 @@ trending: false
 title: "The Teacher",
 author: "Freida MC Freida",
 genre: "horror-thriller",
-cover: "Images/Teacher.jpg",
+cover: "Teacher.jpg",
 file: "https://drive.google.com/file/d/1CNjh1ZuN3iEqvIi5VRccEIrh_yf9SHy9/view?usp=drive_link",
 trending: false
 },
@@ -914,5 +913,6 @@ cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSF7qMkglCDLwhscwtm
 file: "https://drive.google.com/file/d/1nTGbk_sCTDMFmDiXYaVdoqJ1Tl1RjBrl/view?usp=sharing",
 trending: false
 }
+
 
 ];
