@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isValidDriveUrl(url) {
+      return url is string
+        && url.size() > 0
+        && url.size() <= 1000
+        && url.matches('^https://drive\\.google\\.com/.*$');
+    }
+
+    function isValidBookShape() {
+      return request.resource.data.keys().hasOnly([
+        'title', 'author', 'genre', 'cover', 'driveLink', 'trending', 'newRelease', 'createdAt'
+      ])
+      && request.resource.data.title is string
+      && request.resource.data.title.size() > 0
+      && request.resource.data.title.size() <= 200
+      && request.resource.data.author is string
+      && request.resource.data.author.size() > 0
+      && request.resource.data.author.size() <= 120
+      && request.resource.data.genre is string
+      && request.resource.data.genre.size() > 0
+      && request.resource.data.genre.size() <= 80
+      && request.resource.data.cover is string
+      && request.resource.data.cover.matches('^https?://.*$')
+      && isValidDriveUrl(request.resource.data.driveLink)
+      && request.resource.data.trending is bool
+      && request.resource.data.newRelease is bool;
+    }
+
+    function isValidResourceCreate() {
+      return request.resource.data.keys().hasOnly([
+        'title', 'subject', 'type', 'uploader', 'driveLink', 'description', 'downloads', 'createdAt'
+      ])
+      && request.resource.data.title is string
+      && request.resource.data.title.size() > 0
+      && request.resource.data.title.size() <= 200
+      && request.resource.data.subject is string
+      && request.resource.data.subject.size() > 0
+      && request.resource.data.subject.size() <= 120
+      && request.resource.data.type is string
+      && request.resource.data.type in ['notes', 'books', 'papers', 'assignments']
+      && request.resource.data.uploader is string
+      && request.resource.data.uploader.size() > 0
+      && request.resource.data.uploader.size() <= 120
+      && isValidDriveUrl(request.resource.data.driveLink)
+      && request.resource.data.description is string
+      && request.resource.data.description.size() <= 500
+      && request.resource.data.downloads == 0;
+    }
+
+    function isSafeDownloadIncrement() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['downloads'])
+        && request.resource.data.downloads is int
+        && request.resource.data.downloads == resource.data.downloads + 1;
+    }
+
+    function isValidContributorCreate() {
+      return request.resource.data.keys().hasOnly(['name', 'points', 'uploads'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.points == 5
+        && request.resource.data.uploads == 1;
+    }
+
+    function isValidContributorIncrement() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['points', 'uploads'])
+        && request.resource.data.points == resource.data.points + 5
+        && request.resource.data.uploads == resource.data.uploads + 1;
+    }
+
+    match /books/{bookId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidBookShape();
+      allow delete: if isAdmin();
+    }
+
+    match /resources/{resourceId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidResourceCreate();
+      allow update: if isSignedIn() && isSafeDownloadIncrement();
+      allow delete: if isAdmin();
+    }
+
+    match /contributors/{contributorId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidContributorCreate();
+      allow update: if isSignedIn() && isValidContributorIncrement();
+      allow delete: if isAdmin();
+    }
+  }
+}

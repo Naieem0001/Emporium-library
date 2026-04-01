@@ -829,14 +829,42 @@ function getInitials(name) {
   return name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
+function escapeHTML(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function safeUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.href;
+  } catch (err) {
+    return "";
+  }
+  return "";
+}
+
 /* ========== CURRENT FILTER ========== */
 let currentFilter = "all";
 
 /* ========== RENDER ONE CARD ========== */
 function createResourceCard(data, id) {
-  const cfg = typeConfig[data.type] || typeConfig.notes;
+  const normalizedType = String(data.type || "notes");
+  const cfg = typeConfig[normalizedType] || typeConfig.notes;
+  const safeTitle = escapeHTML(data.title);
+  const safeSubject = escapeHTML(data.subject);
+  const safeDescription = escapeHTML(data.description);
+  const safeUploader = escapeHTML(data.uploader);
+  const safeDriveLink = safeUrl(data.driveLink);
+  const safeDownloads = Number(data.downloads) || 0;
   return `
-    <div class="resource-card" data-type="${data.type}" data-id="${id}">
+    <div class="resource-card" data-type="${escapeHTML(normalizedType)}" data-id="${escapeHTML(id)}">
       <div class="resource-card-top">
         <div class="resource-icon-wrap ${cfg.iconClass}">
           <i class="fa-solid ${cfg.icon}"></i>
@@ -844,12 +872,12 @@ function createResourceCard(data, id) {
         <span class="resource-type-badge ${cfg.badge}">${cfg.label}</span>
       </div>
       <div class="resource-card-body">
-        <h3>${data.title}</h3>
+        <h3>${safeTitle}</h3>
        <p class="resource-subject">
           <i class="fa-solid fa-tag" style="font-size:11px;margin-right:4px;color:#9CA3AF"></i>
-          ${data.subject}
+          ${safeSubject}
         </p>
-        ${data.description ? `
+        ${safeDescription ? `
         <p style="
           font-size:12px;
           color:#6B7280;
@@ -859,12 +887,12 @@ function createResourceCard(data, id) {
           -webkit-line-clamp:2;
           -webkit-box-orient:vertical;
           overflow:hidden;
-        ">${data.description}</p>` : ""}
+        ">${safeDescription}</p>` : ""}
         <div class="resource-meta">
-          <span><i class="fa-solid fa-user"></i> ${data.uploader}</span>
-          <span><i class="fa-solid fa-download"></i> ${data.downloads || 0}</span>
+          <span><i class="fa-solid fa-user"></i> ${safeUploader}</span>
+          <span><i class="fa-solid fa-download"></i> ${safeDownloads}</span>
         </div>
-        <a href="${data.driveLink}" target="_blank" class="download-resource"
+        <a href="${safeDriveLink}" target="_blank" rel="noopener noreferrer" class="download-resource"
            onclick="incrementDownload('${id}', this)">
           <i class="fa-solid fa-download"></i> Download
         </a>
@@ -1126,8 +1154,18 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
     return;
   }
 
-  /* basic Drive link validation */
-  if (!driveLink.includes("drive.google.com")) {
+  /* strict Drive link validation */
+  let parsedDriveLink;
+  try {
+    parsedDriveLink = new URL(driveLink);
+  } catch (err) {
+    showToast("Please enter a valid Google Drive link.", true);
+    return;
+  }
+  if (
+    !["http:", "https:"].includes(parsedDriveLink.protocol) ||
+    !parsedDriveLink.hostname.endsWith("drive.google.com")
+  ) {
     showToast("Please enter a valid Google Drive link.", true);
     return;
   }
@@ -1209,13 +1247,13 @@ function loadLeaderboard() {
       board.innerHTML = sorted.map((c, i) => `
         <div class="contributor">
           <div class="rank-badge ${rankClasses[i] || 'rank-other'}">${i + 1}</div>
-          <div class="contributor-avatar">${getInitials(c.name)}</div>
+          <div class="contributor-avatar">${escapeHTML(getInitials(c.name))}</div>
           <div class="contributor-info">
-            <h3>${c.name}</h3>
-            <span>${c.uploads} upload${c.uploads !== 1 ? "s" : ""}</span>
+            <h3>${escapeHTML(c.name)}</h3>
+            <span>${Number(c.uploads) || 0} upload${(Number(c.uploads) || 0) !== 1 ? "s" : ""}</span>
           </div>
           <div class="contributor-right">
-            <span class="points-pill">${c.points} pts</span>
+            <span class="points-pill">${Number(c.points) || 0} pts</span>
             <div class="uploads-count">5 pts / upload</div>
           </div>
         </div>`).join("");

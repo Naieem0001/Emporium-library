@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -265,13 +266,17 @@
   <div class="login-box">
     <i class="fa-solid fa-shield-halved"></i>
     <h2>Admin Access</h2>
-    <p>Enter your password to access the admin panel</p>
-    <input type="password" id="passwordInput" placeholder="Enter password" 
-           onkeydown="if(event.key==='Enter') checkPassword()" />
-    <button class="login-btn" onclick="checkPassword()">
+    <p>Sign in with your Firebase admin account</p>
+    <input type="email" id="adminEmail" placeholder="Admin email"
+           autocomplete="username"
+           onkeydown="if(event.key==='Enter') adminLogin()" />
+    <input type="password" id="passwordInput" placeholder="Admin password"
+           autocomplete="current-password"
+           onkeydown="if(event.key==='Enter') adminLogin()" />
+    <button class="login-btn" onclick="adminLogin()">
       <i class="fa-solid fa-unlock"></i> Access Panel
     </button>
-    <p class="login-error" id="loginError">Incorrect password. Try again.</p>
+    <p class="login-error" id="loginError">Sign in failed. Check your credentials.</p>
   </div>
 </div>
 
@@ -418,27 +423,68 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
 
-/* ===== PASSWORD ===== */
-const ADMIN_PASSWORD = "emporium@admin2026";
+function escapeHTML(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
-function checkPassword() {
-  const input = document.getElementById("passwordInput").value;
-  if (input === ADMIN_PASSWORD) {
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("adminPanel").style.display = "block";
-    loadBooks();
-  } else {
-    document.getElementById("loginError").style.display = "block";
-    document.getElementById("passwordInput").value = "";
+function safeUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.href;
+  } catch (err) {
+    return "";
   }
+  return "";
+}
+
+function setAdminUi(isLoggedIn) {
+  document.getElementById("loginScreen").style.display = isLoggedIn ? "none" : "flex";
+  document.getElementById("adminPanel").style.display = isLoggedIn ? "block" : "none";
+}
+
+function adminLogin() {
+  const email = document.getElementById("adminEmail").value.trim();
+  const password = document.getElementById("passwordInput").value;
+  const loginError = document.getElementById("loginError");
+  if (!email || !password) {
+    loginError.textContent = "Email and password are required.";
+    loginError.style.display = "block";
+    return;
+  }
+  loginError.style.display = "none";
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => {
+      document.getElementById("passwordInput").value = "";
+    })
+    .catch(() => {
+      loginError.textContent = "Sign in failed. Check your credentials.";
+      loginError.style.display = "block";
+      document.getElementById("passwordInput").value = "";
+    });
 }
 
 function logout() {
-  document.getElementById("loginScreen").style.display = "flex";
-  document.getElementById("adminPanel").style.display = "none";
-  document.getElementById("passwordInput").value = "";
+  auth.signOut();
 }
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    setAdminUi(true);
+    loadBooks();
+    return;
+  }
+  setAdminUi(false);
+  document.getElementById("passwordInput").value = "";
+});
 
 /* ===== TOAST ===== */
 function showToast(msg, isError = false) {
@@ -489,12 +535,18 @@ function renderTable(books) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty-table">No books found</td></tr>`;
     return;
   }
-  tbody.innerHTML = books.map(book => `
+  tbody.innerHTML = books.map(book => {
+    const safeTitle = escapeHTML(book.title);
+    const safeAuthor = escapeHTML(book.author);
+    const safeGenre = escapeHTML(book.genre);
+    const safeCover = safeUrl(book.cover) || "https://via.placeholder.com/36x50";
+    const encodedTitle = encodeURIComponent(String(book.title || ""));
+    return `
     <tr>
-      <td><img src="${book.cover}" class="book-cover-thumb" onerror="this.src='https://via.placeholder.com/36x50'" /></td>
-      <td><strong>${book.title}</strong></td>
-      <td style="color:#6B7280">${book.author}</td>
-      <td><span class="genre-badge">${book.genre}</span></td>
+      <td><img src="${safeCover}" class="book-cover-thumb" onerror="this.src='https://via.placeholder.com/36x50'" /></td>
+      <td><strong>${safeTitle}</strong></td>
+      <td style="color:#6B7280">${safeAuthor}</td>
+      <td><span class="genre-badge">${safeGenre}</span></td>
       <td>
         ${book.trending  ? '<span class="trending-badge">🔥 Trending</span> ' : ''}
         ${book.newRelease ? '<span class="new-badge">⭐ New</span>' : ''}
@@ -503,11 +555,12 @@ function renderTable(books) {
         <button class="edit-btn" onclick="toggleFlags('${book.id}', ${book.trending}, ${book.newRelease})">
           <i class="fa-solid fa-pen"></i> Edit Flags
         </button>
-        <button class="delete-btn" onclick="deleteBook('${book.id}', '${book.title.replace(/'/g, "\\'")}')">
+        <button class="delete-btn" onclick="deleteBook('${book.id}', '${encodedTitle}')">
           <i class="fa-solid fa-trash"></i> Delete
         </button>
       </td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
 }
 
 /* ===== FILTER TABLE ===== */
@@ -548,12 +601,30 @@ function addBook() {
     return;
   }
 
+  const safeCover = safeUrl(cover);
+  const safeDriveLink = safeUrl(driveLink);
+  if (!safeCover || !safeDriveLink) {
+    showToast("Cover and Drive link must be valid http/https URLs.", true);
+    return;
+  }
+  let parsedDriveUrl;
+  try {
+    parsedDriveUrl = new URL(safeDriveLink);
+  } catch (err) {
+    showToast("Please enter a valid Google Drive link.", true);
+    return;
+  }
+  if (!parsedDriveUrl.hostname.endsWith("drive.google.com")) {
+    showToast("Please enter a valid Google Drive link.", true);
+    return;
+  }
+
   const btn = document.querySelector(".add-btn");
   btn.disabled = true;
   btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Adding...`;
 
   db.collection("books").add({
-    title, author, genre, cover, driveLink,
+    title, author, genre, cover: safeCover, driveLink: safeDriveLink,
     trending, newRelease,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   }).then(() => {
@@ -669,7 +740,8 @@ function saveFlags(id) {
 }
 
 /* ===== DELETE BOOK ===== */
-function deleteBook(id, title) {
+function deleteBook(id, encodedTitle) {
+  const title = decodeURIComponent(encodedTitle || "");
   if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
   db.collection("books").doc(id).delete().then(() => {
     showToast("Book deleted.");
