@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/index.html</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=all</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=fiction</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=literature</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=science-fiction</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=non-fiction</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=horror-thriller</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=rom-com</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=spirituality</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=religion</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/genre.html?genre=academic</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://emporiumlibrary.netlify.app/academic.html</loc>
+    <lastmod>2026-03-08</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+</urlset>

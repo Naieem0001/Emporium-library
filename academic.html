@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Academic Hub | Emporium Library</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --navy:   #1B2A41;
+      --navy2:  #243B55;
+      --orange: #FF7A18;
+      --orange2:#FF9F43;
+      --cream:  #F8FAFC;
+      --gray:   #F1F5F9;
+      --text:   #2E2E2E;
+      --muted:  #6B7280;
+      --white:  #FFFFFF;
+      --shadow: 0 8px 24px rgba(0,0,0,0.08);
+      --radius: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+    }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      background: var(--navy);
+      padding: 15px 40px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--white);
+      text-decoration: none;
+    }
+    .nav-menu { display: flex; gap: 28px; align-items: center; }
+    .nav-menu a {
+      color: #D1D5DB;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      position: relative;
+      transition: color 0.25s;
+    }
+    .nav-menu a::after {
+      content: '';
+      position: absolute;
+      left: 0; bottom: -4px;
+      width: 0; height: 2px;
+      background: var(--orange);
+      transition: width 0.3s;
+    }
+    .nav-menu a:hover { color: var(--white); }
+    .nav-menu a:hover::after { width: 100%; }
+    .nav-menu a.active-link { color: var(--orange2); }
+
+    .nav-right { display: flex; align-items: center; gap: 18px; }
+    .search-box {
+      display: flex; align-items: center;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 6px 12px; border-radius: 20px; gap: 8px;
+    }
+    .search-box input {
+      background: transparent; border: none; outline: none;
+      color: white; font-size: 13px; width: 120px;
+    }
+    .search-box input::placeholder { color: #9CA3AF; }
+    .search-box i { color: #9CA3AF; font-size: 13px; }
+
+    .hamburger { 
+  display: none; 
+  font-size: 22px; 
+  color: white; 
+  cursor: pointer; 
+}
+
+@media (max-width: 900px) {
+  .nav-menu { 
+    display: none;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    background: #1B2A41;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    gap: 15px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: 0.3s;
+    z-index: 199;
+  }
+
+  .nav-menu.active {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .hamburger { 
+    display: block; 
+  }
+}
+
+    /* ===== HERO SECTION ===== */
+    .academic-hero {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 60%, #1e3a5f 100%);
+      padding: 90px 40px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .academic-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .academic-hero .hero-badge {
+      display: inline-block;
+      background: rgba(255,122,24,0.2);
+      border: 1px solid rgba(255,122,24,0.4);
+      color: var(--orange2);
+      padding: 6px 16px; border-radius: 20px;
+      font-size: 13px; font-weight: 500;
+      margin-bottom: 20px; letter-spacing: 0.5px;
+    }
+    .academic-hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px; font-weight: 700;
+      color: white; margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .academic-hero h1 span { color: var(--orange2); }
+    .academic-hero p {
+      font-size: 16px; color: #CBD5E1;
+      max-width: 580px; margin: 0 auto 36px;
+      line-height: 1.7;
+    }
+    .hero-stats {
+      display: flex; justify-content: center; gap: 50px;
+      flex-wrap: wrap;
+    }
+    .stat-item { text-align: center; }
+    .stat-item .stat-num {
+      display: block; font-size: 28px; font-weight: 700;
+      color: var(--orange2); font-family: 'Playfair Display', serif;
+    }
+    .stat-item .stat-label { font-size: 13px; color: #94A3B8; margin-top: 4px; }
+
+    /* ===== CATEGORY FILTERS ===== */
+    .filter-section {
+      background: white;
+      padding: 28px 40px;
+      border-bottom: 1px solid #E2E8F0;
+      position: sticky; top: 65px; z-index: 100;
+    }
+    .filter-inner {
+      display: flex; align-items: center;
+      justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    }
+    .filter-label {
+      font-size: 13px; color: var(--muted); font-weight: 500;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .category-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+    .category-btn {
+      padding: 9px 20px; border-radius: 30px;
+      border: 1.5px solid #E2E8F0;
+      background: white; color: var(--text);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all 0.22s;
+      font-family: 'Poppins', sans-serif;
+    }
+    .category-btn:hover { border-color: var(--orange); color: var(--orange); }
+    .category-btn.active {
+      background: var(--navy); color: white;
+      border-color: var(--navy);
+    }
+    .filter-count {
+      font-size: 13px; color: var(--muted);
+      background: var(--gray); padding: 6px 14px;
+      border-radius: 20px; font-weight: 500;
+    }
+
+    /* ===== MOBILE FILTER DROPDOWN ===== */
+.filter-dropdown-wrap {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.filter-dropdown {
+  flex: 1;
+  background: #F8FAFC ;
+  color: var(--text);
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  font-family: 'Poppins', sans-serif;
+}
+
+.filter-dropdown:focus {
+  border-color: var(--orange);
+}
+  
+
+    /* ===== SECTION HEADERS ===== */
+    .section-header { text-align: center; margin-bottom: 40px; }
+    .section-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px; color: var(--navy); margin-bottom: 8px;
+    }
+    .section-header p { color: var(--muted); font-size: 15px; }
+    .section-divider {
+      width: 48px; height: 3px; background: var(--orange);
+      border-radius: 2px; margin: 14px auto 0;
+    }
+
+    /* ===== RESOURCES GRID ===== */
+    .resources-section { padding: 70px 40px; background: var(--cream); }
+    .resources-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 24px;
+    }
+    .resource-card {
+      background: white;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: transform 0.25s, box-shadow 0.25s;
+      display: flex; flex-direction: column;
+      border: 1px solid #F1F5F9;
+    }
+    .resource-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+    }
+    .resource-card-top {
+      padding: 28px 20px 20px;
+      text-align: center;
+      background: linear-gradient(135deg, #F8FAFC, #EFF6FF);
+      border-bottom: 1px solid #E2E8F0;
+    }
+    .resource-icon-wrap {
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+      font-size: 26px;
+    }
+    .icon-notes    { background: rgba(255,122,24,0.12); color: var(--orange); }
+    .icon-books    { background: rgba(27,42,65,0.1);    color: var(--navy); }
+    .icon-papers   { background: rgba(16,185,129,0.12); color: #10B981; }
+    .icon-assignments { background: rgba(139,92,246,0.12); color: #8B5CF6; }
+
+    .resource-type-badge {
+      display: inline-block;
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 8px;
+    }
+    .badge-notes        { background: rgba(255,122,24,0.1); color: var(--orange); }
+    .badge-books        { background: rgba(27,42,65,0.08);  color: var(--navy); }
+    .badge-papers       { background: rgba(16,185,129,0.1); color: #059669; }
+    .badge-assignments  { background: rgba(139,92,246,0.1); color: #7C3AED; }
+
+    .resource-card-body { padding: 16px 20px 20px; flex: 1; }
+    .resource-card-body h3 {
+      font-size: 15px; font-weight: 600; color: var(--navy);
+      margin-bottom: 5px; line-height: 1.4;
+    }
+    .resource-subject {
+      font-size: 13px; color: var(--muted); margin-bottom: 10px;
+    }
+    .resource-meta {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 12px; color: #9CA3AF; margin-bottom: 14px;
+    }
+    .resource-meta span { display: flex; align-items: center; gap: 4px; }
+    .download-resource {
+      display: block; text-align: center;
+      background: linear-gradient(135deg, var(--orange), var(--orange2));
+      color: white; padding: 9px 16px;
+      border-radius: 8px; text-decoration: none;
+      font-size: 13px; font-weight: 500;
+      transition: all 0.22s;
+    }
+    .download-resource:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(255,122,24,0.35);
+    }
+
+    /* Empty state */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center; padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty-state i { font-size: 48px; color: #D1D5DB; margin-bottom: 16px; }
+    .empty-state p { font-size: 15px; }
+
+    /* ===== UPLOAD SECTION ===== */
+    .upload-section {
+      padding: 80px 40px;
+      background: white;
+    }
+    .upload-wrapper {
+      max-width: 700px; margin: 0 auto;
+      background: var(--cream);
+      border-radius: 16px;
+      padding: 48px;
+      border: 1px solid #E2E8F0;
+    }
+    .upload-form { display: flex; flex-direction: column; gap: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label {
+      font-size: 13px; font-weight: 600; color: var(--navy);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      padding: 12px 14px;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px; color: var(--text);
+      background: white;
+      transition: border-color 0.22s, box-shadow 0.22s;
+      outline: none;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(255,122,24,0.12);
+    }
+    .form-group textarea { resize: vertical; min-height: 90px; }
+
+    .file-upload-area {
+      border: 2px dashed #CBD5E1;
+      border-radius: 10px; padding: 30px;
+      text-align: center; cursor: pointer;
+      transition: all 0.22s; background: white;
+    }
+    .file-upload-area:hover, .file-upload-area.dragging {
+      border-color: var(--orange);
+      background: rgba(255,122,24,0.03);
+    }
+    .file-upload-area i { font-size: 32px; color: #CBD5E1; margin-bottom: 10px; }
+    .file-upload-area p { font-size: 14px; color: var(--muted); }
+    .file-upload-area span { font-size: 12px; color: #9CA3AF; }
+    .file-upload-area input[type="file"] { display: none; }
+    .file-name-display {
+      font-size: 13px; color: var(--orange); font-weight: 500;
+      margin-top: 8px; display: none;
+    }
+
+    .upload-btn {
+      background: linear-gradient(135deg, var(--navy), var(--navy2));
+      color: white; border: none;
+      padding: 14px; border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.25s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .upload-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(27,42,65,0.3);
+    }
+    .upload-btn:active { transform: translateY(0); }
+
+    /* Upload notice */
+    .upload-notice {
+      background: rgba(255,122,24,0.06);
+      border: 1px solid rgba(255,122,24,0.2);
+      border-radius: 8px; padding: 12px 16px;
+      font-size: 13px; color: #92400E;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .upload-notice i { margin-top: 2px; color: var(--orange); }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 30px; right: 30px;
+      background: var(--navy); color: white;
+      padding: 14px 22px; border-radius: 10px;
+      font-size: 14px; font-weight: 500;
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.35s; z-index: 999;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast i { color: var(--orange2); }
+
+    /* ===== LEADERBOARD ===== */
+    .contributors { padding: 80px 40px; background: var(--gray); }
+    .leaderboard { max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+
+    .contributor {
+      display: flex; align-items: center; gap: 16px;
+      background: white; padding: 18px 22px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      transition: transform 0.22s;
+      border-left: 4px solid transparent;
+    }
+    .contributor:hover { transform: translateX(4px); }
+    .contributor:nth-child(1) { border-left-color: #F59E0B; }
+    .contributor:nth-child(2) { border-left-color: #9CA3AF; }
+    .contributor:nth-child(3) { border-left-color: #CD7C2F; }
+
+    .rank-badge {
+      width: 38px; height: 38px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px; flex-shrink: 0;
+    }
+    .rank-1 { background: rgba(245,158,11,0.15); color: #F59E0B; }
+    .rank-2 { background: rgba(156,163,175,0.15); color: #6B7280; }
+    .rank-3 { background: rgba(205,124,47,0.15); color: #CD7C2F; }
+    .rank-other { background: var(--gray); color: var(--muted); }
+
+    .contributor-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--navy), var(--navy2));
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 16px; flex-shrink: 0;
+    }
+    .contributor-info { flex: 1; }
+    .contributor-info h3 { font-size: 15px; font-weight: 600; color: var(--navy); margin-bottom: 3px; }
+    .contributor-info span { font-size: 12px; color: var(--muted); }
+
+    .contributor-right { text-align: right; }
+    .points-pill {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--orange), var(--orange2));
+      color: white; padding: 5px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 600;
+    }
+    .uploads-count { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: var(--navy); color: #D1D5DB;
+      padding: 50px 40px 20px;
+    }
+    .footer-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 36px; margin-bottom: 30px;
+    }
+    .footer-col h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px; color: white; margin-bottom: 12px;
+    }
+    .footer-col h4 { font-size: 14px; color: white; margin-bottom: 12px; }
+    .footer-col p { font-size: 14px; line-height: 1.7; }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li { margin-bottom: 8px; }
+    .footer-col ul li a {
+      color: #9CA3AF; text-decoration: none;
+      font-size: 14px; transition: color 0.2s;
+    }
+    .footer-col ul li a:hover { color: var(--orange2); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 18px; text-align: center;
+      font-size: 13px; color: #6B7280;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .nav-menu { display: none; }
+      .hamburger { display: block; }
+      .academic-hero h1 { font-size: 36px; }
+      .form-row { grid-template-columns: 1fr; }
+      .filter-inner { flex-direction: column; align-items: flex-start; }
+      .upload-wrapper { padding: 28px 22px; }
+    }
+    
+    @media (max-width: 600px) {
+  .academic-hero { padding: 60px 20px; }
+  .academic-hero h1 { font-size: 28px; }
+  .hero-stats { gap: 28px; }
+  .filter-section { 
+    padding: 14px 16px; 
+    top: 58px;
+    background: #1B2A41;
+  }
+  .resources-section, .upload-section, .contributors { padding: 50px 20px; }
+  .resources-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .footer-container { grid-template-columns: repeat(2, 1fr); }
+  .navbar { padding: 14px 20px; }
+  .category-tabs { display: none; }
+  .filter-label { display: none; }
+  .filter-count { 
+    background: rgba(255,255,255,0.1); 
+    color: white; 
+  }
+  .filter-dropdown-wrap { 
+    display: flex !important; 
+  }
+}
+
+
+  </style>
+</head>
+
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="logo">Emporium Library</a>
+      <nav class="nav-menu" id="navMenu">
+        <a href="index.html">Home</a>
+        <a href="genre.html?genre=all">Library</a>
+        <a href="academic.html" class="active-link">Academic Hub</a>
+        <a href="index.html#feedbackForm">Feedback</a>
+      </nav>
+      <div class="nav-right">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="searchInput" placeholder="Search resources..." />
+        </div>
+        <div class="hamburger" id="hamburger">
+          <i class="fa-solid fa-bars"></i>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="academic-hero">
+    <span class="hero-badge"><i class="fa-solid fa-graduation-cap"></i> &nbsp;Student Resource Hub</span>
+    <h1>Learn, Share &<br><span>Contribute</span></h1>
+    <p>Discover lecture notes, textbooks, question papers and assignments, uploaded by students, for students. Every upload earns you points.</p>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-num" id="totalResources">0</span>
+        <div class="stat-label">Resources Available</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="totalUploaders">0</span>
+        <div class="stat-label">Contributors</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="totalDownloads">0</span>
+        <div class="stat-label">Downloads</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CATEGORY FILTER BAR ===== -->
+  <section class="filter-section">
+    <div class="filter-inner">
+      <span class="filter-label"><i class="fa-solid fa-filter"></i> &nbsp;Filter by Type</span>
+      <div class="category-tabs">
+        <button class="category-btn active" data-type="all">All Resources</button>
+        <button class="category-btn" data-type="notes"><i class="fa-solid fa-file-lines"></i> Notes</button>
+        <button class="category-btn" data-type="books"><i class="fa-solid fa-book"></i> Textbooks</button>
+        <button class="category-btn" data-type="papers"><i class="fa-solid fa-scroll"></i> Question Papers</button>
+        <button class="category-btn" data-type="assignments"><i class="fa-solid fa-pen-to-square"></i> Assignments</button>
+      </div>
+      <span class="filter-count" id="filterCount"></span>
+    </div>
+
+    <div class="filter-dropdown-wrap">
+  <i class="fa-solid fa-filter" style="color:white"></i>
+  <select id="filterDropdown" class="filter-dropdown">
+    <option value="all">All Resources</option>
+    <option value="notes">Notes</option>
+    <option value="books">Textbooks</option>
+    <option value="papers">Question Papers</option>
+    <option value="assignments">Assignments</option>
+  </select>
+</div>
+  </section>
+
+  <!-- ===== RESOURCES GRID ===== -->
+  <section class="resources-section">
+    <div class="section-header">
+      <h2>Available Resources</h2>
+      <p>Download academic materials contributed by students</p>
+      <div class="section-divider"></div>
+    </div>
+    <div class="resources-grid" id="resourcesGrid">
+      <!-- Cards injected by JS -->
+    </div>
+  </section>
+
+  <!-- ===== UPLOAD SECTION ===== -->
+  <section class="upload-section" id="upload">
+    <div class="section-header">
+      <h2>Upload Study Material</h2>
+      <p>Share your notes and earn <strong style="color:var(--orange)">5 points</strong> per upload</p>
+      <div class="section-divider"></div>
+    </div>
+    <div class="upload-wrapper">
+       <div class="upload-notice">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Students are requested to upload their material on Google drive first, then copy the link here. Make sure to upload the valid study resources only.</span>
+      </div> 
+      <br />
+      <form class="upload-form" id="uploadForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Resource Title *</label>
+            <input type="text" id="resTitle" placeholder="e.g. Data Structures Notes" required />
+          </div>
+          <div class="form-group">
+            <label>Subject *</label>
+            <input type="text" id="resSubject" placeholder="e.g. Computer Science" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Resource Type *</label>
+            <select id="resType">
+              <option value="notes">📝 Notes</option>
+              <option value="books">📚 Textbook</option>
+              <option value="papers">📄 Question Paper</option>
+              <option value="assignments">✏️ Assignment</option>
+              <option value="research paper">🔬 Research Paper</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Your Name *</label>
+            <input type="text" id="resUploader" placeholder="e.g. Ahmed Khan" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="resDesc" placeholder="Brief description of the material..."></textarea>
+        </div>
+        <div class="form-group">
+  <label>Google Drive Link *</label>
+  <input 
+    type="url" 
+    id="resDriveLink" 
+    placeholder="Paste your Google Drive shareable link here..." 
+    required 
+  <small style="color:#9CA3AF; font-size:12px; margin-top:4px;">
+    <i class="fa-brands fa-google-drive" style="color:#4285F4"></i>
+    &nbsp;Make sure your Drive file is set to <strong>"Anyone with the link can view"</strong>
+  </small>
+   <button type="submit" class="upload-btn">
+  <i class="fa-solid fa-upload"></i> Upload Resource
+</button>
+</div>
+  </section>
+
+  <!-- ===== LEADERBOARD ===== -->
+  <section class="contributors">
+    <div class="section-header">
+      <h2>Top Contributors</h2>
+      <p>Students who have shared the most knowledge</p>
+      <div class="section-divider"></div>
+    </div>
+    <div class="leaderboard" id="leaderboard">
+      <!-- Injected by JS -->
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-col">
+        <h3>Emporium Library</h3>
+        <p>A digital home for readers and students — explore, download, and share knowledge freely.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="genre.html?genre=all">Library</a></li>
+          <li><a href="academic.html">Academic Hub</a></li>
+          <li><a href="#upload">Upload Material</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Academic Genres</h4>
+        <ul>
+          <li><a href="genre.html?genre=academic">Academic Books</a></li>
+          <li><a href="#" data-type="notes">Notes</a></li>
+          <li><a href="#" data-type="papers">Question Papers</a></li>
+          <li><a href="#" data-type="assignments">Assignments</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Emporium Library. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toastMsg">Resource uploaded successfully!</span>
+  </div>
+
+  <!-- ===== JAVASCRIPT ===== -->
+  <script>
+/* ========== FIREBASE INIT ========== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDCQag_jLEkTVp-DEE2iqk1Pj5ZmjTesXE",
+  authDomain: "emporium-library.firebaseapp.com",
+  projectId: "emporium-library",
+  storageBucket: "emporium-library.firebasestorage.app",
+  messagingSenderId: "243007325031",
+  appId: "1:243007325031:web:efc7981d8933e7ca3c65c2"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* ========== HAMBURGER ========== */
+const hamburger = document.getElementById("hamburger");
+const navMenu   = document.getElementById("navMenu");
+if (hamburger && navMenu) {
+  hamburger.addEventListener("click", e => {
+    e.stopPropagation();
+    navMenu.classList.toggle("active");
+  });
+  document.addEventListener("click", e => {
+    if (!navMenu.contains(e.target) && !hamburger.contains(e.target))
+      navMenu.classList.remove("active");
+  });
+  window.addEventListener("scroll", () => navMenu.classList.remove("active"));
+}
+
+// /* ========== HIDE HERO + FILTER ON SCROLL ========== */
+// const heroSection = document.querySelector(".academic-hero");
+// const filterBar   = document.querySelector(".filter-section");
+// let isHidden      = false;
+
+// window.addEventListener("scroll", () => {
+//   const currentScroll = window.scrollY;
+
+//   if (currentScroll > 200 && !isHidden) {
+//     isHidden = true;
+//     if (heroSection) {
+//       heroSection.style.visibility = "hidden";
+//       heroSection.style.height     = "0";
+//       heroSection.style.overflow   = "hidden";
+//       heroSection.style.padding    = "0";
+//       heroSection.style.margin     = "0";
+//     }
+//     if (filterBar) {
+//       filterBar.style.visibility = "hidden";
+//       filterBar.style.height     = "0";
+//       filterBar.style.overflow   = "hidden";
+//       filterBar.style.padding    = "0";
+//       filterBar.style.margin     = "0";
+//     }
+//   } else if (currentScroll < 50 && isHidden) {
+//     isHidden = false;
+//     if (heroSection) {
+//       heroSection.style.visibility = "";
+//       heroSection.style.height     = "";
+//       heroSection.style.overflow   = "";
+//       heroSection.style.padding    = "";
+//       heroSection.style.margin     = "";
+//     }
+//     if (filterBar) {
+//       filterBar.style.visibility = "";
+//       filterBar.style.height     = "";
+//       filterBar.style.overflow   = "";
+//       filterBar.style.padding    = "";
+//       filterBar.style.margin     = "";
+//     }
+//   }
+// });
+/* ========== TOAST ========== */
+function showToast(msg, isError = false) {
+  const toast = document.getElementById("toast");
+  document.getElementById("toastMsg").textContent = msg;
+  toast.style.background = isError ? "#DC2626" : "#1B2A41";
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 3200);
+}
+
+/* ========== TYPE CONFIG ========== */
+const typeConfig = {
+  notes:       { icon: "fa-file-lines",   iconClass: "icon-notes",       badge: "badge-notes",       label: "Notes" },
+  books:       { icon: "fa-book",          iconClass: "icon-books",       badge: "badge-books",       label: "Textbook" },
+  papers:      { icon: "fa-scroll",        iconClass: "icon-papers",      badge: "badge-papers",      label: "Q-Paper" },
+  assignments: { icon: "fa-pen-to-square", iconClass: "icon-assignments", badge: "badge-assignments", label: "Assignment" },
+};
+
+function getInitials(name) {
+  return name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+}
+
+/* ========== CURRENT FILTER ========== */
+let currentFilter = "all";
+
+/* ========== RENDER ONE CARD ========== */
+function createResourceCard(data, id) {
+  const cfg = typeConfig[data.type] || typeConfig.notes;
+  return `
+    <div class="resource-card" data-type="${data.type}" data-id="${id}">
+      <div class="resource-card-top">
+        <div class="resource-icon-wrap ${cfg.iconClass}">
+          <i class="fa-solid ${cfg.icon}"></i>
+        </div>
+        <span class="resource-type-badge ${cfg.badge}">${cfg.label}</span>
+      </div>
+      <div class="resource-card-body">
+        <h3>${data.title}</h3>
+       <p class="resource-subject">
+          <i class="fa-solid fa-tag" style="font-size:11px;margin-right:4px;color:#9CA3AF"></i>
+          ${data.subject}
+        </p>
+        ${data.description ? `
+        <p style="
+          font-size:12px;
+          color:#6B7280;
+          line-height:1.5;
+          margin-bottom:10px;
+          display:-webkit-box;
+          -webkit-line-clamp:2;
+          -webkit-box-orient:vertical;
+          overflow:hidden;
+        ">${data.description}</p>` : ""}
+        <div class="resource-meta">
+          <span><i class="fa-solid fa-user"></i> ${data.uploader}</span>
+          <span><i class="fa-solid fa-download"></i> ${data.downloads || 0}</span>
+        </div>
+        <a href="${data.driveLink}" target="_blank" class="download-resource"
+           onclick="incrementDownload('${id}', this)">
+          <i class="fa-solid fa-download"></i> Download
+        </a>
+      </div>
+    </div>`;
+}
+
+/* ========== LOAD & DISPLAY RESOURCES FROM FIREBASE ========== */
+/* ========== PAGINATION STATE ========== */
+let allResources = [];
+let currentPage = 1;
+const desktopPerPage = 8;
+const mobilePerPage = 4;
+
+function isMobile() {
+  return window.innerWidth <= 600;
+}
+
+function getPerPage() {
+  return isMobile() ? mobilePerPage : desktopPerPage;
+}
+
+/* ========== RENDER PAGE ========== */
+function renderPage(resources, page) {
+  const grid = document.getElementById("resourcesGrid");
+  const perPage = getPerPage();
+  const start = (page - 1) * perPage;
+  const end = start + perPage;
+  const pageItems = resources.slice(start, end);
+
+  if (page === 1) {
+    grid.innerHTML = "";
+  }
+
+  if (pageItems.length === 0 && page === 1) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <i class="fa-solid fa-folder-open"></i>
+        <p>No resources found. Be the first to upload!</p>
+      </div>`;
+    return;
+  }
+
+  if (isMobile()) {
+    /* append cards for load more */
+    grid.innerHTML += pageItems.map(r => createResourceCard(r, r.id)).join("");
+    renderLoadMore(resources, page);
+  } else {
+    /* replace cards for pagination */
+    grid.innerHTML = pageItems.map(r => createResourceCard(r, r.id)).join("");
+    renderPagination(resources, page);
+  }
+}
+
+/* ========== DESKTOP PAGINATION ========== */
+function renderPagination(resources, page) {
+  let paginationEl = document.getElementById("academicPagination");
+  if (!paginationEl) {
+    paginationEl = document.createElement("div");
+    paginationEl.id = "academicPagination";
+    paginationEl.style.cssText = `
+      display:flex;
+      justify-content:center;
+      gap:8px;
+      margin-top:30px;
+      flex-wrap:wrap;
+    `;
+    document.getElementById("resourcesGrid").after(paginationEl);
+  }
+
+  const totalPages = Math.ceil(resources.length / desktopPerPage);
+  if (totalPages <= 1) { paginationEl.innerHTML = ""; return; }
+
+  let html = "";
+
+  /* prev button */
+  html += `<button onclick="goToPage(${page - 1})" 
+    style="padding:8px 14px;border:none;border-radius:8px;cursor:pointer;
+    background:${page === 1 ? '#2D3748' : '#FF7A18'};color:white;font-size:13px;"
+    ${page === 1 ? 'disabled' : ''}>
+    <i class="fa-solid fa-chevron-left"></i>
+  </button>`;
+
+  /* page numbers */
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button onclick="goToPage(${i})"
+      style="padding:8px 14px;border:none;border-radius:8px;cursor:pointer;
+      background:${i === page ? '#FF7A18' : '#1B2A41'};
+      color:white;font-size:13px;font-weight:${i === page ? '700' : '400'};">
+      ${i}
+    </button>`;
+  }
+
+  /* next button */
+  html += `<button onclick="goToPage(${page + 1})"
+    style="padding:8px 14px;border:none;border-radius:8px;cursor:pointer;
+    background:${page === totalPages ? '#2D3748' : '#FF7A18'};color:white;font-size:13px;"
+    ${page === totalPages ? 'disabled' : ''}>
+    <i class="fa-solid fa-chevron-right"></i>
+  </button>`;
+
+  paginationEl.innerHTML = html;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderPage(allResources, currentPage);
+  document.querySelector(".filter-bar").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ========== MOBILE LOAD MORE ========== */
+function renderLoadMore(resources, page) {
+  let loadMoreEl = document.getElementById("loadMoreBtn");
+  const totalPages = Math.ceil(resources.length / mobilePerPage);
+
+  if (!loadMoreEl) {
+    loadMoreEl = document.createElement("div");
+    loadMoreEl.id = "loadMoreBtn";
+    loadMoreEl.style.cssText = `
+      text-align:center;
+      margin-top:24px;
+    `;
+    document.getElementById("resourcesGrid").after(loadMoreEl);
+  }
+
+  if (page >= totalPages) {
+    loadMoreEl.innerHTML = `
+      <p style="color:#9CA3AF;font-size:13px;">All resources loaded</p>`;
+    return;
+  }
+
+  loadMoreEl.innerHTML = `
+    <button onclick="loadMore()" style="
+      background:#FF7A18;
+      color:white;
+      border:none;
+      padding:12px 32px;
+      border-radius:25px;
+      font-size:14px;
+      font-weight:600;
+      cursor:pointer;
+      letter-spacing:0.5px;
+    ">
+      Load More <i class="fa-solid fa-arrow-down"></i>
+    </button>`;
+}
+
+function loadMore() {
+  currentPage++;
+  renderPage(allResources, currentPage);
+}
+
+/* ========== LOAD RESOURCES FROM FIREBASE ========== */
+function loadResources(filter = "all") {
+  currentFilter = filter;
+  currentPage = 1;
+  allResources = [];
+
+  /* remove old pagination and load more */
+  const oldPagination = document.getElementById("academicPagination");
+  const oldLoadMore = document.getElementById("loadMoreBtn");
+  if (oldPagination) oldPagination.remove();
+  if (oldLoadMore) oldLoadMore.remove();
+
+  const grid = document.getElementById("resourcesGrid");
+  const count = document.getElementById("filterCount");
+
+  grid.innerHTML = `
+    <div class="empty-state">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <p>Loading resources...</p>
+    </div>`;
+
+  db.collection("resources")
+    .orderBy("createdAt", "desc")
+    .get()
+    .then(snapshot => {
+      let resources = [];
+      snapshot.forEach(doc => {
+        resources.push({ id: doc.id, ...doc.data() });
+      });
+
+      /* search filter */
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      if (q) {
+        resources = resources.filter(r =>
+          r.title.toLowerCase().includes(q) ||
+          r.subject.toLowerCase().includes(q) ||
+          r.uploader.toLowerCase().includes(q)
+        );
+      }
+
+      /* category filter */
+      if (filter !== "all") {
+        resources = resources.filter(r => r.type === filter);
+      }
+
+      count.textContent = resources.length + " resource" + (resources.length !== 1 ? "s" : "");
+      document.getElementById("totalResources").textContent = resources.length;
+
+      allResources = resources;
+      renderPage(allResources, currentPage);
+
+    }).catch(err => {
+      console.error(err);
+      grid.innerHTML = `
+        <div class="empty-state">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <p>Failed to load resources. Please refresh.</p>
+        </div>`;
+    });
+}
+
+const filterDropdown = document.getElementById("filterDropdown");
+if (filterDropdown) {
+  filterDropdown.addEventListener("change", function() {
+    loadResources(this.value);
+  });
+}
+/* ========== INCREMENT DOWNLOAD COUNT ========== */
+function incrementDownload(id, el) {
+  db.collection("resources").doc(id).update({
+    downloads: firebase.firestore.FieldValue.increment(1)
+  }).then(() => {
+    const metaEl = el.parentElement.querySelector(".resource-meta span:last-child");
+    if (metaEl) {
+      const current = parseInt(metaEl.textContent.replace(/\D/g, "")) || 0;
+      metaEl.innerHTML = `<i class="fa-solid fa-download"></i> ${current + 1}`;
+    }
+  });
+}
+
+/* ========== CATEGORY FILTER BUTTONS ========== */
+document.querySelectorAll(".category-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    loadResources(btn.dataset.type);
+  });
+});
+
+/* ========== SEARCH ========== */
+document.getElementById("searchInput").addEventListener("input", () => {
+  loadResources(currentFilter);
+});
+
+/* ========== UPLOAD FORM ========== */
+document.getElementById("uploadForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const title     = document.getElementById("resTitle").value.trim();
+  const subject   = document.getElementById("resSubject").value.trim();
+  const type      = document.getElementById("resType").value;
+  const uploader  = document.getElementById("resUploader").value.trim();
+  const driveLink = document.getElementById("resDriveLink").value.trim();
+
+  if (!title || !subject || !uploader || !driveLink) {
+    showToast("Please fill all required fields.", true);
+    return;
+  }
+
+  /* basic Drive link validation */
+  if (!driveLink.includes("drive.google.com")) {
+    showToast("Please enter a valid Google Drive link.", true);
+    return;
+  }
+
+  const btn = this.querySelector(".upload-btn");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading...`;
+
+  /* save resource to Firestore */
+  const desc = document.getElementById("resDesc").value.trim();
+
+  db.collection("resources").add({
+    title,
+    subject,
+    type,
+    uploader,
+    driveLink,
+    description: desc || "",
+    downloads: 0,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+
+    /* update contributor points */
+   const contributorId = uploader.toLowerCase().replace(/\s+/g, "_");
+
+const contributorRef = db.collection("contributors").doc(contributorId);
+
+return contributorRef.get().then(doc => {
+  if (!doc.exists) {
+    return contributorRef.set({
+      name: uploader,
+      points: 5,
+      uploads: 1
+    });
+  } else {
+    return contributorRef.update({
+      points: firebase.firestore.FieldValue.increment(5),
+      uploads: firebase.firestore.FieldValue.increment(1)
+    });
+  }
+});
+
+  }).then(() => {
+    this.reset();
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-upload"></i> Upload Resource`;
+    loadResources(currentFilter);
+    loadLeaderboard();
+    showToast("🎉 Resource uploaded! You earned 5 points.");
+  }).catch(err => {
+    console.error(err);
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-upload"></i> Upload Resource`;
+    showToast("Upload failed. Please try again.", true);
+  });
+});
+
+/* ========== LEADERBOARD FROM FIREBASE ========== */
+function loadLeaderboard() {
+  const board = document.getElementById("leaderboard");
+
+  db.collection("contributors")
+    .get()
+    .then(snapshot => {
+      const rankClasses = ["rank-1", "rank-2", "rank-3"];
+
+      document.getElementById("totalUploaders").textContent = snapshot.size;
+
+      const sorted = snapshot.docs
+        .map(doc => doc.data())
+        .sort((a, b) => b.points - a.points)
+        .slice(0, 8);
+
+      if (sorted.length === 0) {
+        board.innerHTML = `<p style="text-align:center;color:#9CA3AF">No contributors yet. Be the first!</p>`;
+        return;
+      }
+
+      board.innerHTML = sorted.map((c, i) => `
+        <div class="contributor">
+          <div class="rank-badge ${rankClasses[i] || 'rank-other'}">${i + 1}</div>
+          <div class="contributor-avatar">${getInitials(c.name)}</div>
+          <div class="contributor-info">
+            <h3>${c.name}</h3>
+            <span>${c.uploads} upload${c.uploads !== 1 ? "s" : ""}</span>
+          </div>
+          <div class="contributor-right">
+            <span class="points-pill">${c.points} pts</span>
+            <div class="uploads-count">5 pts / upload</div>
+          </div>
+        </div>`).join("");
+    });
+}
+
+/* ========== LOAD TOTAL DOWNLOADS STAT ========== */
+function loadTotalDownloads() {
+  db.collection("resources").get().then(snapshot => {
+    let total = 0;
+    snapshot.forEach(doc => { total += doc.data().downloads || 0; });
+    document.getElementById("totalDownloads").textContent = total;
+  });
+}
+
+/* ========== INIT ========== */
+loadResources("all");
+loadLeaderboard();
+loadTotalDownloads();
+</script>
+
+</body>
+</html>

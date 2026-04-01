@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Genre - Emporium Library</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="genre.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+
+<header class="navbar">
+
+<div class="nav-container">
+
+<div class="logo">
+Emporium Library
+</div>
+
+<nav class="nav-menu">
+<a href="index.html">Home</a>
+<a href="index.html#genres1">Genres</a>
+<a href="index.html#trending1">Trending</a>
+<a href="index.html#academic.html">Academic Hub</a>
+<a href="index.html#feedbackForm">Feedback</a>
+</nav>
+
+<div class="nav-icons">
+<i class="fa-solid fa-magnifying-glass"></i>
+</div>
+
+</div>
+
+</header>
+
+
+<!-- GENRE HEADER -->
+
+<section class="genre-header">
+
+<h1 id="genreTitle">Books</h1>
+
+<p id="genreCount">Explore books from our vast collection</p>
+
+</section>
+
+
+<!-- BOOK GRID -->
+
+<section class="genre-books">
+
+  <div id="libraryGrid" class="books-grid"></div>
+
+  <div id="pagination" class="pagination"></div>
+
+</section>
+<script src="script.js"></script>
+
+
+</body>
+</html>
