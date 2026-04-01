@@ -18,6 +18,12 @@ if (hamburger && navMenu) {
     e.stopPropagation();
     navMenu.classList.toggle("active");
   });
+  hamburger.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      navMenu.classList.toggle("active");
+    }
+  });
   document.addEventListener("click", e => {
     if (!navMenu.contains(e.target) && !hamburger.contains(e.target))
       navMenu.classList.remove("active");
@@ -55,7 +61,7 @@ function renderCard(book) {
       <div class="book-info">
         <h3>${escapeHTML(book.title)}</h3>
         <p class="author">${escapeHTML(book.author)}</p>
-        <a href="${escapeHTML(book.driveLink)}" target="_blank" class="download-btn">
+        <a href="${escapeHTML(book.driveLink)}" target="_blank" rel="noopener noreferrer" class="download-btn">
           <i class="fa-solid fa-download"></i> Download
         </a>
       </div>
@@ -69,7 +75,7 @@ function displayTrendingBooks(books) {
   const trending = books.filter(b => b.trending === true).slice(0, 6);
   container.innerHTML = trending.length
     ? trending.map(renderCard).join("")
-    : `<p style="text-align:center;color:#6B7280">No trending books yet.</p>`;
+    : `<p class="state-message">No trending books yet.</p>`;
 }
 
 /* ========== DISPLAY NEW RELEASES ========== */
@@ -79,7 +85,7 @@ function displayNewReleases(books) {
   const newReleases = books.filter(b => b.newRelease === true).slice(0, 4);
   container.innerHTML = newReleases.length
     ? newReleases.map(renderCard).join("")
-    : `<p style="text-align:center;color:#6B7280">No new releases yet.</p>`;
+    : `<p class="state-message">No new releases yet.</p>`;
 }
 
 /* ========== PAGINATION ========== */
@@ -102,7 +108,7 @@ function renderCurrentPage() {
 
   grid.innerHTML = page.length
     ? page.map(renderCard).join("")
-    : `<p style="text-align:center;color:#6B7280;grid-column:1/-1">No books found.</p>`;
+    : `<p class="state-message">No books found.</p>`;
 
   setupPagination();
 }
@@ -175,7 +181,10 @@ function loadGenrePage(books) {
     if (title) title.textContent = `Search: "${search}"`;
   } else if (genre && genre !== "all") {
     filtered = books.filter(b => b.genre === genre);
-    if (title) title.textContent = genre.charAt(0).toUpperCase() + genre.slice(1).replace("-", " & ");
+    if (title) title.textContent = genre
+      .split("-")
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
   } else {
     if (title) title.textContent = "All Books";
   }
@@ -202,7 +211,7 @@ function loadAllBooks() {
   }).catch(err => {
     console.error("Failed to load books:", err);
     const grid = document.getElementById("libraryGrid");
-    if (grid) grid.innerHTML = `<p style="text-align:center;color:#DC2626;grid-column:1/-1">Failed to load books. Please refresh.</p>`;
+    if (grid) grid.innerHTML = `<p class="state-message">Failed to load books. Please refresh.</p>`;
   });
 }
 

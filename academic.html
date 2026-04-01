@@ -6,6 +6,7 @@
   <title>Academic Hub | Emporium Library</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -181,6 +182,13 @@
       padding: 28px 40px;
       border-bottom: 1px solid #E2E8F0;
       position: sticky; top: 65px; z-index: 100;
+      transition: transform 0.26s ease, opacity 0.26s ease;
+      will-change: transform, opacity;
+    }
+    .filter-section.is-hidden {
+      transform: translateY(-130%);
+      opacity: 0;
+      pointer-events: none;
     }
     .filter-inner {
       display: flex; align-items: center;
@@ -671,20 +679,23 @@
           <textarea id="resDesc" placeholder="Brief description of the material..."></textarea>
         </div>
         <div class="form-group">
-  <label>Google Drive Link *</label>
-  <input 
-    type="url" 
-    id="resDriveLink" 
-    placeholder="Paste your Google Drive shareable link here..." 
-    required 
-  <small style="color:#9CA3AF; font-size:12px; margin-top:4px;">
-    <i class="fa-brands fa-google-drive" style="color:#4285F4"></i>
-    &nbsp;Make sure your Drive file is set to <strong>"Anyone with the link can view"</strong>
-  </small>
-   <button type="submit" class="upload-btn">
-  <i class="fa-solid fa-upload"></i> Upload Resource
-</button>
-</div>
+          <label>Google Drive Link *</label>
+          <input
+            type="url"
+            id="resDriveLink"
+            placeholder="Paste your Google Drive shareable link here..."
+            required
+          />
+          <small style="color:#9CA3AF; font-size:12px; margin-top:4px; display:block;">
+            <i class="fa-brands fa-google-drive" style="color:#4285F4"></i>
+            &nbsp;Make sure your Drive file is set to <strong>"Anyone with the link can view"</strong>
+          </small>
+        </div>
+        <button type="submit" class="upload-btn">
+          <i class="fa-solid fa-upload"></i> Upload Resource
+        </button>
+      </form>
+    </div>
   </section>
 
   <!-- ===== LEADERBOARD ===== -->
@@ -766,48 +777,30 @@ if (hamburger && navMenu) {
   window.addEventListener("scroll", () => navMenu.classList.remove("active"));
 }
 
-// /* ========== HIDE HERO + FILTER ON SCROLL ========== */
-// const heroSection = document.querySelector(".academic-hero");
-// const filterBar   = document.querySelector(".filter-section");
-// let isHidden      = false;
+/* ========== AUTO-HIDE FILTER BAR ON SCROLL DOWN ========== */
+const filterBar = document.querySelector(".filter-section");
+let lastScrollY = window.scrollY;
+window.addEventListener("scroll", () => {
+  if (!filterBar) return;
+  const isMobileView = window.innerWidth <= 768;
+  if (!isMobileView) {
+    filterBar.classList.remove("is-hidden");
+    lastScrollY = window.scrollY;
+    return;
+  }
 
-// window.addEventListener("scroll", () => {
-//   const currentScroll = window.scrollY;
+  const currentScrollY = window.scrollY;
+  const scrollingDown = currentScrollY > lastScrollY;
+  const isPastTop = currentScrollY > 140;
 
-//   if (currentScroll > 200 && !isHidden) {
-//     isHidden = true;
-//     if (heroSection) {
-//       heroSection.style.visibility = "hidden";
-//       heroSection.style.height     = "0";
-//       heroSection.style.overflow   = "hidden";
-//       heroSection.style.padding    = "0";
-//       heroSection.style.margin     = "0";
-//     }
-//     if (filterBar) {
-//       filterBar.style.visibility = "hidden";
-//       filterBar.style.height     = "0";
-//       filterBar.style.overflow   = "hidden";
-//       filterBar.style.padding    = "0";
-//       filterBar.style.margin     = "0";
-//     }
-//   } else if (currentScroll < 50 && isHidden) {
-//     isHidden = false;
-//     if (heroSection) {
-//       heroSection.style.visibility = "";
-//       heroSection.style.height     = "";
-//       heroSection.style.overflow   = "";
-//       heroSection.style.padding    = "";
-//       heroSection.style.margin     = "";
-//     }
-//     if (filterBar) {
-//       filterBar.style.visibility = "";
-//       filterBar.style.height     = "";
-//       filterBar.style.overflow   = "";
-//       filterBar.style.padding    = "";
-//       filterBar.style.margin     = "";
-//     }
-//   }
-// });
+  if (scrollingDown && isPastTop) {
+    filterBar.classList.add("is-hidden");
+  } else {
+    filterBar.classList.remove("is-hidden");
+  }
+
+  lastScrollY = currentScrollY;
+});
 /* ========== TOAST ========== */
 function showToast(msg, isError = false) {
   const toast = document.getElementById("toast");
@@ -953,13 +946,7 @@ function renderPagination(resources, page) {
   if (!paginationEl) {
     paginationEl = document.createElement("div");
     paginationEl.id = "academicPagination";
-    paginationEl.style.cssText = `
-      display:flex;
-      justify-content:center;
-      gap:8px;
-      margin-top:30px;
-      flex-wrap:wrap;
-    `;
+    paginationEl.className = "pagination";
     document.getElementById("resourcesGrid").after(paginationEl);
   }
 
@@ -968,29 +955,15 @@ function renderPagination(resources, page) {
 
   let html = "";
 
-  /* prev button */
-  html += `<button onclick="goToPage(${page - 1})" 
-    style="padding:8px 14px;border:none;border-radius:8px;cursor:pointer;
-    background:${page === 1 ? '#2D3748' : '#FF7A18'};color:white;font-size:13px;"
-    ${page === 1 ? 'disabled' : ''}>
+  html += `<button onclick="goToPage(${page - 1})" class="page-btn prev-next" ${page === 1 ? "disabled" : ""}>
     <i class="fa-solid fa-chevron-left"></i>
   </button>`;
 
-  /* page numbers */
   for (let i = 1; i <= totalPages; i++) {
-    html += `<button onclick="goToPage(${i})"
-      style="padding:8px 14px;border:none;border-radius:8px;cursor:pointer;
-      background:${i === page ? '#FF7A18' : '#1B2A41'};
-      color:white;font-size:13px;font-weight:${i === page ? '700' : '400'};">
-      ${i}
-    </button>`;
+    html += `<button onclick="goToPage(${i})" class="page-btn ${i === page ? "active-page" : ""}">${i}</button>`;
   }
 
-  /* next button */
-  html += `<button onclick="goToPage(${page + 1})"
-    style="padding:8px 14px;border:none;border-radius:8px;cursor:pointer;
-    background:${page === totalPages ? '#2D3748' : '#FF7A18'};color:white;font-size:13px;"
-    ${page === totalPages ? 'disabled' : ''}>
+  html += `<button onclick="goToPage(${page + 1})" class="page-btn prev-next" ${page === totalPages ? "disabled" : ""}>
     <i class="fa-solid fa-chevron-right"></i>
   </button>`;
 
@@ -1000,7 +973,8 @@ function renderPagination(resources, page) {
 function goToPage(page) {
   currentPage = page;
   renderPage(allResources, currentPage);
-  document.querySelector(".filter-bar").scrollIntoView({ behavior: "smooth" });
+  const filterSection = document.querySelector(".filter-section");
+  if (filterSection) filterSection.scrollIntoView({ behavior: "smooth" });
 }
 
 /* ========== MOBILE LOAD MORE ========== */

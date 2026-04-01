@@ -26,12 +26,8 @@
 <!-- ================= NAVBAR ================= -->
 
 <header class="navbar">
-
     <div class="nav-container">
-
-        <div class="logo">
-            Emporium Library
-        </div>
+        <a class="logo" href="index.html">Emporium Library</a>
 
         <nav class="nav-menu" id="navMenu">
 
@@ -40,10 +36,7 @@
             <a href="#trending1">Trending</a>
             <a href="academic.html">Academic Hub</a>
             <a href="#feedbackForm">Feedback</a>
-            <a href="admin.html" style="color:#FF7A18;font-weight:600;">
-    <i class="fa-solid fa-shield-halved"></i> Admin
-  </a>
-
+            <a href="admin.html"><i class="fa-solid fa-shield-halved"></i> Admin</a>
         </nav>
 
         <div class="nav-right">
@@ -52,16 +45,17 @@
 
 <i class="fa-solid fa-magnifying-glass"></i>
 
-<input type="text" id="searchInput" placeholder="Search books...">
+<input type="text" id="searchInput" placeholder="Search books..." aria-label="Search books">
 
 </div>
 
-<div class="hamburger" id="hamburger">
+<div class="hamburger" id="hamburger" role="button" aria-label="Open menu" tabindex="0">
 <i class="fa-solid fa-bars"></i>
 </div>
 
 </div>
 
+    </div>
 </header>
 
 
@@ -80,9 +74,8 @@
 
         <div class="hero-buttons">
 
-            <a href="genre.html?genre=all" class="btn-outline-primary">Explore Library</a>
-
-            <a href="#genres1" class="btn-outline-danger">Browse Genres</a>
+            <a href="genre.html?genre=all" class="btn btn-primary">Explore Library</a>
+            <a href="#genres1" class="btn btn-outline">Browse Genres</a>
 
         </div>
 
@@ -91,7 +84,7 @@
 </section>
 <!-- ================= TRENDING BOOKS ================= -->
 
-<section id="trending1" class="trending">
+<section id="trending1" class="section">
 
 <div class="section-header">
 <h2>Trending Books</h2>
@@ -104,7 +97,7 @@
 
 <!-- ================= GENRE EXPLORER ================= -->
 
-<section id="genres1" class="genres">
+<section id="genres1" class="section section-alt">
 
     <div class="section-header">
         <h2>Explore Genres</h2>
@@ -123,7 +116,7 @@
 
         <a href="genre.html?genre=science-fiction" class="genre-card" >Science Fiction</a>
 
-        <a href="genre.html?genre=rom-com   " class="genre-card" >Rom-Com</a>
+        <a href="genre.html?genre=rom-com" class="genre-card" >Rom-Com</a>
 
         <a href="genre.html?genre=non-fiction" class="genre-card" >Non-Fiction</a>
 
@@ -137,18 +130,20 @@
 
 
 
+</section>
+
 <!-- ===== NEW RELEASES ===== -->
-<section class="popular-downloads" id="newReleases">
+<section class="section" id="newReleases">
   <div class="section-header">
     <h2>New Releases</h2>
-    <p>freshly added books you should not miss</p>
+    <p>Freshly added books you should not miss</p>
   </div>
   <div class="books-grid" id="newReleasesBooks"></div>
 </section>
 
 <!-- ================= ACADEMIC HUB ================= -->
 
-<section class="academic-hub">
+<section class="academic-hub section section-alt">
 
     <div class="academic-container">
 
@@ -166,7 +161,7 @@
                 featured on the platform.
             </p>
 
-            <a href="academic.html" class="academic-btn">Enter Academic Hub</a>
+            <a href="academic.html" class="btn btn-primary">Enter Academic Hub</a>
 
         </div>
 
@@ -182,7 +177,7 @@
 
 <!-- ================= FEEDBACK SECTION ================= -->
 
-<section id="feedbackForm" class="feedback">
+<section id="feedbackForm" class="feedback section">
 
     <div class="section-header">
         <h2>We Value Your Feedback</h2>
@@ -191,7 +186,7 @@
 
     <div class="feedback-container">
 
-       <form id="feedbackForm"
+       <form
 class="feedback-form"
 name="feedback"
 method="POST"
@@ -217,7 +212,7 @@ name="message"
 placeholder="Write your feedback..."
 required></textarea>
 
-<button type="submit">Submit Feedback</button>
+<button type="submit" class="btn btn-primary">Submit Feedback</button>
 
 </form>
     </div>
@@ -250,6 +245,7 @@ required></textarea>
                 <li><a href="genre.html?genre=all">Genres</a></li>
                 <li><a href="#trending1">Trending</a></li>
                 <li><a href="academic.html">Academic Hub</a></li>
+                <li><a href="admin.html">Admin Login</a></li>
             </ul>
 
         </div>
@@ -272,7 +268,7 @@ required></textarea>
             <h4>Connect</h4>
 
             <div class="social-icons">
-                <a href="www.linkedin.com/in/naieem-qureshi-b02524255"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="https://www.linkedin.com/in/naieem-qureshi-b02524255"><i class="fa-brands fa-linkedin"></i></a>
                 <a href="https://t.me/Ebook_Emporium"><i class="fa-brands fa-telegram"></i></a>
                 <a href="https://www.instagram.com/naieem_qurashi/"><i class="fa-brands fa-instagram"></i></a>
             </div>
