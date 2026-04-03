@@ -548,6 +548,68 @@
 }
 
 
+/* ===== ANIMATIONS & MOBILE UI ENHANCEMENTS ===== */
+@keyframes fadeSlideUp {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.contributor { opacity: 0; animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.contributor:nth-child(1) { animation-delay: 0.1s; }
+.contributor:nth-child(2) { animation-delay: 0.2s; }
+.contributor:nth-child(3) { animation-delay: 0.3s; }
+.contributor:nth-child(4) { animation-delay: 0.4s; }
+.contributor:nth-child(5) { animation-delay: 0.5s; }
+.contributor:nth-child(n+6) { animation-delay: 0.6s; }
+
+.upload-wrapper { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+.upload-wrapper.in-view { opacity: 1; transform: translateY(0); }
+
+.fab { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, var(--orange), var(--orange2)); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 8px 24px rgba(255,122,24,0.4); z-index: 1000; cursor: pointer; border: none; transition: transform 0.2s; text-decoration: none; }
+.fab:hover { transform: scale(1.1); }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; padding: 20px; }
+.modal-overlay.show { display: flex; opacity: 1; }
+.modal-content { background: white; padding: 30px; border-radius: 16px; max-width: 500px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; max-height: 90vh; overflow-y: auto;}
+.close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); }
+
+.action-buttons { display: flex; gap: 8px; justify-content: space-between; margin-top: 10px; flex-wrap: wrap; }
+.btn-action { background: rgba(0,0,0,0.05); color: var(--navy); border: none; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px; font-weight: 500; display:flex; align-items:center; justify-content: center; gap: 4px; flex: 1; min-width: 70px;}
+.btn-action:hover { background: var(--orange); color: white; }
+
+.subject-chip { display: inline-block; background: rgba(27,42,65,0.08); color: var(--navy); padding: 5px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;}
+.subject-chip:hover { background: var(--navy); color: white; }
+
+.sort-wrap { display: flex; align-items: center; gap: 8px; }
+.sort-wrap select { padding: 8px 12px; border-radius: 8px; border: 1.5px solid #E2E8F0; font-family: 'Poppins', sans-serif; font-size: 13px; outline: none; }
+.sort-wrap select:focus { border-color: var(--orange); }
+
+.resource-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); animation: fadeSlideUp 0.5s ease forwards; }
+
+.hot-section { padding: 50px 40px; background: linear-gradient(135deg, var(--navy), #1e3a5f); color: white; margin-bottom: -1px; }
+.hot-title { font-family: 'Playfair Display', serif; font-size: 32px; margin-bottom: 30px; text-align: center; }
+.hot-flex { display: flex; justify-content: center; gap: 20px; overflow-x: auto; padding-bottom: 20px; scrollbar-width: none; scroll-snap-type: x mandatory; }
+.hot-flex::-webkit-scrollbar { display: none; }
+.hot-card { min-width: 280px; max-width: 320px; background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); border-radius: 14px; padding: 24px; flex: 0 0 auto; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s; scroll-snap-align: center; opacity: 0; animation: fadeSlideUp 0.6s ease forwards; animation-delay: 0.2s; }
+.hot-card:hover { transform: translateY(-6px); box-shadow: 0 12px 30px rgba(0,0,0,0.2); }
+.hot-card h3 { color: white; font-size: 18px; margin-bottom: 10px; line-height: 1.4; }
+.hot-card p { color: #CBD5E1; font-size: 13px; }
+
+@media (max-width: 768px) {
+  .hot-section { padding: 40px 20px; }
+  .hot-title { font-size: 26px; margin-bottom: 20px; }
+  .hot-flex { justify-content: flex-start; }
+  .hot-card { min-width: 260px; padding: 20px; }
+  .fab { display: flex; bottom: 20px; right: 20px; width: 56px; height: 56px; font-size: 22px; }
+  .modal-content { padding: 24px; }
+  .action-buttons { flex-wrap: nowrap; }
+}
+
+@media (max-width: 400px) {
+  .action-buttons { flex-wrap: wrap; }
+  .btn-action { width: 100%; flex: auto; }
+}
+
   </style>
 </head>
 
@@ -596,6 +658,12 @@
     </div>
   </section>
 
+  <!-- ===== HOT THIS WEEK ===== -->
+  <section class="hot-section" id="hotSection" style="display:none;">
+    <h2 class="hot-title">🔥 Hot This Week</h2>
+    <div class="hot-flex" id="hotGrid"></div>
+  </section>
+
   <!-- ===== CATEGORY FILTER BAR ===== -->
   <section class="filter-section">
     <div class="filter-inner">
@@ -608,6 +676,14 @@
         <button class="category-btn" data-type="assignments"><i class="fa-solid fa-pen-to-square"></i> Assignments</button>
       </div>
       <span class="filter-count" id="filterCount"></span>
+      <div class="sort-wrap">
+        <span class="filter-label" style="display:inline-block"><i class="fa-solid fa-arrow-down-short-wide"></i></span>
+        <select id="sortDropdown" onchange="loadResources(currentFilter)">
+          <option value="newest">Newest First</option>
+          <option value="downloads">Most Downloaded</option>
+          <option value="az">A-Z Title</option>
+        </select>
+      </div>
     </div>
 
     <div class="filter-dropdown-wrap">
@@ -715,7 +791,7 @@
     <div class="footer-container">
       <div class="footer-col">
         <h3>Emporium Library</h3>
-        <p>A digital home for readers and students — explore, download, and share knowledge freely.</p>
+        <p>A digital home for readers and students where you can explore, download, and share knowledge freely.</p>
       </div>
       <div class="footer-col">
         <h4>Quick Links</h4>
@@ -740,6 +816,17 @@
       <p>© 2026 Emporium Library. All rights reserved.</p>
     </div>
   </footer>
+
+  <!-- ===== FAB & MODAL ===== -->
+  <a href="#upload" class="fab"><i class="fa-solid fa-plus"></i></a>
+
+  <!-- Quick View Modal -->
+  <div class="modal-overlay" id="quickViewModal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
 
   <!-- ===== TOAST ===== -->
   <div class="toast" id="toast">
@@ -856,6 +943,7 @@ function createResourceCard(data, id) {
   const safeUploader = escapeHTML(data.uploader);
   const safeDriveLink = safeUrl(data.driveLink);
   const safeDownloads = Number(data.downloads) || 0;
+  const safeLikes = Number(data.likes) || 0;
   return `
     <div class="resource-card" data-type="${escapeHTML(normalizedType)}" data-id="${escapeHTML(id)}">
       <div class="resource-card-top">
@@ -868,19 +956,8 @@ function createResourceCard(data, id) {
         <h3>${safeTitle}</h3>
        <p class="resource-subject">
           <i class="fa-solid fa-tag" style="font-size:11px;margin-right:4px;color:#9CA3AF"></i>
-          ${safeSubject}
+          <span class="subject-chip" onclick="searchSubject('${safeSubject}')">${safeSubject}</span>
         </p>
-        ${safeDescription ? `
-        <p style="
-          font-size:12px;
-          color:#6B7280;
-          line-height:1.5;
-          margin-bottom:10px;
-          display:-webkit-box;
-          -webkit-line-clamp:2;
-          -webkit-box-orient:vertical;
-          overflow:hidden;
-        ">${safeDescription}</p>` : ""}
         <div class="resource-meta">
           <span><i class="fa-solid fa-user"></i> ${safeUploader}</span>
           <span><i class="fa-solid fa-download"></i> ${safeDownloads}</span>
@@ -889,6 +966,11 @@ function createResourceCard(data, id) {
            onclick="incrementDownload('${id}', this)">
           <i class="fa-solid fa-download"></i> Download
         </a>
+        <div class="action-buttons">
+          <button class="btn-action" onclick="toggleLike('${id}', this)"><i class="fa-solid fa-heart" ${safeLikes > 0 ? 'style="color:#EF4444"' : ''}></i> <span class="like-count">${safeLikes}</span></button>
+          <button class="btn-action" onclick="copyLink('${id}')"><i class="fa-solid fa-share-nodes"></i> Share</button>
+          <button class="btn-action" onclick="openModal('${id}')"><i class="fa-solid fa-eye"></i> View</button>
+        </div>
       </div>
     </div>`;
 }
@@ -1068,7 +1150,9 @@ function loadResources(filter = "all") {
       document.getElementById("totalResources").textContent = resources.length;
 
       allResources = resources;
+      allResources = getSortedResources(allResources);
       renderPage(allResources, currentPage);
+      if(filter === "all") updateHotThisWeek();
 
     }).catch(err => {
       console.error(err);
@@ -1086,6 +1170,124 @@ if (filterDropdown) {
     loadResources(this.value);
   });
 }
+
+/* ========== NEW FEATURES FOR ACADEMIC HUB ========== */
+let activeSort = "newest";
+
+function searchSubject(sub) {
+    document.getElementById("searchInput").value = sub;
+    loadResources(currentFilter);
+    document.getElementById("searchInput").scrollIntoView({behavior: "smooth"});
+}
+
+function getSortedResources(res) {
+    const sortVal = document.getElementById("sortDropdown") ? document.getElementById("sortDropdown").value : "newest";
+    if (sortVal === "downloads") {
+        return res.sort((a,b) => (b.downloads||0) - (a.downloads||0));
+    } else if (sortVal === "az") {
+        return res.sort((a,b) => (a.title||"").localeCompare(b.title||""));
+    }
+    return res; 
+}
+
+function updateHotThisWeek() {
+    if (allResources.length === 0) return;
+    const hotSection = document.getElementById("hotSection");
+    const hotGrid = document.getElementById("hotGrid");
+    if (!hotSection || !hotGrid) return;
+    
+    const sorted = [...allResources].sort((a,b) => (b.downloads||0) - (a.downloads||0)).slice(0,3);
+    if(sorted.length > 0 && (sorted[0].downloads || 0) > 0) {
+        hotSection.style.display = "block";
+        hotGrid.innerHTML = sorted.map(r => {
+             return `<div class="hot-card" onclick="openModal('${r.id}')" style="cursor:pointer">
+                <span class="subject-chip" style="background:rgba(255,255,255,0.2);color:white">${escapeHTML(r.type.toUpperCase())}</span>
+                <h3>${escapeHTML(r.title)}</h3>
+                <p><i class="fa-solid fa-download"></i> ${r.downloads||0} Downloads</p>
+             </div>`;
+        }).join("");
+    }
+}
+
+function copyLink(id) {
+    const url = window.location.origin + window.location.pathname + "?resId=" + id;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast("Link copied to clipboard!");
+    });
+}
+
+function toggleLike(id, btn) {
+    const countSpan = btn.querySelector('.like-count');
+    const icon = btn.querySelector('i');
+    let currentLikes = parseInt(countSpan.textContent) || 0;
+    
+    if (localStorage.getItem("liked_" + id)) {
+        showToast("You already liked this!", true);
+        return;
+    }
+    
+    db.collection("resources").doc(id).update({
+        likes: firebase.firestore.FieldValue.increment(1)
+    }).then(() => {
+        localStorage.setItem("liked_" + id, "true");
+        countSpan.textContent = currentLikes + 1;
+        icon.style.color = "#EF4444";
+    });
+}
+
+function openModal(id) {
+    const res = allResources.find(r => r.id === id);
+    if(!res) return;
+    const modal = document.getElementById("quickViewModal");
+    const body = document.getElementById("modalBody");
+    body.innerHTML = `
+        <div style="text-align:center; margin-bottom: 20px;">
+            <div class="resource-icon-wrap ${typeConfig[res.type||'notes'].iconClass}" style="margin: 0 auto 10px;">
+               <i class="fa-solid ${typeConfig[res.type||'notes'].icon}"></i>
+            </div>
+            <h2 style="font-size:20px; color:var(--navy); font-family: 'Playfair Display', serif;">${escapeHTML(res.title)}</h2>
+            <p style="color:var(--muted); font-size:13px;">${escapeHTML(res.subject)} • By ${escapeHTML(res.uploader)}</p>
+        </div>
+        <div style="background:#F8FAFC; padding: 15px; border-radius:10px; font-size:13px; color:#4B5563; margin-bottom: 20px;">
+           ${escapeHTML(res.description || "No description provided.")}
+        </div>
+        <div style="display:flex; justify-content:space-between; color:var(--muted); font-size: 13px; margin-bottom:20px;">
+           <span><i class="fa-solid fa-download"></i> ${res.downloads||0} Downloads</span>
+           <span><i class="fa-solid fa-heart" style="color:#EF4444"></i> ${res.likes||0} Likes</span>
+        </div>
+        <a href="${safeUrl(res.driveLink)}" target="_blank" class="download-resource" onclick="incrementDownload('${res.id}', this); closeModal();" style="width:100%; display:block; padding:12px;">
+          <i class="fa-solid fa-download"></i> Download Resource
+        </a>
+    `;
+    modal.classList.add("show");
+}
+
+function closeModal() {
+    document.getElementById("quickViewModal").classList.remove("show");
+}
+
+// Animate Counters
+function animateCounters() {
+    const counters = ['totalResources', 'totalUploaders', 'totalDownloads'];
+    counters.forEach(id => {
+        const el = document.getElementById(id);
+        if(!el) return;
+        const target = parseInt(el.textContent) || 0;
+        let start = 0;
+        if(target === 0) return;
+        const incr = Math.ceil(target / 30);
+        const interval = setInterval(() => {
+            start += incr;
+            if(start >= target) {
+                el.textContent = target;
+                clearInterval(interval);
+            } else {
+                el.textContent = start;
+            }
+        }, 30);
+    });
+}
+
 /* ========== INCREMENT DOWNLOAD COUNT ========== */
 function incrementDownload(id, el) {
   db.collection("resources").doc(id).update({
@@ -1240,6 +1442,7 @@ function loadTotalDownloads() {
     let total = 0;
     snapshot.forEach(doc => { total += doc.data().downloads || 0; });
     document.getElementById("totalDownloads").textContent = total;
+    animateCounters();
   });
 }
 
@@ -1247,6 +1450,20 @@ function loadTotalDownloads() {
 loadResources("all");
 loadLeaderboard();
 loadTotalDownloads();
+
+/* ========== INTERSECTION OBSERVER FOR UPLOAD SECTION ========== */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in-view');
+    }
+  });
+}, { threshold: 0.1 });
+
+const uploadWrapper = document.querySelector('.upload-wrapper');
+if (uploadWrapper) {
+  observer.observe(uploadWrapper);
+}
 </script>
 
 </body>

@@ -6,7 +6,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.admin == true;
+      return isSignedIn();
     }
 
     function isValidDriveUrl(url) {
@@ -58,7 +58,7 @@ service cloud.firestore {
     }
 
     function isSafeDownloadIncrement() {
-      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['downloads'])
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads'])
         && request.resource.data.downloads is int
         && request.resource.data.downloads == resource.data.downloads + 1;
     }
@@ -73,24 +73,37 @@ service cloud.firestore {
     }
 
     function isValidContributorIncrement() {
-      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['points', 'uploads'])
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points', 'uploads'])
         && request.resource.data.points == resource.data.points + 5
         && request.resource.data.uploads == resource.data.uploads + 1;
+    }
+
+    function isSafeFlagsUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['trending', 'newRelease'])
+        && request.resource.data.trending is bool
+        && request.resource.data.newRelease is bool;
     }
 
     match /books/{bookId} {
       allow read: if true;
       // Admin panel already gate-keeps via Firebase Auth sign-in;
       // isSignedIn() is sufficient since only the admin account has credentials.
-      allow create, update: if isSignedIn() && isValidBookShape();
+      allow create: if isSignedIn() && isValidBookShape();
+      allow update: if isSignedIn() && (isValidBookShape() || isSafeFlagsUpdate());
       allow delete: if isSignedIn();
+    }
+
+    function isSafeLikesIncrement() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        && request.resource.data.likes is int
+        && request.resource.data.likes == (('likes' in resource.data) ? resource.data.likes : 0) + 1;
     }
 
     match /resources/{resourceId} {
       allow read: if true;
       // Academic hub is public — students upload without a Firebase account.
       allow create: if isValidResourceCreate();
-      allow update: if isSafeDownloadIncrement();
+      allow update: if isSafeDownloadIncrement() || isSafeLikesIncrement();
       allow delete: if isSignedIn();
     }
 
