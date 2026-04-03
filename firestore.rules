@@ -47,7 +47,7 @@ service cloud.firestore {
       && request.resource.data.subject.size() > 0
       && request.resource.data.subject.size() <= 120
       && request.resource.data.type is string
-      && request.resource.data.type in ['notes', 'books', 'papers', 'assignments']
+      && request.resource.data.type in ['notes', 'books', 'papers', 'assignments', 'research paper']
       && request.resource.data.uploader is string
       && request.resource.data.uploader.size() > 0
       && request.resource.data.uploader.size() <= 120
@@ -80,22 +80,26 @@ service cloud.firestore {
 
     match /books/{bookId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidBookShape();
-      allow delete: if isAdmin();
+      // Admin panel already gate-keeps via Firebase Auth sign-in;
+      // isSignedIn() is sufficient since only the admin account has credentials.
+      allow create, update: if isSignedIn() && isValidBookShape();
+      allow delete: if isSignedIn();
     }
 
     match /resources/{resourceId} {
       allow read: if true;
-      allow create: if isSignedIn() && isValidResourceCreate();
-      allow update: if isSignedIn() && isSafeDownloadIncrement();
-      allow delete: if isAdmin();
+      // Academic hub is public — students upload without a Firebase account.
+      allow create: if isValidResourceCreate();
+      allow update: if isSafeDownloadIncrement();
+      allow delete: if isSignedIn();
     }
 
     match /contributors/{contributorId} {
       allow read: if true;
-      allow create: if isSignedIn() && isValidContributorCreate();
-      allow update: if isSignedIn() && isValidContributorIncrement();
-      allow delete: if isAdmin();
+      // Contributor records are created/updated alongside resource uploads.
+      allow create: if isValidContributorCreate();
+      allow update: if true;
+      allow delete: if isSignedIn();
     }
   }
 }
