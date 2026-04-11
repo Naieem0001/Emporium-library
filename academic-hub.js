@@ -61,6 +61,20 @@
     return "";
   }
 
+  function toDirectDownloadUrl(url) {
+    const safe = safeUrl(url);
+    if (!safe) return "";
+    try {
+      const u = new URL(safe);
+      if (u.hostname.includes("drive.google.com")) {
+        const m = u.pathname.match(/\/file\/d\/([^/]+)/);
+        const id = m ? m[1] : u.searchParams.get("id");
+        if (id) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+      }
+    } catch (e) {}
+    return safe;
+  }
+
   function showToast(msg, isError) {
     const toast = document.getElementById("toast");
     const span = document.getElementById("toastMsg");
@@ -237,12 +251,11 @@
   }
 
   function noteCard(n) {
-    const link = safeUrl(n.driveLink);
+    const link = toDirectDownloadUrl(n.driveLink);
     const subj = escapeHTML(n.subject);
     const title = escapeHTML(n.title);
     const who = escapeHTML(n.uploaderName);
     const desc = escapeHTML(n.description || "");
-    const pts = Number(n.points) || 5;
     const dls = Number(n.downloads) || 0;
     const when = formatDate(n.uploadDate);
     const rt = normalizeResourceType(n);
@@ -253,7 +266,7 @@
       <div class="note-card" data-subject="${subj}" data-resource-type="${rt}">
         <div class="note-card-top">
           <span class="${badgeClass}"><i class="fa-solid ${icon}" aria-hidden="true"></i> ${escapeHTML(typeLabel)}</span>
-          <span class="points-pill-sm">${pts} pts</span>
+          <span class="points-pill-sm">Shared</span>
         </div>
         <div class="note-card-body">
           <h3>${title}</h3>
@@ -264,7 +277,7 @@
             <span><i class="fa-solid fa-calendar"></i> ${when}</span>
             <span><i class="fa-solid fa-download"></i> ${dls}</span>
           </div>
-          <a href="${link}" target="_blank" rel="noopener noreferrer" class="note-download"
+          <a href="${link}" rel="noopener noreferrer" class="note-download" download
              data-id="${escapeHTML(n.id)}" onclick="window.__emporiumNoteDl(event)">
             <i class="fa-solid fa-download"></i> Download
           </a>

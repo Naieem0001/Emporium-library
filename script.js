@@ -50,6 +50,23 @@ function escapeHTML(str) {
     .replace(/"/g, "&quot;");
 }
 
+function toDirectDownloadUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return "";
+    if (u.hostname.includes("drive.google.com")) {
+      const m = u.pathname.match(/\/file\/d\/([^/]+)/);
+      const id = m ? m[1] : u.searchParams.get("id");
+      if (id) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+    }
+    return u.href;
+  } catch (err) {
+    return "";
+  }
+}
+
 function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -123,6 +140,7 @@ function getStoredParam(name) {
 
 /* ========== RENDER BOOK CARD ========== */
 function renderCard(book) {
+  const downloadLink = toDirectDownloadUrl(book.driveLink);
   return `
     <div class="book-card">
       <div class="book-cover">
@@ -132,7 +150,7 @@ function renderCard(book) {
       <div class="book-info">
         <h3>${escapeHTML(book.title)}</h3>
         <p class="author">${escapeHTML(book.author)}</p>
-        <a href="${escapeHTML(book.driveLink)}" target="_blank" rel="noopener noreferrer" class="download-btn">
+        <a href="${escapeHTML(downloadLink)}" rel="noopener noreferrer" class="download-btn" download>
           <i class="fa-solid fa-download"></i> Download
         </a>
       </div>
