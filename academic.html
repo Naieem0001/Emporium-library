@@ -79,7 +79,54 @@
     .nav-menu a:hover::after { width: 100%; }
     .nav-menu a.active-link { color: var(--orange2); }
 
-    .nav-right { display: flex; align-items: center; gap: 18px; }
+    .nav-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+    .auth-nav { display: flex; align-items: center; gap: 8px; }
+    .auth-nav .auth-name { color: #e2e8f0; font-size: 13px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btn-nav-outline, .btn-nav-primary {
+      border: none; border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+    .btn-nav-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.35); }
+    .btn-nav-outline:hover { background: rgba(255,255,255,0.08); }
+    .btn-nav-primary { background: linear-gradient(135deg, var(--orange), var(--orange2)); color: #fff; }
+    .btn-nav-primary:hover { opacity: 0.95; }
+
+    .auth-modal-content { max-width: 420px; }
+    .auth-tabs { display: flex; gap: 0; margin-bottom: 18px; border-radius: 10px; overflow: hidden; border: 1px solid #E2E8F0; }
+    .auth-tab { flex: 1; padding: 10px; border: none; background: #F1F5F9; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--muted); }
+    .auth-tab.active { background: var(--navy); color: #fff; }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+    .auth-intro { font-size: 13px; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
+    .auth-form label { display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin: 10px 0 4px; }
+    .auth-form input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #E2E8F0; font-family: inherit; }
+
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    .subject-filter-wrap { display: flex; align-items: center; gap: 10px; }
+
+    .note-card {
+      background: rgba(255,255,255,0.92); border: 1px solid #E2E8F0; border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column;
+    }
+    .note-card-top { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; }
+    .note-badge { font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.04em; }
+    .points-pill-sm { font-size: 11px; font-weight: 700; background: linear-gradient(135deg, var(--orange), var(--orange2)); color: #fff; padding: 4px 10px; border-radius: 999px; }
+    .note-card-body { padding: 16px 14px 18px; flex: 1; display: flex; flex-direction: column; }
+    .note-card-body h3 { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--navy); margin-bottom: 8px; line-height: 1.35; }
+    .note-subject { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .note-desc { font-size: 12px; color: #4B5563; line-height: 1.45; margin-bottom: 10px; flex: 1; }
+    .note-meta { display: flex; flex-wrap: wrap; gap: 10px 14px; font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+    .note-download {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; border-radius: 999px;
+      padding: 10px 16px; font-weight: 600; font-size: 13px; color: #fff;
+      background: linear-gradient(135deg, var(--orange), var(--orange2)); margin-top: auto;
+    }
+    .note-download:hover { opacity: 0.95; }
+
+    .upload-progress-track { height: 8px; background: #E2E8F0; border-radius: 999px; overflow: hidden; margin: 12px 0 4px; }
+    .upload-progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--orange), var(--orange2)); transition: width 0.15s ease; }
+
+    #apiHint { align-items: flex-start; gap: 10px; }
     .search-box {
       display: flex; align-items: center;
       background: rgba(255,255,255,0.08);
@@ -628,9 +675,10 @@
       <div class="nav-right">
         <div class="search-box">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="searchInput" placeholder="Search resources..." />
+          <input type="text" id="searchInput" placeholder="Search notes..." aria-label="Search notes" />
         </div>
-        <div class="hamburger" id="hamburger">
+        <div class="auth-nav" id="authNav"></div>
+        <div class="hamburger" id="hamburger" role="button" aria-label="Open menu" tabindex="0">
           <i class="fa-solid fa-bars"></i>
         </div>
       </div>
@@ -658,51 +706,33 @@
     </div>
   </section>
 
-  <!-- ===== HOT THIS WEEK ===== -->
-  <section class="hot-section" id="hotSection" style="display:none;">
-    <h2 class="hot-title">🔥 Hot This Week</h2>
-    <div class="hot-flex" id="hotGrid"></div>
-  </section>
-
-  <!-- ===== CATEGORY FILTER BAR ===== -->
+  <!-- ===== FILTER BAR ===== -->
   <section class="filter-section">
     <div class="filter-inner">
-      <span class="filter-label"><i class="fa-solid fa-filter"></i> &nbsp;Filter by Type</span>
-      <div class="category-tabs">
-        <button class="category-btn active" data-type="all">All Resources</button>
-        <button class="category-btn" data-type="notes"><i class="fa-solid fa-file-lines"></i> Notes</button>
-        <button class="category-btn" data-type="books"><i class="fa-solid fa-book"></i> Textbooks</button>
-        <button class="category-btn" data-type="papers"><i class="fa-solid fa-scroll"></i> Question Papers</button>
-        <button class="category-btn" data-type="assignments"><i class="fa-solid fa-pen-to-square"></i> Assignments</button>
+      <span class="filter-label"><i class="fa-solid fa-book"></i> &nbsp;Academic notes</span>
+      <div class="subject-filter-wrap">
+        <label class="sr-only" for="subjectFilter">Filter by subject</label>
+        <select id="subjectFilter" class="filter-dropdown" style="min-width:200px;">
+          <option value="">All subjects</option>
+        </select>
       </div>
       <span class="filter-count" id="filterCount"></span>
       <div class="sort-wrap">
         <span class="filter-label" style="display:inline-block"><i class="fa-solid fa-arrow-down-short-wide"></i></span>
-        <select id="sortDropdown" onchange="loadResources(currentFilter)">
+        <select id="sortDropdown">
           <option value="newest">Newest First</option>
           <option value="downloads">Most Downloaded</option>
-          <option value="az">A-Z Title</option>
+          <option value="az">A–Z Title</option>
         </select>
       </div>
     </div>
-
-    <div class="filter-dropdown-wrap">
-  <i class="fa-solid fa-filter" style="color:white"></i>
-  <select id="filterDropdown" class="filter-dropdown">
-    <option value="all">All Resources</option>
-    <option value="notes">Notes</option>
-    <option value="books">Textbooks</option>
-    <option value="papers">Question Papers</option>
-    <option value="assignments">Assignments</option>
-  </select>
-</div>
   </section>
 
   <!-- ===== RESOURCES GRID ===== -->
   <section class="resources-section">
     <div class="section-header">
-      <h2>Available Resources</h2>
-      <p>Download academic materials contributed by students</p>
+      <h2>Available notes</h2>
+      <p>Download PDFs and slides shared by students (sign in to upload)</p>
       <div class="section-divider"></div>
     </div>
     <div class="resources-grid" id="resourcesGrid">
@@ -711,64 +741,57 @@
   </section>
 
   <!-- ===== UPLOAD SECTION ===== -->
-  <section class="upload-section" id="upload">
+  <section class="upload-section" id="uploadPanel">
     <div class="section-header">
-      <h2>Upload Study Material</h2>
-      <p>Share your notes and earn <strong style="color:var(--orange)">5 points</strong> per upload</p>
+      <h2>Upload study notes</h2>
+      <p>PDF, Word, or PowerPoint — max <strong style="color:var(--orange)">20MB</strong>. Earn <strong style="color:var(--orange)">5 points</strong> per upload.</p>
       <div class="section-divider"></div>
     </div>
     <div class="upload-wrapper">
-       <div class="upload-notice">
+      <div class="upload-notice" id="uploadGuestHint">
         <i class="fa-solid fa-circle-info"></i>
-        <span>Students are requested to upload their material on Google drive first, then copy the link here. Make sure to upload the valid study resources only.</span>
-      </div> 
+        <span><strong>Log in or sign up</strong> to upload files. Your file is sent securely to the college Drive folder and listed here.</span>
+      </div>
+      <div id="apiHint" class="upload-notice" style="display:none;background:#FEF3C7;border-color:#F59E0B;color:#92400E;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Set <code>window.EMPORIUM_ACADEMIC_API</code> to your Render service URL (see <strong>ACADEMIC_HUB_SETUP.md</strong>).</span>
+      </div>
+      <div class="upload-notice" id="uploadDriveHint" style="display:none;">
+        <i class="fa-brands fa-google-drive"></i>
+        <span>Files are uploaded to the shared <strong>Emporium-Academic-Uploads</strong> folder and shared as view links.</span>
+      </div>
       <br />
-      <form class="upload-form" id="uploadForm">
+      <form class="upload-form" id="uploadNotesForm" style="display:none;">
         <div class="form-row">
           <div class="form-group">
-            <label>Resource Title *</label>
-            <input type="text" id="resTitle" placeholder="e.g. Data Structures Notes" required />
+            <label>Note title *</label>
+            <input type="text" id="noteTitle" placeholder="e.g. Data Structures — Unit 3" required maxlength="200" />
           </div>
           <div class="form-group">
             <label>Subject *</label>
-            <input type="text" id="resSubject" placeholder="e.g. Computer Science" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Resource Type *</label>
-            <select id="resType">
-              <option value="notes">📝 Notes</option>
-              <option value="books">📚 Textbook</option>
-              <option value="papers">📄 Question Paper</option>
-              <option value="assignments">✏️ Assignment</option>
-              <option value="research paper">🔬 Research Paper</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Your Name *</label>
-            <input type="text" id="resUploader" placeholder="e.g. Ahmed Khan" required />
+            <input type="text" id="noteSubject" placeholder="e.g. Computer Science" required maxlength="120" />
           </div>
         </div>
         <div class="form-group">
-          <label>Description</label>
-          <textarea id="resDesc" placeholder="Brief description of the material..."></textarea>
+          <label>Description <span style="color:#9CA3AF;font-weight:400">(optional)</span></label>
+          <textarea id="noteDescription" placeholder="Short summary…" maxlength="500"></textarea>
         </div>
         <div class="form-group">
-          <label>Google Drive Link *</label>
-          <input
-            type="url"
-            id="resDriveLink"
-            placeholder="Paste your Google Drive shareable link here..."
-            required
-          />
-          <small style="color:#9CA3AF; font-size:12px; margin-top:4px; display:block;">
-            <i class="fa-brands fa-google-drive" style="color:#4285F4"></i>
-            &nbsp;Make sure your Drive file is set to <strong>"Anyone with the link can view"</strong>
-          </small>
+          <label>Your name * <span style="color:#9CA3AF;font-weight:400">(shown on the card)</span></label>
+          <input type="text" id="noteUploaderName" placeholder="e.g. Ahmed Khan" required maxlength="120" />
+        </div>
+        <div class="form-group">
+          <label>File * <small style="color:#9CA3AF">PDF, .doc, .docx, .ppt, .pptx — max 20MB</small></label>
+          <input type="file" id="noteFile" accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" required />
+          <small id="fileSizeHint" style="color:#9CA3AF; font-size:12px; margin-top:6px; display:block;"></small>
+        </div>
+        <div class="upload-progress-wrap" id="uploadProgressWrap" style="display:none;">
+          <div class="upload-progress-track">
+            <div class="upload-progress-bar" id="uploadProgressBar"></div>
+          </div>
         </div>
         <button type="submit" class="upload-btn">
-          <i class="fa-solid fa-upload"></i> Upload Resource
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload note
         </button>
       </form>
     </div>
@@ -777,8 +800,8 @@
   <!-- ===== LEADERBOARD ===== -->
   <section class="contributors">
     <div class="section-header">
-      <h2>Top Contributors</h2>
-      <p>Students who have shared the most knowledge</p>
+      <h2>Top contributors</h2>
+      <p>Top 5 students by points (from note uploads)</p>
       <div class="section-divider"></div>
     </div>
     <div class="leaderboard" id="leaderboard">
@@ -799,7 +822,7 @@
           <li><a href="index.html">Home</a></li>
           <li><a href="genre.html?genre=all">Library</a></li>
           <li><a href="academic.html">Academic Hub</a></li>
-          <li><a href="#upload">Upload Material</a></li>
+          <li><a href="#uploadPanel">Upload notes</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -818,653 +841,64 @@
   </footer>
 
   <!-- ===== FAB & MODAL ===== -->
-  <a href="#upload" class="fab"><i class="fa-solid fa-plus"></i></a>
+  <a href="#uploadPanel" class="fab" aria-label="Upload notes"><i class="fa-solid fa-plus"></i></a>
 
-  <!-- Quick View Modal -->
-  <div class="modal-overlay" id="quickViewModal">
-    <div class="modal-content">
-      <button class="close-modal" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
-      <div id="modalBody"></div>
+  <!-- Auth modal -->
+  <div class="modal-overlay" id="authModal" aria-hidden="true">
+    <div class="modal-content auth-modal-content">
+      <button type="button" class="close-modal" id="authModalClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" data-tab="login">Log in</button>
+        <button type="button" class="auth-tab" data-tab="signup">Sign up</button>
+      </div>
+      <div id="authPanel-login" class="auth-panel active">
+        <p class="auth-intro">Use your college email to access uploads.</p>
+        <form id="formLogin" class="auth-form">
+          <label>Email</label>
+          <input type="email" id="loginEmail" autocomplete="username" required />
+          <label>Password</label>
+          <input type="password" id="loginPassword" autocomplete="current-password" required />
+          <button type="submit" class="upload-btn" style="width:100%;margin-top:12px;">Log in</button>
+        </form>
+      </div>
+      <div id="authPanel-signup" class="auth-panel">
+        <p class="auth-intro">Create an account to upload notes (5 points per file).</p>
+        <form id="formSignup" class="auth-form">
+          <label>Display name</label>
+          <input type="text" id="signupName" maxlength="120" required />
+          <label>Email</label>
+          <input type="email" id="signupEmail" autocomplete="username" required />
+          <label>Password</label>
+          <input type="password" id="signupPassword" autocomplete="new-password" minlength="6" required />
+          <button type="submit" class="upload-btn" style="width:100%;margin-top:12px;">Create account</button>
+        </form>
+      </div>
     </div>
   </div>
 
   <!-- ===== TOAST ===== -->
   <div class="toast" id="toast">
     <i class="fa-solid fa-circle-check"></i>
-    <span id="toastMsg">Resource uploaded successfully!</span>
+    <span id="toastMsg">Done</span>
   </div>
 
   <!-- ===== JAVASCRIPT ===== -->
   <script>
-/* ========== FIREBASE INIT ========== */
-const firebaseConfig = {
-  apiKey: "AIzaSyDCQag_jLEkTVp-DEE2iqk1Pj5ZmjTesXE",
-  authDomain: "emporium-library.firebaseapp.com",
-  projectId: "emporium-library",
-  storageBucket: "emporium-library.firebasestorage.app",
-  messagingSenderId: "243007325031",
-  appId: "1:243007325031:web:efc7981d8933e7ca3c65c2"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-/* ========== HAMBURGER ========== */
-const hamburger = document.getElementById("hamburger");
-const navMenu   = document.getElementById("navMenu");
-if (hamburger && navMenu) {
-  hamburger.addEventListener("click", e => {
-    e.stopPropagation();
-    navMenu.classList.toggle("active");
-  });
-  document.addEventListener("click", e => {
-    if (!navMenu.contains(e.target) && !hamburger.contains(e.target))
-      navMenu.classList.remove("active");
-  });
-  window.addEventListener("scroll", () => navMenu.classList.remove("active"));
-}
-
-/* ========== AUTO-HIDE FILTER BAR ON SCROLL DOWN ========== */
-const filterBar = document.querySelector(".filter-section");
-let lastScrollY = window.scrollY;
-window.addEventListener("scroll", () => {
-  if (!filterBar) return;
-  const isMobileView = window.innerWidth <= 768;
-  if (!isMobileView) {
-    filterBar.classList.remove("is-hidden");
-    lastScrollY = window.scrollY;
-    return;
-  }
-
-  const currentScrollY = window.scrollY;
-  const scrollingDown = currentScrollY > lastScrollY;
-  const isPastTop = currentScrollY > 140;
-
-  if (scrollingDown && isPastTop) {
-    filterBar.classList.add("is-hidden");
-  } else {
-    filterBar.classList.remove("is-hidden");
-  }
-
-  lastScrollY = currentScrollY;
-});
-/* ========== TOAST ========== */
-function showToast(msg, isError = false) {
-  const toast = document.getElementById("toast");
-  document.getElementById("toastMsg").textContent = msg;
-  toast.style.background = isError ? "#DC2626" : "#1B2A41";
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 3200);
-}
-
-/* ========== TYPE CONFIG ========== */
-const typeConfig = {
-  notes:       { icon: "fa-file-lines",   iconClass: "icon-notes",       badge: "badge-notes",       label: "Notes" },
-  books:       { icon: "fa-book",          iconClass: "icon-books",       badge: "badge-books",       label: "Textbook" },
-  papers:      { icon: "fa-scroll",        iconClass: "icon-papers",      badge: "badge-papers",      label: "Q-Paper" },
-  assignments: { icon: "fa-pen-to-square", iconClass: "icon-assignments", badge: "badge-assignments", label: "Assignment" },
-};
-
-function getInitials(name) {
-  return name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
-}
-
-function escapeHTML(str) {
-  return String(str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function safeUrl(url) {
-  const raw = String(url || "").trim();
-  if (!raw) return "";
-  try {
-    const parsed = new URL(raw);
-    if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.href;
-  } catch (err) {
-    return "";
-  }
-  return "";
-}
-
-/* ========== CURRENT FILTER ========== */
-let currentFilter = "all";
-
-/* ========== RENDER ONE CARD ========== */
-function createResourceCard(data, id) {
-  const normalizedType = String(data.type || "notes");
-  const cfg = typeConfig[normalizedType] || typeConfig.notes;
-  const safeTitle = escapeHTML(data.title);
-  const safeSubject = escapeHTML(data.subject);
-  const safeDescription = escapeHTML(data.description);
-  const safeUploader = escapeHTML(data.uploader);
-  const safeDriveLink = safeUrl(data.driveLink);
-  const safeDownloads = Number(data.downloads) || 0;
-  const safeLikes = Number(data.likes) || 0;
-  return `
-    <div class="resource-card" data-type="${escapeHTML(normalizedType)}" data-id="${escapeHTML(id)}">
-      <div class="resource-card-top">
-        <div class="resource-icon-wrap ${cfg.iconClass}">
-          <i class="fa-solid ${cfg.icon}"></i>
-        </div>
-        <span class="resource-type-badge ${cfg.badge}">${cfg.label}</span>
-      </div>
-      <div class="resource-card-body">
-        <h3>${safeTitle}</h3>
-       <p class="resource-subject">
-          <i class="fa-solid fa-tag" style="font-size:11px;margin-right:4px;color:#9CA3AF"></i>
-          <span class="subject-chip" onclick="searchSubject('${safeSubject}')">${safeSubject}</span>
-        </p>
-        <div class="resource-meta">
-          <span><i class="fa-solid fa-user"></i> ${safeUploader}</span>
-          <span><i class="fa-solid fa-download"></i> ${safeDownloads}</span>
-        </div>
-        <a href="${safeDriveLink}" target="_blank" rel="noopener noreferrer" class="download-resource"
-           onclick="incrementDownload('${id}', this)">
-          <i class="fa-solid fa-download"></i> Download
-        </a>
-        <div class="action-buttons">
-          <button class="btn-action" onclick="toggleLike('${id}', this)"><i class="fa-solid fa-heart" ${safeLikes > 0 ? 'style="color:#EF4444"' : ''}></i> <span class="like-count">${safeLikes}</span></button>
-          <button class="btn-action" onclick="copyLink('${id}')"><i class="fa-solid fa-share-nodes"></i> Share</button>
-          <button class="btn-action" onclick="openModal('${id}')"><i class="fa-solid fa-eye"></i> View</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-/* ========== LOAD & DISPLAY RESOURCES FROM FIREBASE ========== */
-/* ========== PAGINATION STATE ========== */
-let allResources = [];
-let currentPage = 1;
-const desktopPerPage = 8;
-const mobilePerPage = 4;
-
-function isMobile() {
-  return window.innerWidth <= 600;
-}
-
-function getPerPage() {
-  return isMobile() ? mobilePerPage : desktopPerPage;
-}
-
-/* ========== RENDER PAGE ========== */
-function renderPage(resources, page) {
-  const grid = document.getElementById("resourcesGrid");
-  const perPage = getPerPage();
-  const start = (page - 1) * perPage;
-  const end = start + perPage;
-  const pageItems = resources.slice(start, end);
-
-  if (page === 1) {
-    grid.innerHTML = "";
-  }
-
-  if (pageItems.length === 0 && page === 1) {
-    grid.innerHTML = `
-      <div class="empty-state">
-        <i class="fa-solid fa-folder-open"></i>
-        <p>No resources found. Be the first to upload!</p>
-      </div>`;
-    return;
-  }
-
-  if (isMobile()) {
-    /* append cards for load more */
-    grid.innerHTML += pageItems.map(r => createResourceCard(r, r.id)).join("");
-    renderLoadMore(resources, page);
-  } else {
-    /* replace cards for pagination */
-    grid.innerHTML = pageItems.map(r => createResourceCard(r, r.id)).join("");
-    renderPagination(resources, page);
-  }
-}
-
-/* ========== DESKTOP PAGINATION ========== */
-function renderPagination(resources, page) {
-  let paginationEl = document.getElementById("academicPagination");
-  if (!paginationEl) {
-    paginationEl = document.createElement("div");
-    paginationEl.id = "academicPagination";
-    paginationEl.className = "pagination";
-    document.getElementById("resourcesGrid").after(paginationEl);
-  }
-
-  const totalPages = Math.ceil(resources.length / desktopPerPage);
-  if (totalPages <= 1) { paginationEl.innerHTML = ""; return; }
-
-  let html = "";
-
-  html += `<button onclick="goToPage(${page - 1})" class="page-btn prev-next" ${page === 1 ? "disabled" : ""}>
-    <i class="fa-solid fa-chevron-left"></i>
-  </button>`;
-
-  for (let i = 1; i <= totalPages; i++) {
-    html += `<button onclick="goToPage(${i})" class="page-btn ${i === page ? "active-page" : ""}">${i}</button>`;
-  }
-
-  html += `<button onclick="goToPage(${page + 1})" class="page-btn prev-next" ${page === totalPages ? "disabled" : ""}>
-    <i class="fa-solid fa-chevron-right"></i>
-  </button>`;
-
-  paginationEl.innerHTML = html;
-}
-
-function goToPage(page) {
-  currentPage = page;
-  renderPage(allResources, currentPage);
-  const filterSection = document.querySelector(".filter-section");
-  if (filterSection) filterSection.scrollIntoView({ behavior: "smooth" });
-}
-
-/* ========== MOBILE LOAD MORE ========== */
-function renderLoadMore(resources, page) {
-  let loadMoreEl = document.getElementById("loadMoreBtn");
-  const totalPages = Math.ceil(resources.length / mobilePerPage);
-
-  if (!loadMoreEl) {
-    loadMoreEl = document.createElement("div");
-    loadMoreEl.id = "loadMoreBtn";
-    loadMoreEl.style.cssText = `
-      text-align:center;
-      margin-top:24px;
-    `;
-    document.getElementById("resourcesGrid").after(loadMoreEl);
-  }
-
-  if (page >= totalPages) {
-    loadMoreEl.innerHTML = `
-      <p style="color:#9CA3AF;font-size:13px;">All resources loaded</p>`;
-    return;
-  }
-
-  loadMoreEl.innerHTML = `
-    <button onclick="loadMore()" style="
-      background:#FF7A18;
-      color:white;
-      border:none;
-      padding:12px 32px;
-      border-radius:25px;
-      font-size:14px;
-      font-weight:600;
-      cursor:pointer;
-      letter-spacing:0.5px;
-    ">
-      Load More <i class="fa-solid fa-arrow-down"></i>
-    </button>`;
-}
-
-function loadMore() {
-  currentPage++;
-  renderPage(allResources, currentPage);
-}
-
-/* ========== LOAD RESOURCES FROM FIREBASE ========== */
-function loadResources(filter = "all") {
-  currentFilter = filter;
-  currentPage = 1;
-  allResources = [];
-
-  /* remove old pagination and load more */
-  const oldPagination = document.getElementById("academicPagination");
-  const oldLoadMore = document.getElementById("loadMoreBtn");
-  if (oldPagination) oldPagination.remove();
-  if (oldLoadMore) oldLoadMore.remove();
-
-  const grid = document.getElementById("resourcesGrid");
-  const count = document.getElementById("filterCount");
-
-  grid.innerHTML = `
-    <div class="empty-state">
-      <i class="fa-solid fa-spinner fa-spin"></i>
-      <p>Loading resources...</p>
-    </div>`;
-
-  db.collection("resources")
-    .orderBy("createdAt", "desc")
-    .get()
-    .then(snapshot => {
-      let resources = [];
-      snapshot.forEach(doc => {
-        resources.push({ id: doc.id, ...doc.data() });
-      });
-
-      /* search filter */
-      const q = document.getElementById("searchInput").value.trim().toLowerCase();
-      if (q) {
-        resources = resources.filter(r =>
-          r.title.toLowerCase().includes(q) ||
-          r.subject.toLowerCase().includes(q) ||
-          r.uploader.toLowerCase().includes(q)
-        );
-      }
-
-      /* category filter */
-      if (filter !== "all") {
-        resources = resources.filter(r => r.type === filter);
-      }
-
-      count.textContent = resources.length + " resource" + (resources.length !== 1 ? "s" : "");
-      document.getElementById("totalResources").textContent = resources.length;
-
-      allResources = resources;
-      allResources = getSortedResources(allResources);
-      renderPage(allResources, currentPage);
-      if(filter === "all") updateHotThisWeek();
-
-    }).catch(err => {
-      console.error(err);
-      grid.innerHTML = `
-        <div class="empty-state">
-          <i class="fa-solid fa-circle-exclamation"></i>
-          <p>Failed to load resources. Please refresh.</p>
-        </div>`;
-    });
-}
-
-const filterDropdown = document.getElementById("filterDropdown");
-if (filterDropdown) {
-  filterDropdown.addEventListener("change", function() {
-    loadResources(this.value);
-  });
-}
-
-/* ========== NEW FEATURES FOR ACADEMIC HUB ========== */
-let activeSort = "newest";
-
-function searchSubject(sub) {
-    document.getElementById("searchInput").value = sub;
-    loadResources(currentFilter);
-    document.getElementById("searchInput").scrollIntoView({behavior: "smooth"});
-}
-
-function getSortedResources(res) {
-    const sortVal = document.getElementById("sortDropdown") ? document.getElementById("sortDropdown").value : "newest";
-    if (sortVal === "downloads") {
-        return res.sort((a,b) => (b.downloads||0) - (a.downloads||0));
-    } else if (sortVal === "az") {
-        return res.sort((a,b) => (a.title||"").localeCompare(b.title||""));
+    /* Set your Render API URL (no trailing slash). Example:
+       window.EMPORIUM_ACADEMIC_API = "https://emporium-academic-api.onrender.com"; */
+    window.EMPORIUM_ACADEMIC_API = "";
+  </script>
+  <script src="academic-hub.js"></script>
+  <script>
+    const uploadWrapper = document.querySelector(".upload-wrapper");
+    if (uploadWrapper) {
+      const observer = new IntersectionObserver(
+        entries => entries.forEach(en => en.isIntersecting && en.target.classList.add("in-view")),
+        { threshold: 0.1 }
+      );
+      observer.observe(uploadWrapper);
     }
-    return res; 
-}
-
-function updateHotThisWeek() {
-    if (allResources.length === 0) return;
-    const hotSection = document.getElementById("hotSection");
-    const hotGrid = document.getElementById("hotGrid");
-    if (!hotSection || !hotGrid) return;
-    
-    const sorted = [...allResources].sort((a,b) => (b.downloads||0) - (a.downloads||0)).slice(0,3);
-    if(sorted.length > 0 && (sorted[0].downloads || 0) > 0) {
-        hotSection.style.display = "block";
-        hotGrid.innerHTML = sorted.map(r => {
-             return `<div class="hot-card" onclick="openModal('${r.id}')" style="cursor:pointer">
-                <span class="subject-chip" style="background:rgba(255,255,255,0.2);color:white">${escapeHTML(r.type.toUpperCase())}</span>
-                <h3>${escapeHTML(r.title)}</h3>
-                <p><i class="fa-solid fa-download"></i> ${r.downloads||0} Downloads</p>
-             </div>`;
-        }).join("");
-    }
-}
-
-function copyLink(id) {
-    const url = window.location.origin + window.location.pathname + "?resId=" + id;
-    navigator.clipboard.writeText(url).then(() => {
-        showToast("Link copied to clipboard!");
-    });
-}
-
-function toggleLike(id, btn) {
-    const countSpan = btn.querySelector('.like-count');
-    const icon = btn.querySelector('i');
-    let currentLikes = parseInt(countSpan.textContent) || 0;
-    
-    if (localStorage.getItem("liked_" + id)) {
-        showToast("You already liked this!", true);
-        return;
-    }
-    
-    db.collection("resources").doc(id).update({
-        likes: firebase.firestore.FieldValue.increment(1)
-    }).then(() => {
-        localStorage.setItem("liked_" + id, "true");
-        countSpan.textContent = currentLikes + 1;
-        icon.style.color = "#EF4444";
-    });
-}
-
-function openModal(id) {
-    const res = allResources.find(r => r.id === id);
-    if(!res) return;
-    const modal = document.getElementById("quickViewModal");
-    const body = document.getElementById("modalBody");
-    body.innerHTML = `
-        <div style="text-align:center; margin-bottom: 20px;">
-            <div class="resource-icon-wrap ${typeConfig[res.type||'notes'].iconClass}" style="margin: 0 auto 10px;">
-               <i class="fa-solid ${typeConfig[res.type||'notes'].icon}"></i>
-            </div>
-            <h2 style="font-size:20px; color:var(--navy); font-family: 'Playfair Display', serif;">${escapeHTML(res.title)}</h2>
-            <p style="color:var(--muted); font-size:13px;">${escapeHTML(res.subject)} • By ${escapeHTML(res.uploader)}</p>
-        </div>
-        <div style="background:#F8FAFC; padding: 15px; border-radius:10px; font-size:13px; color:#4B5563; margin-bottom: 20px;">
-           ${escapeHTML(res.description || "No description provided.")}
-        </div>
-        <div style="display:flex; justify-content:space-between; color:var(--muted); font-size: 13px; margin-bottom:20px;">
-           <span><i class="fa-solid fa-download"></i> ${res.downloads||0} Downloads</span>
-           <span><i class="fa-solid fa-heart" style="color:#EF4444"></i> ${res.likes||0} Likes</span>
-        </div>
-        <a href="${safeUrl(res.driveLink)}" target="_blank" class="download-resource" onclick="incrementDownload('${res.id}', this); closeModal();" style="width:100%; display:block; padding:12px;">
-          <i class="fa-solid fa-download"></i> Download Resource
-        </a>
-    `;
-    modal.classList.add("show");
-}
-
-function closeModal() {
-    document.getElementById("quickViewModal").classList.remove("show");
-}
-
-// Animate Counters
-function animateCounters() {
-    const counters = ['totalResources', 'totalUploaders', 'totalDownloads'];
-    counters.forEach(id => {
-        const el = document.getElementById(id);
-        if(!el) return;
-        const target = parseInt(el.textContent) || 0;
-        let start = 0;
-        if(target === 0) return;
-        const incr = Math.ceil(target / 30);
-        const interval = setInterval(() => {
-            start += incr;
-            if(start >= target) {
-                el.textContent = target;
-                clearInterval(interval);
-            } else {
-                el.textContent = start;
-            }
-        }, 30);
-    });
-}
-
-/* ========== INCREMENT DOWNLOAD COUNT ========== */
-function incrementDownload(id, el) {
-  db.collection("resources").doc(id).update({
-    downloads: firebase.firestore.FieldValue.increment(1)
-  }).then(() => {
-    const metaEl = el.parentElement.querySelector(".resource-meta span:last-child");
-    if (metaEl) {
-      const current = parseInt(metaEl.textContent.replace(/\D/g, "")) || 0;
-      metaEl.innerHTML = `<i class="fa-solid fa-download"></i> ${current + 1}`;
-    }
-  });
-}
-
-/* ========== CATEGORY FILTER BUTTONS ========== */
-document.querySelectorAll(".category-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    loadResources(btn.dataset.type);
-  });
-});
-
-/* ========== SEARCH ========== */
-document.getElementById("searchInput").addEventListener("input", () => {
-  loadResources(currentFilter);
-});
-
-/* ========== UPLOAD FORM ========== */
-document.getElementById("uploadForm").addEventListener("submit", function(e) {
-  e.preventDefault();
-
-  const title     = document.getElementById("resTitle").value.trim();
-  const subject   = document.getElementById("resSubject").value.trim();
-  const type      = document.getElementById("resType").value;
-  const uploader  = document.getElementById("resUploader").value.trim();
-  const driveLink = document.getElementById("resDriveLink").value.trim();
-
-  if (!title || !subject || !uploader || !driveLink) {
-    showToast("Please fill all required fields.", true);
-    return;
-  }
-
-  /* strict Drive link validation */
-  let parsedDriveLink;
-  try {
-    parsedDriveLink = new URL(driveLink);
-  } catch (err) {
-    showToast("Please enter a valid Google Drive link.", true);
-    return;
-  }
-  if (
-    !["http:", "https:"].includes(parsedDriveLink.protocol) ||
-    !parsedDriveLink.hostname.endsWith("drive.google.com")
-  ) {
-    showToast("Please enter a valid Google Drive link.", true);
-    return;
-  }
-
-  const btn = this.querySelector(".upload-btn");
-  btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading...`;
-
-  /* save resource to Firestore */
-  const desc = document.getElementById("resDesc").value.trim();
-
-  db.collection("resources").add({
-    title,
-    subject,
-    type,
-    uploader,
-    driveLink,
-    description: desc || "",
-    downloads: 0,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-
-    /* update contributor points */
-   const contributorId = uploader.toLowerCase().replace(/\s+/g, "_");
-
-const contributorRef = db.collection("contributors").doc(contributorId);
-
-return contributorRef.get().then(doc => {
-  if (!doc.exists) {
-    return contributorRef.set({
-      name: uploader,
-      points: 5,
-      uploads: 1
-    });
-  } else {
-    return contributorRef.update({
-      points: firebase.firestore.FieldValue.increment(5),
-      uploads: firebase.firestore.FieldValue.increment(1)
-    });
-  }
-});
-
-  }).then(() => {
-    this.reset();
-    btn.disabled = false;
-    btn.innerHTML = `<i class="fa-solid fa-upload"></i> Upload Resource`;
-    loadResources(currentFilter);
-    loadLeaderboard();
-    showToast("🎉 Resource uploaded! You earned 5 points.");
-  }).catch(err => {
-    console.error(err);
-    btn.disabled = false;
-    btn.innerHTML = `<i class="fa-solid fa-upload"></i> Upload Resource`;
-    showToast("Upload failed. Please try again.", true);
-  });
-});
-
-/* ========== LEADERBOARD FROM FIREBASE ========== */
-function loadLeaderboard() {
-  const board = document.getElementById("leaderboard");
-
-  db.collection("contributors")
-    .get()
-    .then(snapshot => {
-      const rankClasses = ["rank-1", "rank-2", "rank-3"];
-
-      document.getElementById("totalUploaders").textContent = snapshot.size;
-
-      const sorted = snapshot.docs
-        .map(doc => doc.data())
-        .sort((a, b) => b.points - a.points)
-        .slice(0, 8);
-
-      if (sorted.length === 0) {
-        board.innerHTML = `<p style="text-align:center;color:#9CA3AF">No contributors yet. Be the first!</p>`;
-        return;
-      }
-
-      board.innerHTML = sorted.map((c, i) => `
-        <div class="contributor">
-          <div class="rank-badge ${rankClasses[i] || 'rank-other'}">${i + 1}</div>
-          <div class="contributor-avatar">${escapeHTML(getInitials(c.name))}</div>
-          <div class="contributor-info">
-            <h3>${escapeHTML(c.name)}</h3>
-            <span>${Number(c.uploads) || 0} upload${(Number(c.uploads) || 0) !== 1 ? "s" : ""}</span>
-          </div>
-          <div class="contributor-right">
-            <span class="points-pill">${Number(c.points) || 0} pts</span>
-            <div class="uploads-count">5 pts / upload</div>
-          </div>
-        </div>`).join("");
-    });
-}
-
-/* ========== LOAD TOTAL DOWNLOADS STAT ========== */
-function loadTotalDownloads() {
-  db.collection("resources").get().then(snapshot => {
-    let total = 0;
-    snapshot.forEach(doc => { total += doc.data().downloads || 0; });
-    document.getElementById("totalDownloads").textContent = total;
-    animateCounters();
-  });
-}
-
-/* ========== INIT ========== */
-loadResources("all");
-loadLeaderboard();
-loadTotalDownloads();
-
-/* ========== INTERSECTION OBSERVER FOR UPLOAD SECTION ========== */
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('in-view');
-    }
-  });
-}, { threshold: 0.1 });
-
-const uploadWrapper = document.querySelector('.upload-wrapper');
-if (uploadWrapper) {
-  observer.observe(uploadWrapper);
-}
-</script>
+  </script>
 
 </body>
 </html>

@@ -37,6 +37,13 @@ body {
 }
 .section-alt { background: var(--color-bg-soft); }
 .section-header { text-align: center; margin-bottom: 36px; }
+.section-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
 .section-header h2 {
   font-family: "Playfair Display", serif;
   font-size: clamp(1.55rem, 2.7vw, 2rem);
@@ -44,7 +51,25 @@ body {
   margin-bottom: 6px;
   font-weight: 600;
 }
+.section-header-top h2 { margin-bottom: 0; }
 .section-header p { color: var(--color-muted); }
+.section-see-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  background: #1b2a41;
+  border-radius: 999px;
+  padding: 5px 12px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.section-see-all:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
 
 .navbar {
   position: sticky;
@@ -302,6 +327,10 @@ body {
 }
 
 @media (max-width: 600px) {
+  .section-header-top {
+    flex-direction: column;
+    gap: 8px;
+  }
   .section { padding: 38px 0; }
   .nav-container { min-height: 64px; }
   .search-box input { width: 110px; }

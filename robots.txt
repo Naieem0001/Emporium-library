@@ -1,6 +1,6 @@
 # =============================================
 # robots.txt — Emporium Library
-# https://emporiumlibrary.netlify.app
+# https://emporiumlibrary.me
 # =============================================
 
 # ---- Good bots: Allow full crawl ----
@@ -110,11 +110,10 @@ User-agent: ia_archiver
 Disallow: /
 
 # ---- Default fallback for all others ----
+# Allow the whole public site; backend API lives on Render, not under these paths.
 
 User-agent: *
-Allow: /index.html
-Allow: /genre.html
-Allow: /academic.html
+Allow: /
 Disallow: /books/
 Disallow: /images/
 

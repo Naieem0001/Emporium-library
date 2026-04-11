@@ -50,6 +50,77 @@ function escapeHTML(str) {
     .replace(/"/g, "&quot;");
 }
 
+function normalizeText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeGenre(value) {
+  const v = normalizeText(value).replace(/\s+/g, "-");
+  const alias = {
+    "sci-fi": "science-fiction",
+    "scifi": "science-fiction",
+    "romance": "rom-com",
+    "horror-&-thriller": "horror-thriller"
+  };
+  return alias[v] || v;
+}
+
+function isTruthy(value) {
+  const v = normalizeText(value);
+  return value === true || value === 1 || v === "true" || v === "1" || v === "yes";
+}
+
+function getQueryParam(name) {
+  try {
+    const url = new URL(window.location.href);
+    const direct = url.searchParams.get(name);
+    if (direct !== null) return direct;
+
+    // Fallback: support links that accidentally put params in hash.
+    const hash = String(url.hash || "").replace(/^#/, "");
+    if (hash) {
+      const hashParams = new URLSearchParams(hash);
+      const fromHash = hashParams.get(name);
+      if (fromHash !== null) return fromHash;
+    }
+  } catch (err) {
+    // Ignore and use final regex fallback below.
+  }
+
+  const match = new RegExp(`[?&#]${name}=([^&#]*)`, "i").exec(window.location.href);
+  return match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : null;
+}
+
+function persistNavigationFilter() {
+  document.querySelectorAll('a[href*="genre.html?"]').forEach(link => {
+    link.addEventListener("click", () => {
+      try {
+        const url = new URL(link.getAttribute("href"), window.location.href);
+        const payload = {
+          genre: url.searchParams.get("genre"),
+          flag: url.searchParams.get("flag"),
+          search: url.searchParams.get("search")
+        };
+        sessionStorage.setItem("emporiumGenreFilter", JSON.stringify(payload));
+      } catch (err) {
+        // Ignore parsing/storage errors.
+      }
+    });
+  });
+}
+
+function getStoredParam(name) {
+  try {
+    const raw = sessionStorage.getItem("emporiumGenreFilter");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const value = parsed && typeof parsed === "object" ? parsed[name] : null;
+    return value == null ? null : String(value);
+  } catch (err) {
+    return null;
+  }
+}
+
 /* ========== RENDER BOOK CARD ========== */
 function renderCard(book) {
   return `
@@ -72,7 +143,7 @@ function renderCard(book) {
 function displayTrendingBooks(books) {
   const container = document.getElementById("trendingBooks");
   if (!container) return;
-  const trending = books.filter(b => b.trending === true).slice(0, 6);
+  const trending = books.filter(b => isTruthy(b.trending)).slice(0, 6);
   container.innerHTML = trending.length
     ? trending.map(renderCard).join("")
     : `<p class="state-message">No trending books yet.</p>`;
@@ -82,7 +153,7 @@ function displayTrendingBooks(books) {
 function displayNewReleases(books) {
   const container = document.getElementById("newReleasesBooks");
   if (!container) return;
-  const newReleases = books.filter(b => b.newRelease === true).slice(0, 4);
+  const newReleases = books.filter(b => isTruthy(b.newRelease)).slice(0, 4);
   container.innerHTML = newReleases.length
     ? newReleases.map(renderCard).join("")
     : `<p class="state-message">No new releases yet.</p>`;
@@ -156,35 +227,51 @@ function goToPage(page) {
 
 /* ========== GENRE / SEARCH PAGE ========== */
 function getGenreFromURL() {
-  return new URLSearchParams(window.location.search).get("genre");
+  return getQueryParam("genre") ?? getStoredParam("genre");
 }
 
 function getSearchFromURL() {
-  return new URLSearchParams(window.location.search).get("search");
+  return getQueryParam("search") ?? getStoredParam("search");
+}
+
+function getFlagFromURL() {
+  return getQueryParam("flag") ?? getStoredParam("flag");
 }
 
 function loadGenrePage(books) {
-  const genre  = getGenreFromURL();
+  const genreParam = getGenreFromURL();
   const search = getSearchFromURL();
+  const flag = normalizeText(getFlagFromURL());
   const title  = document.getElementById("genreTitle");
   const count  = document.getElementById("genreCount");
 
   let filtered = books;
 
   if (search) {
-    const q = search.toLowerCase();
+    const q = normalizeText(search);
     filtered = books.filter(b =>
-      b.title.toLowerCase().includes(q) ||
-      b.author.toLowerCase().includes(q) ||
-      b.genre.toLowerCase().includes(q)
+      normalizeText(b.title).includes(q) ||
+      normalizeText(b.author).includes(q) ||
+      normalizeGenre(b.genre).includes(q)
     );
     if (title) title.textContent = `Search: "${search}"`;
-  } else if (genre && genre !== "all") {
-    filtered = books.filter(b => b.genre === genre);
-    if (title) title.textContent = genre
+  } else if (flag === "trending") {
+    filtered = books.filter(b => isTruthy(b.trending));
+    if (title) title.textContent = "All Trending Books";
+  } else if (flag === "new") {
+    filtered = books.filter(b => isTruthy(b.newRelease));
+    if (title) title.textContent = "All New Releases";
+  } else if (genreParam !== null && genreParam !== "") {
+    const genre = normalizeGenre(genreParam);
+    if (genre && genre !== "all") {
+      filtered = books.filter(b => normalizeGenre(b.genre) === genre);
+      if (title) title.textContent = genre
       .split("-")
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join(" ");
+    } else {
+      if (title) title.textContent = "All Books";
+    }
   } else {
     if (title) title.textContent = "All Books";
   }
@@ -216,4 +303,5 @@ function loadAllBooks() {
 }
 
 /* ========== INIT ========== */
+persistNavigationFilter();
 loadAllBooks();

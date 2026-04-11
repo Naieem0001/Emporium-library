@@ -424,6 +424,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+let enforceFreshAdminLogin = true;
 
 function escapeHTML(str) {
   return String(str || "")
@@ -476,7 +477,18 @@ function logout() {
   auth.signOut();
 }
 
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(async user => {
+  // Always require fresh credentials when opening admin page.
+  if (enforceFreshAdminLogin) {
+    enforceFreshAdminLogin = false;
+    if (user) {
+      try { await auth.signOut(); } catch (err) {}
+      setAdminUi(false);
+      document.getElementById("passwordInput").value = "";
+      return;
+    }
+  }
+
   if (user) {
     setAdminUi(true);
     loadBooks();

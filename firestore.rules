@@ -99,6 +99,12 @@ service cloud.firestore {
         && request.resource.data.likes == (('likes' in resource.data) ? resource.data.likes : 0) + 1;
     }
 
+    function isAcademicNoteDownloadIncrement() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads'])
+        && request.resource.data.downloads is int
+        && request.resource.data.downloads == resource.data.downloads + 1;
+    }
+
     match /resources/{resourceId} {
       allow read: if true;
       // Academic hub is public — students upload without a Firebase account.
@@ -113,6 +119,19 @@ service cloud.firestore {
       allow create: if isValidContributorCreate();
       allow update: if true;
       allow delete: if isSignedIn();
+    }
+
+    // Academic Hub v2: created/updated only by Render backend (Firebase Admin SDK).
+    // Clients may increment download counts only.
+    match /academic_notes/{noteId} {
+      allow read: if true;
+      allow create, delete: if false;
+      allow update: if isAcademicNoteDownloadIncrement();
+    }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update, delete: if false;
     }
   }
 }
