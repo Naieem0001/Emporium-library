@@ -126,7 +126,7 @@ In `academic.html`, find:
 Set it to your Render URL **without** a trailing slash, for example:
 
 ```html
-window.EMPORIUM_ACADEMIC_API = "https://your-service-name.onrender.com";
+window.EMPORIUM_ACADEMIC_API = "https://emporium-academic-api.onrender.com";
 ```
 
 Commit and deploy the site to Netlify.
