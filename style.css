@@ -365,7 +365,7 @@ body {
   }
   .footer-col h3 { font-size: 15px; margin-bottom: 10px; }
   .footer-col h4 { font-size: 13px; margin-bottom: 10px; }
-  .footer-col p,
+.footer-col p,
   .footer-col ul li a { font-size: 12px; line-height: 1.6; }
   .footer-bottom { flex-direction: column; text-align: center; font-size: 12px; }
   .typewriter { white-space: normal; width: 100% !important; border-right: none; animation: none; }

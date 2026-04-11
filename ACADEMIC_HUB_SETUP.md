@@ -166,8 +166,10 @@ If you need them visible, say so and we can add a one-time import script.
 
 | Symptom | Likely cause |
 |--------|----------------|
+| `POST …/accounts:signUp` **403** | Browser **API key** restrictions in Google Cloud (HTTP referrers must include your site, `www`, Netlify URL, `localhost`); or **Identity Toolkit API** / **reCAPTCHA Enterprise API** not enabled for the project. |
 | CORS error in browser | `ALLOWED_ORIGINS` missing your exact site origin (scheme + host, no path). |
 | Drive 403 / File not found | Folder not shared with service account, or wrong `DRIVE_PARENT_FOLDER_ID`. |
+| “Service account … **no storage quota**” | Folder is not in **your** Drive quota (wrong id, **shortcut** id, or Shared drive where the SA is not a member). Open the real folder → URL `…/folders/FOLDER_ID` → share that folder with **`client_email`** from the same JSON as `GOOGLE_SERVICE_ACCOUNT_JSON`. |
 | `Invalid token` / 401 | Wrong Firebase Admin JSON or clock skew; user not signed in on site. |
 | Upload works but no Firestore doc | `FIREBASE_SERVICE_ACCOUNT_JSON` wrong project or Firestore API disabled. |
 | “Leaderboard unavailable” | Missing index on `users` / `totalPoints`, or no `users` docs yet. |

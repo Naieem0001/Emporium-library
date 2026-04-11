@@ -26,12 +26,19 @@
   if (hamburger && navMenu) {
     hamburger.addEventListener("click", e => {
       e.stopPropagation();
-      navMenu.classList.toggle("active");
+      const on = navMenu.classList.toggle("active");
+      hamburger.setAttribute("aria-expanded", on ? "true" : "false");
     });
     document.addEventListener("click", e => {
-      if (!navMenu.contains(e.target) && !hamburger.contains(e.target)) navMenu.classList.remove("active");
+      if (!navMenu.contains(e.target) && !hamburger.contains(e.target)) {
+        navMenu.classList.remove("active");
+        hamburger.setAttribute("aria-expanded", "false");
+      }
     });
-    window.addEventListener("scroll", () => navMenu.classList.remove("active"));
+    window.addEventListener("scroll", () => {
+      navMenu.classList.remove("active");
+      hamburger.setAttribute("aria-expanded", "false");
+    });
   }
 
   const MAX_BYTES = 20 * 1024 * 1024;
@@ -90,10 +97,13 @@
     if (t) t.classList.add("active");
     if (p) p.classList.add("active");
     authModal.classList.add("show");
+    authModal.setAttribute("aria-hidden", "false");
   }
 
   function closeAuth() {
-    if (authModal) authModal.classList.remove("show");
+    if (!authModal) return;
+    authModal.classList.remove("show");
+    authModal.setAttribute("aria-hidden", "true");
   }
 
   document.querySelectorAll(".auth-tab").forEach(btn => {
@@ -176,6 +186,56 @@
   let currentPage = 1;
   const perPage = window.innerWidth <= 600 ? 4 : 8;
 
+  const RESOURCE_TYPES = new Set(["notes", "textbooks", "papers", "assignments"]);
+
+  function normalizeResourceType(n) {
+    const t = String(n.resourceType || "notes").toLowerCase();
+    return RESOURCE_TYPES.has(t) ? t : "notes";
+  }
+
+  function resourceTypeLabel(rt) {
+    const labels = {
+      notes: "Notes",
+      textbooks: "Textbook",
+      papers: "Past papers",
+      assignments: "Assignment"
+    };
+    return labels[rt] || "Notes";
+  }
+
+  function resourceTypeIcon(rt) {
+    const icons = {
+      notes: "fa-file-lines",
+      textbooks: "fa-book",
+      papers: "fa-file-circle-check",
+      assignments: "fa-file-pen"
+    };
+    return icons[rt] || "fa-file-lines";
+  }
+
+  let selectedCategory = "all";
+
+  function syncCategoryUI() {
+    document.querySelectorAll("#categoryTabs .category-btn").forEach(btn => {
+      const on = btn.getAttribute("data-cat") === selectedCategory;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    const mob = document.getElementById("categoryMobileSelect");
+    if (mob && mob.value !== selectedCategory) mob.value = selectedCategory;
+  }
+
+  function setCategory(cat, opts) {
+    if (!["all", "notes", "textbooks", "papers", "assignments"].includes(cat)) return;
+    selectedCategory = cat;
+    syncCategoryUI();
+    currentPage = 1;
+    renderNotesPage();
+    if (!opts || opts.scroll !== false) {
+      document.querySelector(".filter-section")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
   function noteCard(n) {
     const link = safeUrl(n.driveLink);
     const subj = escapeHTML(n.subject);
@@ -185,10 +245,14 @@
     const pts = Number(n.points) || 5;
     const dls = Number(n.downloads) || 0;
     const when = formatDate(n.uploadDate);
+    const rt = normalizeResourceType(n);
+    const badgeClass = `note-badge-rt rt-${rt}`;
+    const icon = resourceTypeIcon(rt);
+    const typeLabel = resourceTypeLabel(rt);
     return `
-      <div class="note-card" data-subject="${subj}">
+      <div class="note-card" data-subject="${subj}" data-resource-type="${rt}">
         <div class="note-card-top">
-          <span class="note-badge"><i class="fa-solid fa-file-lines"></i> Notes</span>
+          <span class="${badgeClass}"><i class="fa-solid ${icon}" aria-hidden="true"></i> ${escapeHTML(typeLabel)}</span>
           <span class="points-pill-sm">${pts} pts</span>
         </div>
         <div class="note-card-body">
@@ -233,6 +297,9 @@
     const q = document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
     const sub = document.getElementById("subjectFilter")?.value || "";
     let list = [...allNotes];
+    if (selectedCategory !== "all") {
+      list = list.filter(n => normalizeResourceType(n) === selectedCategory);
+    }
     if (sub) list = list.filter(n => String(n.subject || "") === sub);
     if (q) {
       list = list.filter(
@@ -465,6 +532,8 @@
     form.append("subject", subject);
     form.append("description", description);
     form.append("uploaderName", uploaderName);
+    const resType = document.getElementById("noteResourceType")?.value || "notes";
+    form.append("resourceType", RESOURCE_TYPES.has(resType) ? resType : "notes");
 
     const btn = e.target.querySelector('button[type="submit"]');
     if (btn) {
@@ -533,6 +602,24 @@
     currentPage = 1;
     renderNotesPage();
   });
+
+  document.querySelectorAll("#categoryTabs .category-btn").forEach(btn => {
+    btn.addEventListener("click", () => setCategory(btn.getAttribute("data-cat") || "all", { scroll: false }));
+  });
+  document.getElementById("categoryMobileSelect")?.addEventListener("change", e => {
+    setCategory(e.target.value || "all", { scroll: false });
+  });
+
+  document.querySelectorAll("a[data-type]").forEach(a => {
+    a.addEventListener("click", ev => {
+      const t = (a.getAttribute("data-type") || "").toLowerCase();
+      if (!RESOURCE_TYPES.has(t)) return;
+      ev.preventDefault();
+      setCategory(t);
+    });
+  });
+
+  syncCategoryUI();
 
   /* ---------- Mobile filter hide (existing) ---------- */
   const filterBar = document.querySelector(".filter-section");
