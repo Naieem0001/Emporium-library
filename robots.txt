@@ -120,4 +120,4 @@ Disallow: /images/
 
 # ---- Sitemap ----
 
-Sitemap: https://emporiumlibrary.netlify.app/sitemap.xml
+Sitemap: https://emporiumlibrary.me/sitemap.xml
