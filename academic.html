@@ -54,7 +54,7 @@
     }
     .logo {
       font-family: 'Playfair Display', serif;
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
       color: var(--white);
       text-decoration: none;
@@ -184,7 +184,7 @@
         gap: 12px;
       }
       .logo {
-        font-size: 20px;
+        font-size: 22px;
       }
       .nav-menu {
         gap: 14px;
@@ -195,7 +195,7 @@
       }
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1180px) {
       .academic-page-nav .nav-container {
         position: relative;
         display: grid;
@@ -209,7 +209,7 @@
       .academic-page-nav .logo {
         grid-area: logo;
         min-width: 0;
-        font-size: clamp(15px, 4.2vw, 20px);
+        font-size: clamp(18px, 5.2vw, 24px);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -549,10 +549,11 @@
     }
     .upload-wrapper {
       max-width: 700px; margin: 0 auto;
-      background: var(--cream);
-      border-radius: 16px;
-      padding: 48px;
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      border-radius: 20px;
+      padding: 52px;
       border: 1px solid #E2E8F0;
+      box-shadow: 0 20px 48px rgba(15, 23, 42, 0.1);
     }
     .upload-form { display: flex; flex-direction: column; gap: 16px; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -580,6 +581,28 @@
       box-shadow: 0 0 0 3px rgba(255,122,24,0.12);
     }
     .form-group textarea { resize: vertical; min-height: 90px; }
+    #noteFile {
+      border: 1.5px dashed #CBD5E1;
+      border-radius: 12px;
+      padding: 10px;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+    }
+    #noteFile::file-selector-button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-right: 10px;
+      background: linear-gradient(135deg, var(--navy), var(--navy2));
+      color: #fff;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    #noteFile::file-selector-button:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
 
     .file-upload-area {
       border: 2px dashed #CBD5E1;
@@ -638,6 +661,54 @@
     }
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast i { color: var(--orange2); }
+    #academicPagination {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 16px auto 0;
+    }
+    #loadMoreNotes {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 20px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 13px;
+      color: #7C2D12;
+      background: linear-gradient(135deg, #F59E0B, #FBBF24);
+      box-shadow: 0 10px 24px rgba(245, 158, 11, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    #loadMoreNotes:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 28px rgba(245, 158, 11, 0.35);
+    }
+    .celebration-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3000;
+      overflow: hidden;
+    }
+    .celebration-piece {
+      position: absolute;
+      width: 8px;
+      height: 14px;
+      border-radius: 999px;
+      opacity: 0;
+      transform: translate3d(0, 0, 0) rotate(0deg);
+      animation: confettiPop 900ms ease-out forwards;
+    }
+    @keyframes confettiPop {
+      0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg) scale(0.6); }
+      15% { opacity: 1; }
+      100% { opacity: 0; transform: translate3d(var(--dx), var(--dy), 0) rotate(var(--rot)) scale(1); }
+    }
 
     /* ===== LEADERBOARD ===== */
     .contributors { padding: 80px 40px; background: var(--gray); }
@@ -652,6 +723,13 @@
       border-left: 4px solid transparent;
     }
     .contributor:hover { transform: translateX(4px); }
+    .contributor.top-1 {
+      background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+      border-left-color: #F59E0B !important;
+      box-shadow: 0 14px 34px rgba(245, 158, 11, 0.22);
+    }
+    .contributor.top-1 .contributor-info h3 { color: #7C2D12; font-size: 1.06rem; }
+    .contributor.top-1 .points-pill { background: linear-gradient(135deg, #F59E0B, #FB923C); }
     .contributor:nth-child(1) { border-left-color: #F59E0B; }
     .contributor:nth-child(2) { border-left-color: #9CA3AF; }
     .contributor:nth-child(3) { border-left-color: #CD7C2F; }
@@ -665,6 +743,7 @@
     .rank-2 { background: rgba(156,163,175,0.15); color: #6B7280; }
     .rank-3 { background: rgba(205,124,47,0.15); color: #CD7C2F; }
     .rank-other { background: var(--gray); color: var(--muted); }
+    .rank-badge .fa-crown { font-size: 13px; margin-right: 4px; }
 
     .contributor-avatar {
       width: 44px; height: 44px; border-radius: 50%;
@@ -684,6 +763,47 @@
       font-size: 13px; font-weight: 600;
     }
     .uploads-count { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .my-notes-section {
+      padding: 40px 40px 10px;
+      background: #f8fafc;
+    }
+    .my-notes-head {
+      max-width: 1100px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .my-notes-head h3 {
+      font-family: "Playfair Display", serif;
+      font-size: 26px;
+      color: var(--navy);
+    }
+    .my-notes-grid {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 18px;
+    }
+    .my-note-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .my-note-actions .btn-action {
+      flex: 1;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .btn-delete-note { background: #FEE2E2; color: #B91C1C; }
+    .btn-delete-note:hover { background: #FECACA; }
 
     /* ===== FOOTER ===== */
     .footer {
@@ -749,6 +869,7 @@
     background: #1B2A41;
   }
   .resources-section, .upload-section, .contributors { padding: 50px 20px; }
+  .my-notes-section { padding: 28px 20px 6px; }
   .resources-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .footer-container { grid-template-columns: repeat(2, 1fr); }
   .navbar { padding: 12px 16px; }
@@ -782,6 +903,7 @@
   .filter-section .sort-label {
     color: rgba(255, 255, 255, 0.75);
   }
+  .my-notes-head h3 { font-size: 22px; }
 }
 
 
@@ -970,7 +1092,7 @@
       </div>
       <div class="upload-notice" id="uploadDriveHint" style="display:none;">
         <i class="fa-brands fa-google-drive"></i>
-        <span>Files are uploaded to the shared <strong>Emporium-Academic-Uploads</strong> folder and shared as view links.</span>
+        <span>Let’s contribute your knowledge to support fellow classmates with high-quality resources.</span>
       </div>
       <br />
       <form class="upload-form" id="uploadNotesForm" style="display:none;">

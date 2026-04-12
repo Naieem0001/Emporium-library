@@ -59,7 +59,7 @@ function toDirectDownloadUrl(url) {
     if (u.hostname.includes("drive.google.com")) {
       const m = u.pathname.match(/\/file\/d\/([^/]+)/);
       const id = m ? m[1] : u.searchParams.get("id");
-      if (id) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+      if (id) return `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download&confirm=t`;
     }
     return u.href;
   } catch (err) {

@@ -353,6 +353,109 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+app.delete("/notes/:id", async (req, res) => {
+  try {
+    const noteId = String(req.params.id || "").trim();
+    if (!noteId) return res.status(400).json({ error: "Missing note id" });
+
+    const authHeader = req.headers.authorization || "";
+    const m = authHeader.match(/^Bearer\s+(.+)$/i);
+    const idToken = m ? m[1].trim() : "";
+    const decoded = await verifyIdToken(idToken);
+    const uid = decoded.uid;
+
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const noteRef = db.collection("academic_notes").doc(noteId);
+    const snap = await noteRef.get();
+    if (!snap.exists) return res.status(404).json({ error: "Note not found" });
+
+    const note = snap.data() || {};
+    if (String(note.uploaderUid || "") !== String(uid)) {
+      return res.status(403).json({ error: "You can delete only your own notes" });
+    }
+
+    const driveFileId = String(note.driveFileId || "").trim();
+    if (driveFileId) {
+      try {
+        const bundle = getDriveClient();
+        await bundle.drive.files.delete({
+          fileId: driveFileId,
+          supportsAllDrives: true
+        });
+      } catch (err) {
+        // Keep note cleanup resilient even if Drive file is already gone.
+        console.warn("Drive delete skipped:", driveApiDetail(err) || err?.message || err);
+      }
+    }
+
+    const userRef = db.collection("users").doc(uid);
+    const earned = Math.max(1, Number(note.points) || 5);
+    await db.runTransaction(async t => {
+      t.delete(noteRef);
+      const userSnap = await t.get(userRef);
+      if (userSnap.exists) {
+        t.update(userRef, {
+          uploadCount: admin.firestore.FieldValue.increment(-1),
+          totalPoints: admin.firestore.FieldValue.increment(-earned)
+        });
+      }
+    });
+
+    return res.json({ ok: true, deleted: noteId });
+  } catch (err) {
+    console.error(err);
+    const msg = err && err.message ? err.message : "Delete failed";
+    const code = /Missing token|Invalid token|auth/i.test(msg) ? 401 : 400;
+    return res.status(code).json({ error: msg });
+  }
+});
+
+app.patch("/notes/:id", async (req, res) => {
+  try {
+    const noteId = String(req.params.id || "").trim();
+    if (!noteId) return res.status(400).json({ error: "Missing note id" });
+
+    const authHeader = req.headers.authorization || "";
+    const m = authHeader.match(/^Bearer\s+(.+)$/i);
+    const idToken = m ? m[1].trim() : "";
+    const decoded = await verifyIdToken(idToken);
+    const uid = decoded.uid;
+
+    const title = String(req.body.title || "").trim();
+    const description = String(req.body.description || "").trim();
+    if (!title || title.length > 200) {
+      return res.status(400).json({ error: "Invalid title" });
+    }
+    if (description.length > 500) {
+      return res.status(400).json({ error: "Description too long" });
+    }
+
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const noteRef = db.collection("academic_notes").doc(noteId);
+    const snap = await noteRef.get();
+    if (!snap.exists) return res.status(404).json({ error: "Note not found" });
+
+    const note = snap.data() || {};
+    if (String(note.uploaderUid || "") !== String(uid)) {
+      return res.status(403).json({ error: "You can edit only your own notes" });
+    }
+
+    await noteRef.update({
+      title,
+      description
+    });
+
+    return res.json({ ok: true, id: noteId });
+  } catch (err) {
+    console.error(err);
+    const msg = err && err.message ? err.message : "Update failed";
+    const code = /Missing token|Invalid token|auth/i.test(msg) ? 401 : 400;
+    return res.status(code).json({ error: msg });
+  }
+});
+
 app.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {

@@ -5,6 +5,9 @@
  */
 (function () {
   const ACADEMIC_API = String(window.EMPORIUM_ACADEMIC_API || "").replace(/\/$/, "");
+  const viewMode = new URLSearchParams(window.location.search).get("view") || "all";
+  const pageName = String(window.location.pathname || "").split("/").pop().toLowerCase();
+  const isMyNotesView = viewMode === "my-notes" || pageName === "my-notes.html";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDCQag_jLEkTVp-DEE2iqk1Pj5ZmjTesXE",
@@ -69,7 +72,10 @@
       if (u.hostname.includes("drive.google.com")) {
         const m = u.pathname.match(/\/file\/d\/([^/]+)/);
         const id = m ? m[1] : u.searchParams.get("id");
-        if (id) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+        if (id) {
+          const enc = encodeURIComponent(id);
+          return `https://drive.usercontent.google.com/download?id=${enc}&export=download&confirm=t`;
+        }
       }
     } catch (e) {}
     return safe;
@@ -135,9 +141,18 @@
     if (!authNav) return;
     if (user) {
       const name = user.displayName || user.email || "Account";
+      const myNotesLabel = isMyNotesView ? "All Notes" : "My Notes";
       authNav.innerHTML = `
         <span class="auth-name">${escapeHTML(name)}</span>
+        <button type="button" class="btn-nav-outline" id="navMyNotes">${myNotesLabel}</button>
         <button type="button" class="btn-nav-outline" id="navLogout">Log out</button>`;
+      document.getElementById("navMyNotes")?.addEventListener("click", () => {
+        if (isMyNotesView) {
+          window.location.href = "academic.html";
+        } else {
+          window.location.href = "my-notes.html";
+        }
+      });
       document.getElementById("navLogout")?.addEventListener("click", () => auth.signOut());
     } else {
       authNav.innerHTML = `
@@ -178,18 +193,35 @@
     }
   });
 
+  let currentUser = null;
+
+  function applyViewMode() {
+    const hideInMyNotes = [".academic-hero", ".filter-section", ".resources-section", ".contributors"];
+    hideInMyNotes.forEach(sel => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      el.style.display = isMyNotesView ? "none" : "";
+    });
+    const browseAll = document.getElementById("browseAllNotesLink");
+    if (browseAll) browseAll.style.display = isMyNotesView ? "inline-flex" : "none";
+  }
+
   auth.onAuthStateChanged(user => {
+    currentUser = user || null;
     setAuthNav(user);
     const guestHint = document.getElementById("uploadGuestHint");
     const driveHint = document.getElementById("uploadDriveHint");
     const uploadForm = document.getElementById("uploadNotesForm");
+    const myNotesSection = document.getElementById("myNotesSection");
     if (guestHint) guestHint.style.display = user ? "none" : "block";
     if (driveHint) driveHint.style.display = user ? "flex" : "none";
     if (uploadForm) uploadForm.style.display = user ? "block" : "none";
+    if (myNotesSection) myNotesSection.style.display = user && isMyNotesView ? "block" : "none";
     const nameField = document.getElementById("noteUploaderName");
     if (nameField && user) {
       nameField.value = user.displayName || "";
     }
+    renderMyNotes();
   });
 
   const apiHint = document.getElementById("apiHint");
@@ -199,6 +231,8 @@
   let allNotes = [];
   let currentPage = 1;
   const perPage = window.innerWidth <= 600 ? 4 : 8;
+  let myNotesPage = 1;
+  const myNotesPerPage = 4;
 
   const RESOURCE_TYPES = new Set(["notes", "textbooks", "papers", "assignments"]);
 
@@ -349,8 +383,9 @@
     const total = list.length;
     const pages = Math.max(1, Math.ceil(total / perPage));
     if (currentPage > pages) currentPage = pages;
+    const isMobile = window.innerWidth <= 600;
     const start = (currentPage - 1) * perPage;
-    const slice = list.slice(start, start + perPage);
+    const slice = isMobile ? list.slice(0, currentPage * perPage) : list.slice(start, start + perPage);
 
     if (!slice.length) {
       grid.innerHTML = `
@@ -362,14 +397,14 @@
       grid.innerHTML = slice.map(noteCard).join("");
     }
 
-    renderPagination(pages);
+    renderPagination(pages, isMobile);
     document.getElementById("totalResources").textContent = String(allNotes.length);
     const uniq = new Set(allNotes.map(n => n.uploaderUid).filter(Boolean));
     const tu = document.getElementById("totalUploaders");
     if (tu) tu.textContent = String(uniq.size || allNotes.length);
   }
 
-  function renderPagination(totalPages) {
+  function renderPagination(totalPages, isMobile) {
     const grid = document.getElementById("resourcesGrid");
     if (!grid) return;
     let el = document.getElementById("academicPagination");
@@ -381,6 +416,18 @@
     }
     if (totalPages <= 1) {
       el.innerHTML = "";
+      return;
+    }
+    if (isMobile) {
+      if (currentPage >= totalPages) {
+        el.innerHTML = "";
+        return;
+      }
+      el.innerHTML = `<button type="button" class="page-btn prev-next" id="loadMoreNotes"><i class="fa-solid fa-plus"></i> Load more</button>`;
+      document.getElementById("loadMoreNotes")?.addEventListener("click", () => {
+        currentPage += 1;
+        renderNotesPage();
+      });
       return;
     }
     let html = `<button type="button" class="page-btn prev-next" ${currentPage === 1 ? "disabled" : ""} data-p="${currentPage - 1}"><i class="fa-solid fa-chevron-left"></i></button>`;
@@ -414,6 +461,7 @@
         populateSubjectFilter(allNotes);
         currentPage = 1;
         renderNotesPage();
+        renderMyNotes();
         loadTotalDownloads();
       })
       .catch(err => {
@@ -422,6 +470,158 @@
           grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-exclamation"></i><p>Could not load notes.</p></div>`;
         }
       });
+  }
+
+  function myNoteCard(n) {
+    const link = toDirectDownloadUrl(n.driveLink);
+    const subj = escapeHTML(n.subject);
+    const title = escapeHTML(n.title);
+    const desc = escapeHTML(n.description || "");
+    const dls = Number(n.downloads) || 0;
+    const when = formatDate(n.uploadDate);
+    const rt = normalizeResourceType(n);
+    const badgeClass = `note-badge-rt rt-${rt}`;
+    const icon = resourceTypeIcon(rt);
+    return `
+      <div class="note-card">
+        <div class="note-card-top">
+          <span class="${badgeClass}"><i class="fa-solid ${icon}" aria-hidden="true"></i> ${escapeHTML(resourceTypeLabel(rt))}</span>
+          <span class="points-pill-sm">Mine</span>
+        </div>
+        <div class="note-card-body">
+          <h3>${title}</h3>
+          <p class="note-subject"><i class="fa-solid fa-tag"></i> ${subj}</p>
+          ${desc ? `<p class="note-desc">${desc}</p>` : ""}
+          <div class="note-meta">
+            <span><i class="fa-solid fa-calendar"></i> ${when}</span>
+            <span><i class="fa-solid fa-download"></i> ${dls}</span>
+          </div>
+          <div class="my-note-actions">
+            <a href="${link}" rel="noopener noreferrer" class="btn-action note-download" download>
+              <i class="fa-solid fa-download"></i> Download
+            </a>
+            <button type="button" class="btn-action" data-edit-note-id="${escapeHTML(n.id)}">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </button>
+            <button type="button" class="btn-action btn-delete-note" data-note-id="${escapeHTML(n.id)}">
+              <i class="fa-solid fa-trash"></i> Delete
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderMyNotes() {
+    const grid = document.getElementById("myNotesGrid");
+    const section = document.getElementById("myNotesSection");
+    const loadMoreWrap = document.getElementById("myNotesLoadMoreWrap");
+    if (!grid || !section) return;
+    if (!currentUser) {
+      section.style.display = "none";
+      if (loadMoreWrap) loadMoreWrap.style.display = "none";
+      return;
+    }
+    section.style.display = "block";
+    const mine = allNotes
+      .filter(n => String(n.uploaderUid || "") === String(currentUser.uid || ""))
+      .sort((a, b) => {
+        const ta = a.uploadDate && a.uploadDate.toMillis ? a.uploadDate.toMillis() : 0;
+        const tb = b.uploadDate && b.uploadDate.toMillis ? b.uploadDate.toMillis() : 0;
+        return tb - ta;
+      });
+    if (!mine.length) {
+      grid.innerHTML = `<div class="empty-state"><i class="fa-solid fa-upload"></i><p>You have not uploaded any materials yet.</p></div>`;
+      if (loadMoreWrap) loadMoreWrap.style.display = "none";
+      return;
+    }
+    const isMobile = window.innerWidth <= 600;
+    const visible = isMobile ? mine.slice(0, myNotesPage * myNotesPerPage) : mine;
+    grid.innerHTML = visible.map(myNoteCard).join("");
+    grid.querySelectorAll("[data-edit-note-id]").forEach(btn => {
+      btn.addEventListener("click", () => editMyNote(btn.getAttribute("data-edit-note-id")));
+    });
+    grid.querySelectorAll(".btn-delete-note").forEach(btn => {
+      btn.addEventListener("click", () => deleteMyNote(btn.getAttribute("data-note-id")));
+    });
+    if (loadMoreWrap) {
+      if (isMobile && visible.length < mine.length) {
+        loadMoreWrap.style.display = "flex";
+      } else {
+        loadMoreWrap.style.display = "none";
+      }
+    }
+  }
+
+  async function deleteMyNote(noteId) {
+    if (!noteId || !currentUser) return;
+    if (!ACADEMIC_API) {
+      showToast("API URL not configured. Cannot delete note.", true);
+      return;
+    }
+    const ok = window.confirm("Delete this note permanently?");
+    if (!ok) return;
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`${ACADEMIC_API}/notes/${encodeURIComponent(noteId)}`, {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + token }
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || "Delete failed");
+      showToast("Note deleted.");
+      myNotesPage = 1;
+      await loadNotes();
+      loadLeaderboard();
+    } catch (err) {
+      showToast(err.message || "Could not delete note.", true);
+    }
+  }
+
+  async function editMyNote(noteId) {
+    if (!noteId || !currentUser) return;
+    if (!ACADEMIC_API) {
+      showToast("API URL not configured. Cannot edit note.", true);
+      return;
+    }
+    const note = allNotes.find(n => String(n.id) === String(noteId));
+    if (!note) {
+      showToast("Note not found.", true);
+      return;
+    }
+    const currentTitle = String(note.title || "").trim();
+    const currentDesc = String(note.description || "").trim();
+    const title = window.prompt("Edit resource name:", currentTitle);
+    if (title === null) return;
+    const cleanTitle = String(title).trim();
+    if (!cleanTitle || cleanTitle.length > 200) {
+      showToast("Title is required and must be 200 chars or less.", true);
+      return;
+    }
+    const desc = window.prompt("Edit description (optional):", currentDesc);
+    if (desc === null) return;
+    const cleanDesc = String(desc).trim();
+    if (cleanDesc.length > 500) {
+      showToast("Description must be 500 chars or less.", true);
+      return;
+    }
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`${ACADEMIC_API}/notes/${encodeURIComponent(noteId)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ title: cleanTitle, description: cleanDesc })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || "Edit failed");
+      showToast("Note updated.");
+      await loadNotes();
+      renderMyNotes();
+    } catch (err) {
+      showToast(err.message || "Could not update note.", true);
+    }
   }
 
   function loadTotalDownloads() {
@@ -451,8 +651,8 @@
         board.innerHTML = rows
           .map(
             (c, i) => `
-        <div class="contributor">
-          <div class="rank-badge ${rankClasses[i] || "rank-other"}">${i + 1}</div>
+        <div class="contributor ${i === 0 ? "top-1" : ""}">
+          <div class="rank-badge ${rankClasses[i] || "rank-other"}">${i === 0 ? '<i class="fa-solid fa-crown" aria-hidden="true"></i>' : ""}${i + 1}</div>
           <div class="contributor-avatar">${escapeHTML(
             String(c.name || "U")
               .split(" ")
@@ -587,6 +787,8 @@
           document.getElementById("fileSizeHint").textContent = "";
         } catch (err) {}
         showToast("Note uploaded successfully. +5 points!");
+        celebrateUpload();
+        myNotesPage = 1;
         loadNotes();
         loadLeaderboard();
       } else {
@@ -633,6 +835,36 @@
   });
 
   syncCategoryUI();
+  applyViewMode();
+  document.getElementById("myNotesLoadMore")?.addEventListener("click", () => {
+    myNotesPage += 1;
+    renderMyNotes();
+  });
+
+  function celebrateUpload() {
+    const layer = document.createElement("div");
+    layer.className = "celebration-layer";
+    const colors = ["#FF7A18", "#FF9F43", "#1B2A41", "#3B82F6", "#10B981"];
+    const burstX = Math.floor(window.innerWidth * 0.5);
+    const burstY = Math.floor(window.innerHeight * 0.28);
+    for (let i = 0; i < 22; i += 1) {
+      const p = document.createElement("span");
+      p.className = "celebration-piece";
+      const dx = Math.round((Math.random() - 0.5) * 320) + "px";
+      const dy = Math.round(Math.random() * 260 + 80) + "px";
+      const rot = Math.round((Math.random() - 0.5) * 360) + "deg";
+      p.style.left = burstX + "px";
+      p.style.top = burstY + "px";
+      p.style.background = colors[i % colors.length];
+      p.style.setProperty("--dx", dx);
+      p.style.setProperty("--dy", dy);
+      p.style.setProperty("--rot", rot);
+      p.style.animationDelay = Math.round(Math.random() * 100) + "ms";
+      layer.appendChild(p);
+    }
+    document.body.appendChild(layer);
+    setTimeout(() => layer.remove(), 1100);
+  }
 
   /* ---------- Mobile filter hide (existing) ---------- */
   const filterBar = document.querySelector(".filter-section");
