@@ -151,6 +151,29 @@
       display: flex; align-items: center; gap: 8px;
     }
     .add-btn:hover { opacity: 0.9; }
+    .upload-progress-wrap {
+      display: none;
+      margin-top: 14px;
+      max-width: 420px;
+    }
+    .upload-progress-track {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #E2E8F0;
+    }
+    .upload-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #FF7A18, #FFB347);
+      transition: width 0.2s ease;
+    }
+    .upload-progress-label {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #6B7280;
+      text-align: right;
+    }
 
     /* ===== BOOKS TABLE ===== */
     .table-section {
@@ -341,13 +364,21 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Cover Image URL *</label>
+          <label>Cover Image URL (Old)</label>
           <input type="url" id="bookCover" placeholder="https://covers.openlibrary.org/..." 
                  oninput="previewCover(this.value)" />
           <img id="coverPreview" class="cover-preview" />
         </div>
         <div class="form-group full">
-          <label>Google Drive Link *</label>
+          <label>Cover File (New) <span style="color:#9CA3AF;font-weight:500">JPG/PNG/WEBP/GIF</span></label>
+          <input type="file" id="bookCoverFile" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" />
+        </div>
+        <div class="form-group full">
+          <label>Book File (New) <span style="color:#9CA3AF;font-weight:500">(max 400MB)</span></label>
+          <input type="file" id="bookFile" accept=".pdf,.epub,.doc,.docx,.txt,.mobi,application/pdf,application/epub+zip,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" />
+        </div>
+        <div class="form-group full">
+          <label>Google Drive Link (old option)</label>
           <input type="url" id="bookLink" placeholder="https://drive.google.com/file/d/..." />
         </div>
         <div class="form-group full">
@@ -367,6 +398,12 @@
       <button class="add-btn" onclick="addBook()">
         <i class="fa-solid fa-plus"></i> Add Book
       </button>
+      <div class="upload-progress-wrap" id="bookUploadProgressWrap">
+        <div class="upload-progress-track">
+          <div class="upload-progress-bar" id="bookUploadProgressBar"></div>
+        </div>
+        <div class="upload-progress-label" id="bookUploadProgressLabel">0%</div>
+      </div>
     </div>
 
     <!-- BOOKS TABLE -->
@@ -424,6 +461,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+const ACADEMIC_API = String(window.EMPORIUM_ACADEMIC_API || "https://emporium-academic-api.onrender.com").replace(/\/$/, "");
 let enforceFreshAdminLogin = true;
 const adminEmailSource = Array.isArray(window.EMPORIUM_ADMIN_EMAILS)
   ? window.EMPORIUM_ADMIN_EMAILS
@@ -629,59 +667,114 @@ function addBook() {
   const author   = document.getElementById("bookAuthor").value.trim();
   const genre    = document.getElementById("bookGenre").value;
   const cover    = document.getElementById("bookCover").value.trim();
-  const driveLink = document.getElementById("bookLink").value.trim();
+  const coverFileInput = document.getElementById("bookCoverFile");
+  const coverFile = coverFileInput && coverFileInput.files && coverFileInput.files[0];
+  const driveLinkInput = document.getElementById("bookLink");
+  const driveLink = driveLinkInput ? driveLinkInput.value.trim() : "";
+  const fileInput = document.getElementById("bookFile");
+  const file = fileInput && fileInput.files && fileInput.files[0];
   const trending  = document.getElementById("bookTrending").checked;
   const newRelease = document.getElementById("bookNewRelease").checked;
+  const progressWrap = document.getElementById("bookUploadProgressWrap");
+  const progressBar = document.getElementById("bookUploadProgressBar");
+  const progressLabel = document.getElementById("bookUploadProgressLabel");
 
-  if (!title || !author || !cover || !driveLink) {
-    showToast("Please fill all required fields.", true);
+  if (!title || !author) {
+    showToast("Title and author are required.", true);
+    return;
+  }
+  if (!file && !driveLink) {
+    showToast("Choose a book file or provide a Google Drive link.", true);
+    return;
+  }
+  if (!cover && !coverFile) {
+    showToast("Provide cover URL or upload a cover image.", true);
+    return;
+  }
+  if (file && file.size > 400 * 1024 * 1024) {
+    showToast("Book file must be 400MB or smaller.", true);
+    return;
+  }
+  if (coverFile && coverFile.size > 10 * 1024 * 1024) {
+    showToast("Cover image must be 10MB or smaller.", true);
     return;
   }
 
-  const safeCover = safeUrl(cover);
-  const safeDriveLink = safeUrl(driveLink);
-  if (!safeCover || !safeDriveLink) {
-    showToast("Cover and Drive link must be valid http/https URLs.", true);
+  const safeCover = cover ? safeUrl(cover) : "";
+  if (cover && !safeCover) {
+    showToast("Cover URL must be valid http/https.", true);
     return;
   }
-  let parsedDriveUrl;
-  try {
-    parsedDriveUrl = new URL(safeDriveLink);
-  } catch (err) {
-    showToast("Please enter a valid Google Drive link.", true);
-    return;
-  }
-  if (!parsedDriveUrl.hostname.endsWith("drive.google.com")) {
-    showToast("Please enter a valid Google Drive link.", true);
+  const safeDriveLink = driveLink ? safeUrl(driveLink) : "";
+  if (driveLink && !safeDriveLink) {
+    showToast("Drive link must be valid http/https URL.", true);
     return;
   }
 
   const btn = document.querySelector(".add-btn");
   btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Adding...`;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading...`;
+  if (progressWrap) progressWrap.style.display = "block";
+  if (progressBar) progressBar.style.width = "0%";
+  if (progressLabel) progressLabel.textContent = "0%";
 
-  db.collection("books").add({
-    title, author, genre, cover: safeCover, driveLink: safeDriveLink,
-    trending, newRelease,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-    document.getElementById("bookTitle").value   = "";
-    document.getElementById("bookAuthor").value  = "";
-    document.getElementById("bookCover").value   = "";
-    document.getElementById("bookLink").value    = "";
-    document.getElementById("bookTrending").checked   = false;
-    document.getElementById("bookNewRelease").checked = false;
-    document.getElementById("coverPreview").style.display = "none";
-    btn.disabled = false;
-    btn.innerHTML = `<i class="fa-solid fa-plus"></i> Add Book`;
-    showToast("Book added successfully!");
-    loadBooks();
-  }).catch(err => {
-    console.error(err);
-    btn.disabled = false;
-    btn.innerHTML = `<i class="fa-solid fa-plus"></i> Add Book`;
-    showToast("Failed to add book.", true);
-  });
+  auth.currentUser.getIdToken()
+    .then(token => {
+      const form = new FormData();
+      if (file) form.append("file", file);
+      if (coverFile) form.append("coverFile", coverFile);
+      if (safeDriveLink) form.append("driveLink", safeDriveLink);
+      if (safeCover) form.append("cover", safeCover);
+      form.append("title", title);
+      form.append("author", author);
+      form.append("genre", genre);
+      form.append("trending", String(trending));
+      form.append("newRelease", String(newRelease));
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", ACADEMIC_API + "/admin/upload-book");
+        xhr.setRequestHeader("Authorization", "Bearer " + token);
+        xhr.upload.onprogress = ev => {
+          if (!ev.lengthComputable) return;
+          const pct = Math.max(0, Math.min(100, Math.round((ev.loaded / ev.total) * 100)));
+          if (progressBar) progressBar.style.width = pct + "%";
+          if (progressLabel) progressLabel.textContent = pct + "%";
+        };
+        xhr.onerror = () => reject(new Error("Network error during upload."));
+        xhr.onload = () => {
+          let body = {};
+          try { body = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
+          if (xhr.status >= 200 && xhr.status < 300) resolve(body);
+          else reject(new Error(body.error || "Failed to upload book."));
+        };
+        xhr.send(form);
+      });
+    })
+    .then(() => {
+      document.getElementById("bookTitle").value = "";
+      document.getElementById("bookAuthor").value = "";
+      document.getElementById("bookCover").value = "";
+      if (fileInput) fileInput.value = "";
+      if (coverFileInput) coverFileInput.value = "";
+      if (driveLinkInput) driveLinkInput.value = "";
+      document.getElementById("bookTrending").checked = false;
+      document.getElementById("bookNewRelease").checked = false;
+      document.getElementById("coverPreview").style.display = "none";
+      showToast("Book uploaded and added successfully!");
+      loadBooks();
+    })
+    .catch(err => {
+      console.error(err);
+      showToast(err.message || "Failed to add book.", true);
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-plus"></i> Add Book`;
+      if (progressWrap) progressWrap.style.display = "none";
+      if (progressBar) progressBar.style.width = "0%";
+      if (progressLabel) progressLabel.textContent = "0%";
+    });
 }
 
 /* ===== TOGGLE FLAGS ===== */

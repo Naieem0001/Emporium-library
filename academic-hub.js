@@ -44,7 +44,7 @@
     });
   }
 
-  const MAX_BYTES = 20 * 1024 * 1024;
+  const MAX_BYTES = 50 * 1024 * 1024;
 
   function escapeHTML(str) {
     return String(str || "")
@@ -680,11 +680,14 @@
   /* ---------- Upload ---------- */
   const progressBar = document.getElementById("uploadProgressBar");
   const progressWrap = document.getElementById("uploadProgressWrap");
+  const progressLabel = document.getElementById("uploadProgressLabel");
 
   function setProgress(pct) {
     if (!progressBar || !progressWrap) return;
     progressWrap.style.display = "block";
-    progressBar.style.width = Math.min(100, Math.max(0, pct)) + "%";
+    const clamped = Math.min(100, Math.max(0, pct));
+    progressBar.style.width = clamped + "%";
+    if (progressLabel) progressLabel.textContent = Math.round(clamped) + "%";
   }
 
   document.getElementById("noteFile")?.addEventListener("change", e => {
@@ -696,7 +699,7 @@
     }
     if (hint) hint.textContent = `Selected: ${f.name} (${(f.size / (1024 * 1024)).toFixed(2)} MB)`;
     if (f.size > MAX_BYTES) {
-      showToast("File must be 20MB or smaller.", true);
+      showToast("File must be 50MB or smaller.", true);
       e.target.value = "";
       if (hint) hint.textContent = "";
     }
@@ -727,7 +730,7 @@
       return;
     }
     if (file.size > MAX_BYTES) {
-      showToast("File must be 20MB or smaller.", true);
+      showToast("File must be 50MB or smaller.", true);
       return;
     }
 
@@ -771,6 +774,7 @@
       }
       showToast("Network error during upload.", true);
       if (progressWrap) progressWrap.style.display = "none";
+      if (progressLabel) progressLabel.textContent = "0%";
     };
 
     xhr.onload = () => {
@@ -780,6 +784,7 @@
       }
       if (progressWrap) progressWrap.style.display = "none";
       setProgress(0);
+      if (progressLabel) progressLabel.textContent = "0%";
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           e.target.reset();

@@ -9,7 +9,8 @@ import { google } from "googleapis";
 import admin from "firebase-admin";
 
 const PORT = Number(process.env.PORT) || 3000;
-const MAX_BYTES = 20 * 1024 * 1024;
+const NOTES_MAX_BYTES = 50 * 1024 * 1024;
+const BOOK_MAX_BYTES = 400 * 1024 * 1024;
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"];
 
 const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGINS || "")
@@ -26,6 +27,22 @@ const ALLOWED_MIME = new Set([
 ]);
 
 const ALLOWED_EXT = new Set([".pdf", ".doc", ".docx", ".ppt", ".pptx"]);
+const BOOK_ALLOWED_EXT = new Set([".pdf", ".epub", ".doc", ".docx", ".txt", ".mobi"]);
+const BOOK_ALLOWED_MIME = new Set([
+  "application/pdf",
+  "application/epub+zip",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+  "application/x-mobipocket-ebook"
+]);
+const IMAGE_ALLOWED_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
+const IMAGE_ALLOWED_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif"
+]);
 
 function parseJsonEnv(name) {
   let raw = process.env[name];
@@ -88,6 +105,21 @@ async function verifyIdToken(idToken) {
   if (!idToken) throw new Error("Missing token");
   initFirebaseAdmin();
   return admin.auth().verifyIdToken(idToken);
+}
+
+function getAdminEmailAllowlist() {
+  return String(process.env.ADMIN_EMAILS || "naieemq111@gmail.com")
+    .split(",")
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function ensureAdminUser(decoded) {
+  const email = String(decoded?.email || "").trim().toLowerCase();
+  const allowed = getAdminEmailAllowlist();
+  if (!email || !allowed.includes(email)) {
+    throw new Error("Admin access denied");
+  }
 }
 
 /** Human-readable message from googleapis Drive errors */
@@ -156,6 +188,29 @@ async function resolveDriveParentFolderId(drive, folderId) {
   return folderId;
 }
 
+async function uploadPublicFileToDrive(drive, parentId, file, fallbackName) {
+  const safeName =
+    path.basename(file?.originalname || fallbackName).replace(/[^\w.\- ()\[\]]+/g, "_") || fallbackName;
+  const created = await drive.files.create({
+    requestBody: { name: safeName, parents: [parentId] },
+    media: {
+      body: fs.createReadStream(file.path),
+      mimeType: file.mimetype || "application/octet-stream"
+    },
+    fields: "id",
+    supportsAllDrives: true
+  });
+  const fileId = created.data.id;
+  if (!fileId) throw new Error("Drive upload failed");
+  await drive.permissions.create({
+    fileId,
+    requestBody: { role: "reader", type: "anyone" },
+    fields: "id",
+    supportsAllDrives: true
+  });
+  return fileId;
+}
+
 const app = express();
 app.use(express.json({ limit: "512kb" }));
 
@@ -177,7 +232,7 @@ app.get("/health", (_req, res) => {
 
 const upload = multer({
   dest: os.tmpdir(),
-  limits: { fileSize: MAX_BYTES },
+  limits: { fileSize: NOTES_MAX_BYTES },
   fileFilter(_req, file, cb) {
     const ext = path.extname(file.originalname || "").toLowerCase();
     if (!ALLOWED_EXT.has(ext)) {
@@ -190,6 +245,24 @@ const upload = multer({
       return cb(null, true);
     }
     return cb(new Error("Invalid file type"));
+  }
+});
+
+const uploadBook = multer({
+  dest: os.tmpdir(),
+  limits: { fileSize: BOOK_MAX_BYTES },
+  fileFilter(_req, file, cb) {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    if (file.fieldname === "coverFile") {
+      if (!IMAGE_ALLOWED_EXT.has(ext)) return cb(new Error("Invalid cover image type"));
+      if (!file.mimetype || file.mimetype === "application/octet-stream") return cb(null, true);
+      if (IMAGE_ALLOWED_MIME.has(file.mimetype)) return cb(null, true);
+      return cb(new Error("Invalid cover image type"));
+    }
+    if (!BOOK_ALLOWED_EXT.has(ext)) return cb(new Error("Invalid book file type"));
+    if (!file.mimetype || file.mimetype === "application/octet-stream") return cb(null, true);
+    if (BOOK_ALLOWED_MIME.has(file.mimetype)) return cb(null, true);
+    return cb(new Error("Invalid book file type"));
   }
 });
 
@@ -456,10 +529,99 @@ app.patch("/notes/:id", async (req, res) => {
   }
 });
 
+app.post(
+  "/admin/upload-book",
+  uploadBook.fields([
+    { name: "file", maxCount: 1 },
+    { name: "coverFile", maxCount: 1 }
+  ]),
+  async (req, res) => {
+  const file = req.files?.file?.[0];
+  const coverFile = req.files?.coverFile?.[0];
+  const tmpPath = file?.path;
+  const coverTmpPath = coverFile?.path;
+  const cleanup = () => {
+    if (tmpPath) fs.unlink(tmpPath, () => {});
+    if (coverTmpPath) fs.unlink(coverTmpPath, () => {});
+  };
+  try {
+    const authHeader = req.headers.authorization || "";
+    const m = authHeader.match(/^Bearer\s+(.+)$/i);
+    const idToken = m ? m[1].trim() : "";
+    const decoded = await verifyIdToken(idToken);
+    ensureAdminUser(decoded);
+
+    const title = String(req.body.title || "").trim();
+    const author = String(req.body.author || "").trim();
+    const genre = String(req.body.genre || "").trim();
+    const cover = String(req.body.cover || "").trim();
+    const driveLinkInput = String(req.body.driveLink || "").trim();
+    const trending = String(req.body.trending || "").toLowerCase() === "true";
+    const newRelease = String(req.body.newRelease || "").toLowerCase() === "true";
+    if (!title || title.length > 200) return res.status(400).json({ error: "Invalid title" });
+    if (!author || author.length > 120) return res.status(400).json({ error: "Invalid author" });
+    if (!genre || genre.length > 80) return res.status(400).json({ error: "Invalid genre" });
+    if (!file && !/^https?:\/\//i.test(driveLinkInput)) {
+      return res.status(400).json({ error: "Provide a book file or a valid Google Drive link" });
+    }
+    if (!coverFile && !/^https?:\/\//i.test(cover)) {
+      return res.status(400).json({ error: "Provide a cover image file or valid image URL" });
+    }
+
+    const folderId = normalizeDriveFolderId(process.env.DRIVE_PARENT_FOLDER_ID);
+    if (!folderId) return res.status(500).json({ error: "Server missing DRIVE_PARENT_FOLDER_ID" });
+    const bundle = getDriveClient();
+    const drive = bundle.drive;
+    let parentId = folderId;
+    try {
+      parentId = await resolveDriveParentFolderId(drive, folderId);
+    } catch (e) {
+      const detail = driveApiDetail(e) || e.message || "Cannot read folder";
+      return res.status(400).json({ error: `Drive parent folder: ${detail}` });
+    }
+
+    let driveLink = driveLinkInput;
+    if (file) {
+      const fileId = await uploadPublicFileToDrive(drive, parentId, file, "book");
+      driveLink = `https://drive.google.com/file/d/${fileId}/view`;
+    }
+
+    let finalCover = cover;
+    if (coverFile) {
+      const coverId = await uploadPublicFileToDrive(drive, parentId, coverFile, "cover");
+      finalCover = `https://drive.google.com/thumbnail?id=${coverId}&sz=w1000`;
+    }
+
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const docRef = await db.collection("books").add({
+      title,
+      author,
+      genre,
+      cover: finalCover,
+      driveLink,
+      trending,
+      newRelease,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    cleanup();
+    return res.json({ ok: true, id: docRef.id, driveLink });
+  } catch (err) {
+    console.error(err);
+    cleanup();
+    const msg = err && err.message ? err.message : "Book upload failed";
+    const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
+    return res.status(code).json({ error: msg });
+  }
+});
+
 app.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
-      return res.status(400).json({ error: "File too large (max 20MB)" });
+      if (_req.path === "/upload") {
+        return res.status(400).json({ error: "File too large (max 50MB)" });
+      }
+      return res.status(400).json({ error: "File too large (max 400MB for admin book uploads)" });
     }
     return res.status(400).json({ error: err.message });
   }

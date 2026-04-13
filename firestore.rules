@@ -6,7 +6,11 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn();
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'naieemq111@gmail.com'
+        ];
     }
 
     function isValidDriveUrl(url) {
@@ -86,11 +90,10 @@ service cloud.firestore {
 
     match /books/{bookId} {
       allow read: if true;
-      // Admin panel already gate-keeps via Firebase Auth sign-in;
-      // isSignedIn() is sufficient since only the admin account has credentials.
-      allow create: if isSignedIn() && isValidBookShape();
-      allow update: if isSignedIn() && (isValidBookShape() || isSafeFlagsUpdate());
-      allow delete: if isSignedIn();
+      // Restrict write operations to explicit admin email(s).
+      allow create: if isAdmin() && isValidBookShape();
+      allow update: if isAdmin() && (isValidBookShape() || isSafeFlagsUpdate());
+      allow delete: if isAdmin();
     }
 
     function isSafeLikesIncrement() {
@@ -110,15 +113,15 @@ service cloud.firestore {
       // Academic hub is public — students upload without a Firebase account.
       allow create: if isValidResourceCreate();
       allow update: if isSafeDownloadIncrement() || isSafeLikesIncrement();
-      allow delete: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
     match /contributors/{contributorId} {
       allow read: if true;
       // Contributor records are created/updated alongside resource uploads.
       allow create: if isValidContributorCreate();
-      allow update: if true;
-      allow delete: if isSignedIn();
+      allow update: if isValidContributorIncrement() || isAdmin();
+      allow delete: if isAdmin();
     }
 
     // Academic Hub v2: created/updated only by Render backend (Firebase Admin SDK).

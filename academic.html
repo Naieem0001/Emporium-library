@@ -1124,7 +1124,7 @@
           <input type="text" id="noteUploaderName" placeholder="e.g. Ahmed Khan" required maxlength="120" />
         </div>
         <div class="form-group">
-          <label>File * <small style="color:#9CA3AF">PDF, .doc, .docx, .ppt, .pptx — max 20MB</small></label>
+          <label>File * <small style="color:#9CA3AF">PDF, .doc, .docx, .ppt, .pptx — max 50MB</small></label>
           <input type="file" id="noteFile" accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" required />
           <small id="fileSizeHint" style="color:#9CA3AF; font-size:12px; margin-top:6px; display:block;"></small>
         </div>
@@ -1132,6 +1132,7 @@
           <div class="upload-progress-track">
             <div class="upload-progress-bar" id="uploadProgressBar"></div>
           </div>
+          <div id="uploadProgressLabel" style="font-size:12px;color:#6B7280;text-align:right;margin-top:6px;">0%</div>
         </div>
         <button type="submit" class="upload-btn">
           <i class="fa-solid fa-cloud-arrow-up"></i> Upload note
