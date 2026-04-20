@@ -180,6 +180,10 @@
       <header class="pm-head">
         <h4>Pay <span>${fmtPrice(book.price)}</span></h4>
         <p>Pay using either option below, then paste the transaction reference to unlock.</p>
+        <p class="pm-ref-shortcut">
+          Already paid?
+          <button type="button" class="pm-link-btn pm-paid-btn-inline">Submit reference</button>
+        </p>
       </header>
 
       <div class="pm-tabs" role="tablist">
@@ -233,8 +237,9 @@
     });
 
     // "I've paid" -> form
-    const paidBtn = panel.querySelector(".pm-paid-btn");
-    if (paidBtn) paidBtn.addEventListener("click", () => renderForm(book, cfg));
+    panel.querySelectorAll(".pm-paid-btn, .pm-paid-btn-inline").forEach(btn => {
+      btn.addEventListener("click", () => renderForm(book, cfg));
+    });
   }
 
   function renderUpiPane(cfg, book) {

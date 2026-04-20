@@ -567,6 +567,22 @@ body {
 }
 .pm-head h4 span { color: #B45309; font-weight: 700; }
 .pm-head p { font-size: 13px; color: #64748B; margin: 0 0 18px; line-height: 1.5; }
+.pm-ref-shortcut {
+  margin: -4px 0 14px;
+  font-size: 12px;
+  color: #64748B;
+}
+.pm-link-btn {
+  border: none;
+  background: transparent;
+  color: #B45309;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.pm-link-btn:hover { color: #92400E; }
 .pm-back {
   border: none; background: transparent;
   color: #64748B; font-size: 13px; cursor: pointer;
@@ -721,7 +737,11 @@ body {
 /* Footer CTA */
 .pm-foot {
   margin-top: auto;
-  padding-top: 18px;
+  padding-top: 14px;
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 24%, #fff 100%);
+  border-top: 1px solid #E2E8F0;
 }
 .pm-primary {
   width: 100%;
