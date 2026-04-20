@@ -676,6 +676,19 @@ app.post(
 // PAID NEW RELEASES: payment config, orders, admin approve/reject, unlock
 // =====================================================================
 
+async function resolvePaidBookDriveLink(db, bookId) {
+  const id = String(bookId || "").trim();
+  if (!id) return "";
+  const assetSnap = await db.collection("paid_book_assets").doc(id).get();
+  if (assetSnap.exists) {
+    const link = String(assetSnap.data()?.driveLink || "").trim();
+    if (link) return link;
+  }
+  const bookSnap = await db.collection("books").doc(id).get();
+  if (!bookSnap.exists) return "";
+  return String(bookSnap.data()?.driveLink || "").trim();
+}
+
 // Public: fetch current UPI + bank details for the checkout modal.
 app.get("/api/payment-config", async (_req, res) => {
   try {
@@ -864,6 +877,13 @@ app.post("/api/orders", uploadProof.single("proof"), async (req, res) => {
     const bookData = bookSnap.data() || {};
     const price = Number(bookData.price) || 0;
     if (price <= 0) return res.status(400).json({ error: "This book is free — no purchase needed" });
+    const snapshotDriveLink = await resolvePaidBookDriveLink(db, bookId);
+    if (!snapshotDriveLink) {
+      cleanup();
+      return res.status(400).json({
+        error: "This paid book is not configured for download yet. Ask admin to set/repair the file link first."
+      });
+    }
 
     if (utr) {
       const dupUtr = await db.collection("orders")
@@ -924,6 +944,7 @@ app.post("/api/orders", uploadProof.single("proof"), async (req, res) => {
       method,
       utr,
       screenshotUrl,
+      bookDriveLinkSnapshot: snapshotDriveLink,
       status: "pending",
       accessCode,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
@@ -967,13 +988,8 @@ app.post("/api/unlock", async (req, res) => {
     }
 
     const bookId = String(order.bookId || "");
-    let driveLink = "";
-    const assetSnap = await db.collection("paid_book_assets").doc(bookId).get();
-    if (assetSnap.exists) driveLink = String(assetSnap.data()?.driveLink || "");
-    if (!driveLink) {
-      const bookSnap = await db.collection("books").doc(bookId).get();
-      if (bookSnap.exists) driveLink = String(bookSnap.data()?.driveLink || "");
-    }
+    let driveLink = await resolvePaidBookDriveLink(db, bookId);
+    if (!driveLink) driveLink = String(order.bookDriveLinkSnapshot || "");
     if (!driveLink) return res.status(500).json({ error: "Book file is missing. Please contact support." });
 
     await doc.ref.update({
@@ -1085,9 +1101,18 @@ app.post("/admin/orders/:id/approve", async (req, res) => {
     const ref = db.collection("orders").doc(id);
     const snap = await ref.get();
     if (!snap.exists) return res.status(404).json({ error: "Order not found" });
+    const order = snap.data() || {};
+    const bookId = String(order.bookId || "");
+    const driveLink = await resolvePaidBookDriveLink(db, bookId) || String(order.bookDriveLinkSnapshot || "");
+    if (!driveLink) {
+      return res.status(400).json({
+        error: "Cannot approve: this book has no configured file link. Set/repair link first."
+      });
+    }
     await ref.update({
       status: "approved",
       approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+      bookDriveLinkSnapshot: driveLink,
       rejectedReason: admin.firestore.FieldValue.delete()
     });
     return res.json({ ok: true });
