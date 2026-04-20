@@ -609,6 +609,11 @@
           <div class="form-group full">
             <label>UPI QR Image (optional) <span style="color:#9CA3AF;font-weight:500">JPG/PNG/WEBP, max 5MB</span></label>
             <input type="file" id="cfgQrFile" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+            <div style="margin-top:10px;font-size:12px;color:#6B7280;display:flex;align-items:center;gap:8px;">
+              <span style="flex:0 0 auto;">or paste direct image URL &rarr;</span>
+              <input type="url" id="cfgQrUrl" placeholder="https://i.imgur.com/your-qr.png"
+                     style="flex:1;padding:8px 10px;border:1px solid #E5E7EB;border-radius:6px;font-size:13px;" />
+            </div>
             <img id="cfgQrPreview" class="qr-preview" alt="UPI QR preview" />
             <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:#6B7280;">
               <input type="checkbox" id="cfgClearQr" /> Remove existing QR
@@ -1202,6 +1207,8 @@ function savePaymentConfig(ev) {
       form.append("clearQr", String(document.getElementById("cfgClearQr").checked));
       const existing = document.getElementById("cfgQrPreview").dataset.existing || "";
       form.append("existingQrUrl", existing);
+      const pastedUrl = String(document.getElementById("cfgQrUrl").value || "").trim();
+      if (pastedUrl) form.append("qrUrl", pastedUrl);
       const qrFile = document.getElementById("cfgQrFile").files[0];
       if (qrFile) form.append("qr", qrFile);
       return fetch(ACADEMIC_API + "/admin/payment-config", {
@@ -1218,6 +1225,7 @@ function savePaymentConfig(ev) {
     .then(() => {
       showToast("Payment config saved.");
       document.getElementById("cfgQrFile").value = "";
+      document.getElementById("cfgQrUrl").value = "";
       document.getElementById("cfgClearQr").checked = false;
       loadPaymentConfig();
     })

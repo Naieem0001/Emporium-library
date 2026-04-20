@@ -714,6 +714,7 @@ app.post("/admin/payment-config", uploadQR.single("qr"), async (req, res) => {
     const branch = String(req.body.branch || "").trim();
     const clearQr = String(req.body.clearQr || "").toLowerCase() === "true";
     const existingQr = String(req.body.existingQrUrl || "").trim();
+    const pastedQrUrl = String(req.body.qrUrl || "").trim();
 
     if (upiId.length > 120) return res.status(400).json({ error: "UPI id too long" });
     if (upiId && !/^[\w.\-]+@[\w.\-]+$/.test(upiId)) {
@@ -725,8 +726,12 @@ app.post("/admin/payment-config", uploadQR.single("qr"), async (req, res) => {
     if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
       return res.status(400).json({ error: "Invalid IFSC" });
     }
+    if (pastedQrUrl && !/^https:\/\/[^\s<>"']{4,500}$/i.test(pastedQrUrl)) {
+      return res.status(400).json({ error: "QR URL must be a valid https link" });
+    }
 
     let upiQrUrl = clearQr ? "" : existingQr;
+    if (pastedQrUrl) upiQrUrl = pastedQrUrl;
     if (req.file) {
       const folderId = normalizeDriveFolderId(process.env.DRIVE_PARENT_FOLDER_ID);
       if (!folderId) return res.status(500).json({ error: "Server missing DRIVE_PARENT_FOLDER_ID" });
