@@ -139,10 +139,26 @@ function getStoredParam(name) {
 }
 
 /* ========== RENDER BOOK CARD ========== */
+const bookCache = new Map();
+
 function renderCard(book) {
-  const downloadLink = toDirectDownloadUrl(book.driveLink);
+  const price = Number(book.price) || 0;
+  const isPaid = price > 0;
+  if (book.id) bookCache.set(book.id, book);
+  const cardClass = isPaid ? "book-card is-paid" : "book-card";
+  const badge = isPaid
+    ? `<span class="paid-badge"><i class="fa-solid fa-lock"></i> Paid</span>`
+    : "";
+  const action = isPaid
+    ? `<button type="button" class="buy-btn" data-book-id="${escapeHTML(book.id || "")}" onclick="openEmporiumCheckout(this)">
+         <i class="fa-solid fa-indian-rupee-sign"></i> Buy &mdash; &#8377;${price}
+       </button>`
+    : `<a href="${escapeHTML(toDirectDownloadUrl(book.driveLink))}" rel="noopener noreferrer" class="download-btn" download>
+         <i class="fa-solid fa-download"></i> Download
+       </a>`;
   return `
-    <div class="book-card">
+    <div class="${cardClass}">
+      ${badge}
       <div class="book-cover">
         <img src="${escapeHTML(book.cover)}" alt="${escapeHTML(book.title)}"
              onerror="this.src='https://via.placeholder.com/150x220?text=No+Cover'" />
@@ -150,11 +166,30 @@ function renderCard(book) {
       <div class="book-info">
         <h3>${escapeHTML(book.title)}</h3>
         <p class="author">${escapeHTML(book.author)}</p>
-        <a href="${escapeHTML(downloadLink)}" rel="noopener noreferrer" class="download-btn" download>
-          <i class="fa-solid fa-download"></i> Download
-        </a>
+        ${action}
       </div>
     </div>`;
+}
+
+function openEmporiumCheckout(btn) {
+  const id = btn && btn.getAttribute("data-book-id");
+  if (!id) return;
+  const book = bookCache.get(id);
+  if (!book) {
+    console.warn("Book not found in cache:", id);
+    return;
+  }
+  if (window.EmporiumCheckout && typeof window.EmporiumCheckout.openCheckout === "function") {
+    window.EmporiumCheckout.openCheckout({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      cover: book.cover,
+      price: Number(book.price) || 0
+    });
+  } else {
+    alert("Checkout is still loading. Please try again in a moment.");
+  }
 }
 
 /* ========== DISPLAY TRENDING ========== */

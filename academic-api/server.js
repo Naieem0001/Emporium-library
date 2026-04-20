@@ -5,6 +5,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import crypto from "crypto";
 import { google } from "googleapis";
 import admin from "firebase-admin";
 
@@ -266,6 +267,39 @@ const uploadBook = multer({
   }
 });
 
+const uploadQR = multer({
+  dest: os.tmpdir(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    if (!IMAGE_ALLOWED_EXT.has(ext)) return cb(new Error("Invalid QR image type"));
+    if (!file.mimetype || file.mimetype === "application/octet-stream") return cb(null, true);
+    if (IMAGE_ALLOWED_MIME.has(file.mimetype)) return cb(null, true);
+    return cb(new Error("Invalid QR image type"));
+  }
+});
+
+function generateAccessCode(len = 8) {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const buf = crypto.randomBytes(len);
+  let out = "";
+  for (let i = 0; i < len; i++) out += alphabet[buf[i] % alphabet.length];
+  return out;
+}
+
+function isValidEmail(s) {
+  return typeof s === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 120;
+}
+
+async function requireAdminFromReq(req) {
+  const authHeader = req.headers.authorization || "";
+  const m = authHeader.match(/^Bearer\s+(.+)$/i);
+  const idToken = m ? m[1].trim() : "";
+  const decoded = await verifyIdToken(idToken);
+  ensureAdminUser(decoded);
+  return decoded;
+}
+
 app.post("/upload", upload.single("file"), async (req, res) => {
   const tmpPath = req.file?.path;
   let driveMode = "service_account";
@@ -465,8 +499,9 @@ app.delete("/notes/:id", async (req, res) => {
     const userRef = db.collection("users").doc(uid);
     const earned = Math.max(1, Number(note.points) || 5);
     await db.runTransaction(async t => {
-      t.delete(noteRef);
+      // Firestore transactions require all reads to run before any writes.
       const userSnap = await t.get(userRef);
+      t.delete(noteRef);
       if (userSnap.exists) {
         t.update(userRef, {
           uploadCount: admin.firestore.FieldValue.increment(-1),
@@ -558,6 +593,8 @@ app.post(
     const driveLinkInput = String(req.body.driveLink || "").trim();
     const trending = String(req.body.trending || "").toLowerCase() === "true";
     const newRelease = String(req.body.newRelease || "").toLowerCase() === "true";
+    const priceRaw = Number(req.body.price);
+    const price = Number.isFinite(priceRaw) ? Math.max(0, Math.min(100000, Math.round(priceRaw))) : 0;
     if (!title || title.length > 200) return res.status(400).json({ error: "Invalid title" });
     if (!author || author.length > 120) return res.status(400).json({ error: "Invalid author" });
     if (!genre || genre.length > 80) return res.status(400).json({ error: "Invalid genre" });
@@ -594,22 +631,443 @@ app.post(
 
     initFirebaseAdmin();
     const db = admin.firestore();
+    const publicDriveLink = price > 0 ? "" : driveLink;
     const docRef = await db.collection("books").add({
       title,
       author,
       genre,
       cover: finalCover,
-      driveLink,
+      driveLink: publicDriveLink,
       trending,
       newRelease,
+      price,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
+    if (price > 0 && driveLink) {
+      await db.collection("paid_book_assets").doc(docRef.id).set({
+        driveLink,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
     cleanup();
-    return res.json({ ok: true, id: docRef.id, driveLink });
+    return res.json({ ok: true, id: docRef.id, driveLink: publicDriveLink, price });
   } catch (err) {
     console.error(err);
     cleanup();
     const msg = err && err.message ? err.message : "Book upload failed";
+    const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
+    return res.status(code).json({ error: msg });
+  }
+});
+
+// =====================================================================
+// PAID NEW RELEASES: payment config, orders, admin approve/reject, unlock
+// =====================================================================
+
+// Public: fetch current UPI + bank details for the checkout modal.
+app.get("/api/payment-config", async (_req, res) => {
+  try {
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const snap = await db.collection("payment_config").doc("default").get();
+    const fallback = {
+      upiId: "",
+      upiPayeeName: "",
+      upiQrUrl: "",
+      bankName: "",
+      accountName: "",
+      accountNumber: "",
+      ifsc: "",
+      branch: ""
+    };
+    if (!snap.exists) return res.json(fallback);
+    const d = snap.data() || {};
+    return res.json({
+      upiId: d.upiId || "",
+      upiPayeeName: d.upiPayeeName || "",
+      upiQrUrl: d.upiQrUrl || "",
+      bankName: d.bankName || "",
+      accountName: d.accountName || "",
+      accountNumber: d.accountNumber || "",
+      ifsc: d.ifsc || "",
+      branch: d.branch || ""
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to load payment config" });
+  }
+});
+
+// Admin: update UPI + bank details, optionally upload a QR image.
+app.post("/admin/payment-config", uploadQR.single("qr"), async (req, res) => {
+  const tmpPath = req.file?.path;
+  const cleanup = () => { if (tmpPath) fs.unlink(tmpPath, () => {}); };
+  try {
+    await requireAdminFromReq(req);
+
+    const upiId = String(req.body.upiId || "").trim();
+    const upiPayeeName = String(req.body.upiPayeeName || "").trim();
+    const bankName = String(req.body.bankName || "").trim();
+    const accountName = String(req.body.accountName || "").trim();
+    const accountNumber = String(req.body.accountNumber || "").trim();
+    const ifsc = String(req.body.ifsc || "").trim().toUpperCase();
+    const branch = String(req.body.branch || "").trim();
+    const clearQr = String(req.body.clearQr || "").toLowerCase() === "true";
+    const existingQr = String(req.body.existingQrUrl || "").trim();
+
+    if (upiId.length > 120) return res.status(400).json({ error: "UPI id too long" });
+    if (upiId && !/^[\w.\-]+@[\w.\-]+$/.test(upiId)) {
+      return res.status(400).json({ error: "UPI id looks invalid (expected like name@bank)" });
+    }
+    if (accountNumber && !/^[0-9]{6,30}$/.test(accountNumber)) {
+      return res.status(400).json({ error: "Invalid account number" });
+    }
+    if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+      return res.status(400).json({ error: "Invalid IFSC" });
+    }
+
+    let upiQrUrl = clearQr ? "" : existingQr;
+    if (req.file) {
+      const folderId = normalizeDriveFolderId(process.env.DRIVE_PARENT_FOLDER_ID);
+      if (!folderId) return res.status(500).json({ error: "Server missing DRIVE_PARENT_FOLDER_ID" });
+      const bundle = getDriveClient();
+      const drive = bundle.drive;
+      let parentId = folderId;
+      try { parentId = await resolveDriveParentFolderId(drive, folderId); } catch (e) {
+        const detail = driveApiDetail(e) || e.message || "Cannot read folder";
+        return res.status(400).json({ error: `Drive parent folder: ${detail}` });
+      }
+      const qrId = await uploadPublicFileToDrive(drive, parentId, req.file, "upi-qr");
+      upiQrUrl = `https://drive.google.com/thumbnail?id=${qrId}&sz=w800`;
+    }
+
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    await db.collection("payment_config").doc("default").set({
+      upiId,
+      upiPayeeName,
+      upiQrUrl,
+      bankName,
+      accountName,
+      accountNumber,
+      ifsc,
+      branch,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    cleanup();
+    return res.json({ ok: true, upiQrUrl });
+  } catch (err) {
+    console.error(err);
+    cleanup();
+    const msg = err?.message || "Save failed";
+    const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
+    return res.status(code).json({ error: msg });
+  }
+});
+
+// Admin: move a book between free/paid — handles driveLink relocation.
+app.post("/admin/books/:id/set-pricing", async (req, res) => {
+  try {
+    await requireAdminFromReq(req);
+    const id = String(req.params.id || "").trim();
+    const priceRaw = Number(req.body.price);
+    const price = Number.isFinite(priceRaw) ? Math.max(0, Math.min(100000, Math.round(priceRaw))) : 0;
+    const trending = typeof req.body.trending === "boolean" ? req.body.trending : null;
+    const newRelease = typeof req.body.newRelease === "boolean" ? req.body.newRelease : null;
+    if (!id) return res.status(400).json({ error: "Missing book id" });
+
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const bookRef = db.collection("books").doc(id);
+    const assetRef = db.collection("paid_book_assets").doc(id);
+    const [bookSnap, assetSnap] = await Promise.all([bookRef.get(), assetRef.get()]);
+    if (!bookSnap.exists) return res.status(404).json({ error: "Book not found" });
+    const book = bookSnap.data() || {};
+    const currentPublicLink = String(book.driveLink || "");
+    const currentPrivateLink = assetSnap.exists ? String(assetSnap.data()?.driveLink || "") : "";
+    const existingLink = currentPublicLink || currentPrivateLink;
+
+    const update = { price };
+    if (trending !== null) update.trending = !!trending;
+    if (newRelease !== null) update.newRelease = !!newRelease;
+
+    if (price > 0) {
+      if (existingLink) {
+        await assetRef.set({
+          driveLink: existingLink,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      }
+      update.driveLink = "";
+    } else {
+      update.driveLink = existingLink || "";
+      if (assetSnap.exists) await assetRef.delete();
+    }
+
+    await bookRef.update(update);
+    return res.json({ ok: true, price });
+  } catch (err) {
+    console.error(err);
+    const msg = err?.message || "Update failed";
+    const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
+    return res.status(code).json({ error: msg });
+  }
+});
+
+// Public: create a pending order after buyer submits UTR.
+app.post("/api/orders", async (req, res) => {
+  try {
+    const bookId = String(req.body.bookId || "").trim();
+    const emailRaw = String(req.body.email || "").trim().toLowerCase();
+    const phone = String(req.body.phone || "").trim();
+    const method = String(req.body.method || "").toLowerCase().trim();
+    const utr = String(req.body.utr || "").trim();
+
+    if (!bookId || bookId.length > 200) return res.status(400).json({ error: "Invalid bookId" });
+    if (!isValidEmail(emailRaw)) return res.status(400).json({ error: "Invalid email" });
+    if (phone && (phone.length > 20 || !/^[0-9+\-\s()]{6,20}$/.test(phone))) {
+      return res.status(400).json({ error: "Invalid phone" });
+    }
+    if (!["upi", "bank"].includes(method)) return res.status(400).json({ error: "Invalid payment method" });
+    if (!utr || utr.length < 4 || utr.length > 40 || !/^[A-Za-z0-9\-_]+$/.test(utr)) {
+      return res.status(400).json({ error: "Invalid UTR / transaction id" });
+    }
+
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const bookSnap = await db.collection("books").doc(bookId).get();
+    if (!bookSnap.exists) return res.status(404).json({ error: "Book not found" });
+    const bookData = bookSnap.data() || {};
+    const price = Number(bookData.price) || 0;
+    if (price <= 0) return res.status(400).json({ error: "This book is free — no purchase needed" });
+
+    // Reject exact-duplicate (same UTR already submitted for same book+email)
+    const dupUtr = await db.collection("orders")
+      .where("utr", "==", utr)
+      .where("bookId", "==", bookId)
+      .limit(1)
+      .get();
+    if (!dupUtr.empty) {
+      const existing = dupUtr.docs[0].data() || {};
+      return res.status(409).json({
+        error: "This UTR is already on file for this book",
+        accessCode: existing.accessCode || "",
+        orderId: dupUtr.docs[0].id
+      });
+    }
+
+    let accessCode = "";
+    for (let i = 0; i < 6; i++) {
+      const candidate = generateAccessCode(8);
+      const dup = await db.collection("orders")
+        .where("accessCode", "==", candidate).limit(1).get();
+      if (dup.empty) { accessCode = candidate; break; }
+    }
+    if (!accessCode) return res.status(500).json({ error: "Could not generate access code, please retry" });
+
+    const orderRef = await db.collection("orders").add({
+      bookId,
+      bookTitle: String(bookData.title || ""),
+      bookCover: String(bookData.cover || ""),
+      bookPrice: price,
+      buyerEmail: emailRaw,
+      buyerPhone: phone,
+      method,
+      utr,
+      status: "pending",
+      accessCode,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return res.json({ ok: true, orderId: orderRef.id, accessCode });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err?.message || "Order creation failed" });
+  }
+});
+
+// Public: unlock a paid drive link with email + access code.
+app.post("/api/unlock", async (req, res) => {
+  try {
+    const emailRaw = String(req.body.email || "").trim().toLowerCase();
+    const accessCode = String(req.body.accessCode || "").trim().toUpperCase();
+
+    if (!isValidEmail(emailRaw)) return res.status(400).json({ error: "Invalid email" });
+    if (!accessCode || accessCode.length < 4 || accessCode.length > 20) {
+      return res.status(400).json({ error: "Invalid access code" });
+    }
+
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const snap = await db.collection("orders")
+      .where("accessCode", "==", accessCode).limit(1).get();
+    if (snap.empty) return res.status(404).json({ error: "Access code not found" });
+    const doc = snap.docs[0];
+    const order = doc.data() || {};
+    if (String(order.buyerEmail || "").toLowerCase() !== emailRaw) {
+      return res.status(403).json({ error: "Email does not match this code" });
+    }
+    if (order.status === "rejected") {
+      return res.status(403).json({ error: `Payment was rejected. ${order.rejectedReason || ""}`.trim() });
+    }
+    if (order.status !== "approved") {
+      return res.status(403).json({ error: "Payment is still pending. Please wait for verification (usually within a few hours)." });
+    }
+
+    const bookId = String(order.bookId || "");
+    let driveLink = "";
+    const assetSnap = await db.collection("paid_book_assets").doc(bookId).get();
+    if (assetSnap.exists) driveLink = String(assetSnap.data()?.driveLink || "");
+    if (!driveLink) {
+      const bookSnap = await db.collection("books").doc(bookId).get();
+      if (bookSnap.exists) driveLink = String(bookSnap.data()?.driveLink || "");
+    }
+    if (!driveLink) return res.status(500).json({ error: "Book file is missing. Please contact support." });
+
+    await doc.ref.update({
+      lastUnlockAt: admin.firestore.FieldValue.serverTimestamp(),
+      unlockCount: admin.firestore.FieldValue.increment(1)
+    });
+
+    return res.json({ ok: true, driveLink, bookTitle: order.bookTitle || "" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err?.message || "Unlock failed" });
+  }
+});
+
+// Public: list a buyer's past orders by email (metadata only — no drive links).
+app.get("/api/purchases", async (req, res) => {
+  try {
+    const emailRaw = String(req.query.email || "").trim().toLowerCase();
+    if (!isValidEmail(emailRaw)) return res.status(400).json({ error: "Invalid email" });
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const snap = await db.collection("orders")
+      .where("buyerEmail", "==", emailRaw)
+      .orderBy("createdAt", "desc")
+      .limit(100)
+      .get();
+    const rows = snap.docs.map(d => {
+      const x = d.data() || {};
+      // SECURITY: do NOT return the full accessCode here. Email alone must
+      // not be enough to unlock a download — unlock requires email + code.
+      // The full code is only shown at checkout (saved to localStorage) and
+      // to admins. We return the last 4 chars as a visual hint so buyers can
+      // match a stored code to the right order.
+      const code = String(x.accessCode || "");
+      return {
+        id: d.id,
+        bookId: x.bookId || "",
+        bookTitle: x.bookTitle || "",
+        bookCover: x.bookCover || "",
+        bookPrice: x.bookPrice || 0,
+        method: x.method || "",
+        status: x.status || "pending",
+        accessCodeHint: code ? "****" + code.slice(-4) : "",
+        createdAt: x.createdAt?.toMillis ? x.createdAt.toMillis() : null,
+        approvedAt: x.approvedAt?.toMillis ? x.approvedAt.toMillis() : null,
+        rejectedReason: x.rejectedReason || ""
+      };
+    });
+    return res.json({ ok: true, orders: rows });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err?.message || "Lookup failed" });
+  }
+});
+
+// Admin: list recent orders (optionally filtered by status).
+app.get("/admin/orders", async (req, res) => {
+  try {
+    await requireAdminFromReq(req);
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const status = String(req.query.status || "").toLowerCase().trim();
+    let q = db.collection("orders").orderBy("createdAt", "desc").limit(300);
+    if (["pending", "approved", "rejected"].includes(status)) {
+      q = db.collection("orders")
+        .where("status", "==", status)
+        .orderBy("createdAt", "desc")
+        .limit(300);
+    }
+    const snap = await q.get();
+    const rows = snap.docs.map(d => {
+      const x = d.data() || {};
+      return {
+        id: d.id,
+        bookId: x.bookId || "",
+        bookTitle: x.bookTitle || "",
+        bookCover: x.bookCover || "",
+        bookPrice: x.bookPrice || 0,
+        buyerEmail: x.buyerEmail || "",
+        buyerPhone: x.buyerPhone || "",
+        method: x.method || "",
+        utr: x.utr || "",
+        status: x.status || "pending",
+        accessCode: x.accessCode || "",
+        createdAt: x.createdAt?.toMillis ? x.createdAt.toMillis() : null,
+        approvedAt: x.approvedAt?.toMillis ? x.approvedAt.toMillis() : null,
+        rejectedReason: x.rejectedReason || "",
+        unlockCount: x.unlockCount || 0
+      };
+    });
+    return res.json({ ok: true, orders: rows });
+  } catch (err) {
+    console.error(err);
+    const msg = err?.message || "Fetch failed";
+    const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
+    return res.status(code).json({ error: msg });
+  }
+});
+
+// Admin: approve an order.
+app.post("/admin/orders/:id/approve", async (req, res) => {
+  try {
+    await requireAdminFromReq(req);
+    const id = String(req.params.id || "").trim();
+    if (!id) return res.status(400).json({ error: "Missing order id" });
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const ref = db.collection("orders").doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) return res.status(404).json({ error: "Order not found" });
+    await ref.update({
+      status: "approved",
+      approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+      rejectedReason: admin.firestore.FieldValue.delete()
+    });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    const msg = err?.message || "Approve failed";
+    const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
+    return res.status(code).json({ error: msg });
+  }
+});
+
+// Admin: reject an order with a reason.
+app.post("/admin/orders/:id/reject", async (req, res) => {
+  try {
+    await requireAdminFromReq(req);
+    const id = String(req.params.id || "").trim();
+    const reason = String(req.body.reason || "").trim().slice(0, 300);
+    if (!id) return res.status(400).json({ error: "Missing order id" });
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const ref = db.collection("orders").doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) return res.status(404).json({ error: "Order not found" });
+    await ref.update({
+      status: "rejected",
+      rejectedReason: reason || "Payment could not be verified",
+      rejectedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    const msg = err?.message || "Reject failed";
     const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
     return res.status(code).json({ error: msg });
   }
@@ -620,6 +1078,9 @@ app.use((err, _req, res, _next) => {
     if (err.code === "LIMIT_FILE_SIZE") {
       if (_req.path === "/upload") {
         return res.status(400).json({ error: "File too large (max 50MB)" });
+      }
+      if (_req.path === "/admin/payment-config") {
+        return res.status(400).json({ error: "QR image too large (max 5MB)" });
       }
       return res.status(400).json({ error: "File too large (max 400MB for admin book uploads)" });
     }

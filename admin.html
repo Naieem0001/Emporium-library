@@ -273,12 +273,114 @@
     }
     .toast.show { transform: translateY(0); opacity: 1; }
 
+    /* ===== TAB NAV ===== */
+    .admin-tab-nav {
+      display: flex; gap: 8px; margin-bottom: 28px;
+      background: white; padding: 6px; border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      width: fit-content;
+    }
+    .admin-tab {
+      border: none; background: transparent; cursor: pointer;
+      padding: 10px 20px; border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px; font-weight: 600; color: var(--muted);
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: all 0.2s;
+    }
+    .admin-tab:hover { color: var(--navy); }
+    .admin-tab.active {
+      background: linear-gradient(135deg, var(--navy), var(--navy2));
+      color: white;
+    }
+    .admin-tab .pending-dot {
+      display: inline-block;
+      min-width: 20px; height: 20px; padding: 0 6px;
+      border-radius: 999px; background: #F59E0B; color: white;
+      font-size: 11px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+
+    /* ===== ORDERS TABLE ===== */
+    .order-cover {
+      width: 36px; height: 50px;
+      object-fit: cover; border-radius: 4px;
+      border: 1px solid #E2E8F0;
+    }
+    .status-pill {
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 600;
+      text-transform: capitalize;
+    }
+    .status-pill.pending { background: rgba(245,158,11,0.12); color: #B45309; }
+    .status-pill.approved { background: rgba(16,185,129,0.12); color: #047857; }
+    .status-pill.rejected { background: rgba(220,38,38,0.1); color: #B91C1C; }
+    .method-pill {
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 600;
+      background: rgba(27,42,65,0.08); color: var(--navy);
+      text-transform: uppercase;
+    }
+    .copy-btn {
+      border: none; background: rgba(27,42,65,0.06);
+      color: var(--navy); padding: 4px 10px;
+      border-radius: 6px; font-size: 11px; cursor: pointer;
+      font-family: 'Poppins', sans-serif; margin-left: 6px;
+    }
+    .copy-btn:hover { background: var(--navy); color: white; }
+    .utr-cell {
+      font-family: 'Courier New', monospace;
+      font-size: 12px; color: var(--navy);
+      max-width: 160px; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .code-cell {
+      font-family: 'Courier New', monospace;
+      font-weight: 700; color: var(--orange);
+      letter-spacing: 1px;
+    }
+    .approve-btn {
+      background: rgba(16,185,129,0.12); color: #047857;
+      border: none; padding: 6px 12px; border-radius: 6px;
+      cursor: pointer; font-size: 12px; font-weight: 600;
+      font-family: 'Poppins', sans-serif; margin-right: 6px;
+    }
+    .approve-btn:hover { background: #059669; color: white; }
+    .reject-btn {
+      background: rgba(220,38,38,0.08); color: #DC2626;
+      border: none; padding: 6px 12px; border-radius: 6px;
+      cursor: pointer; font-size: 12px; font-weight: 600;
+      font-family: 'Poppins', sans-serif;
+    }
+    .reject-btn:hover { background: #DC2626; color: white; }
+
+    .config-card {
+      background: white; border-radius: 16px;
+      padding: 40px; margin-bottom: 28px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+    .config-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px; color: var(--navy); margin-bottom: 8px;
+    }
+    .config-card .muted {
+      color: var(--muted); font-size: 13px; margin-bottom: 22px;
+    }
+    .qr-preview {
+      width: 120px; height: 120px;
+      object-fit: contain; border: 1px solid #E2E8F0;
+      border-radius: 8px; background: #FAFAFA; margin-top: 8px;
+      display: none;
+    }
+
     @media (max-width: 768px) {
       .admin-body { padding: 20px 16px; }
       .admin-stats { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
-      .form-section, .table-section { padding: 24px 16px; }
+      .form-section, .table-section, .config-card { padding: 24px 16px; }
       .books-table { display: block; overflow-x: auto; }
+      .admin-tab-nav { width: 100%; overflow-x: auto; }
+      .admin-tab { padding: 10px 16px; font-size: 13px; }
     }
   </style>
 </head>
@@ -317,6 +419,20 @@
   </nav>
 
   <div class="admin-body">
+
+    <!-- TAB NAV -->
+    <div class="admin-tab-nav">
+      <button class="admin-tab active" id="tabBtnBooks" onclick="switchView('books')" type="button">
+        <i class="fa-solid fa-book"></i> Books
+      </button>
+      <button class="admin-tab" id="tabBtnPayments" onclick="switchView('payments')" type="button">
+        <i class="fa-solid fa-indian-rupee-sign"></i> Payments
+        <span class="pending-dot" id="pendingDot" style="display:none">0</span>
+      </button>
+    </div>
+
+    <!-- ================= BOOKS VIEW ================= -->
+    <div id="booksView">
 
     <!-- STATS -->
     <div class="admin-stats">
@@ -381,6 +497,16 @@
           <label>Google Drive Link (old option)</label>
           <input type="url" id="bookLink" placeholder="https://drive.google.com/file/d/..." />
         </div>
+        <div class="form-group">
+          <label>Price (INR) <span style="color:#9CA3AF;font-weight:500">0 = free download</span></label>
+          <input type="number" id="bookPrice" min="0" max="100000" step="1" value="0" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <div style="font-size:12px;color:#6B7280;line-height:1.5;padding:8px 0;">
+            Set a non-zero price to gate this book behind the UPI / Bank checkout flow.
+          </div>
+        </div>
         <div class="form-group full">
           <label>Flags</label>
           <div class="toggle-group">
@@ -432,15 +558,122 @@
             <th>Title</th>
             <th>Author</th>
             <th>Genre</th>
+            <th>Price</th>
             <th>Flags</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody id="booksTableBody">
-          <tr><td colspan="6" class="empty-table">Loading books...</td></tr>
+          <tr><td colspan="7" class="empty-table">Loading books...</td></tr>
         </tbody>
       </table>
     </div>
+
+    </div><!-- /#booksView -->
+
+    <!-- ================= PAYMENTS VIEW ================= -->
+    <div id="paymentsView" style="display:none;">
+
+      <!-- STATS -->
+      <div class="admin-stats">
+        <div class="stat-card">
+          <i class="fa-solid fa-hourglass-half"></i>
+          <h3 id="statPending">0</h3>
+          <p>Pending Orders</p>
+        </div>
+        <div class="stat-card">
+          <i class="fa-solid fa-circle-check"></i>
+          <h3 id="statApproved">0</h3>
+          <p>Approved</p>
+        </div>
+        <div class="stat-card">
+          <i class="fa-solid fa-indian-rupee-sign"></i>
+          <h3 id="statRevenue">&#8377;0</h3>
+          <p>Revenue (approved)</p>
+        </div>
+      </div>
+
+      <!-- PAYMENT CONFIG -->
+      <div class="config-card">
+        <h2><i class="fa-solid fa-gears" style="color:var(--orange);margin-right:10px"></i>Payment Config</h2>
+        <p class="muted">Buyers see these details on the checkout modal. Update once and forget.</p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>UPI ID</label>
+            <input type="text" id="cfgUpiId" placeholder="e.g. naieem@okhdfc" />
+          </div>
+          <div class="form-group">
+            <label>UPI Payee Name</label>
+            <input type="text" id="cfgUpiPayeeName" placeholder="e.g. Naieem Qureshi" />
+          </div>
+          <div class="form-group full">
+            <label>UPI QR Image (optional) <span style="color:#9CA3AF;font-weight:500">JPG/PNG/WEBP, max 5MB</span></label>
+            <input type="file" id="cfgQrFile" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+            <img id="cfgQrPreview" class="qr-preview" alt="UPI QR preview" />
+            <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:#6B7280;">
+              <input type="checkbox" id="cfgClearQr" /> Remove existing QR
+            </label>
+          </div>
+          <div class="form-group">
+            <label>Account Holder Name</label>
+            <input type="text" id="cfgAccountName" placeholder="e.g. Naieem Qureshi" />
+          </div>
+          <div class="form-group">
+            <label>Bank Name</label>
+            <input type="text" id="cfgBankName" placeholder="e.g. HDFC Bank" />
+          </div>
+          <div class="form-group">
+            <label>Account Number</label>
+            <input type="text" id="cfgAccountNumber" placeholder="e.g. 50100123456789" />
+          </div>
+          <div class="form-group">
+            <label>IFSC</label>
+            <input type="text" id="cfgIfsc" placeholder="e.g. HDFC0001234" style="text-transform:uppercase;" />
+          </div>
+          <div class="form-group full">
+            <label>Branch</label>
+            <input type="text" id="cfgBranch" placeholder="e.g. Baramulla" />
+          </div>
+        </div>
+        <button class="add-btn" onclick="savePaymentConfig(event)" type="button">
+          <i class="fa-solid fa-floppy-disk"></i> Save Config
+        </button>
+      </div>
+
+      <!-- ORDERS TABLE -->
+      <div class="table-section">
+        <div class="table-header">
+          <h2><i class="fa-solid fa-receipt" style="color:var(--orange);margin-right:10px"></i>Orders</h2>
+          <input type="text" class="table-search" id="ordersSearch"
+                 placeholder="Search by email / UTR / book..." oninput="renderOrders()" />
+        </div>
+        <div class="filter-tabs" id="ordersFilterTabs">
+          <button class="filter-tab active" onclick="setOrderFilter('pending', this)" type="button">Pending</button>
+          <button class="filter-tab" onclick="setOrderFilter('approved', this)" type="button">Approved</button>
+          <button class="filter-tab" onclick="setOrderFilter('rejected', this)" type="button">Rejected</button>
+          <button class="filter-tab" onclick="setOrderFilter('all', this)" type="button">All</button>
+        </div>
+        <table class="books-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Book</th>
+              <th>Buyer</th>
+              <th>Method</th>
+              <th>UTR / Ref</th>
+              <th>Amount</th>
+              <th>Code</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody">
+            <tr><td colspan="9" class="empty-table">Loading orders&hellip;</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /#paymentsView -->
 
   </div>
 </div>
@@ -607,7 +840,7 @@ function loadBooks() {
 function renderTable(books) {
   const tbody = document.getElementById("booksTableBody");
   if (books.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-table">No books found</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-table">No books found</td></tr>`;
     return;
   }
   tbody.innerHTML = books.map(book => {
@@ -616,19 +849,24 @@ function renderTable(books) {
     const safeGenre = escapeHTML(book.genre);
     const safeCover = safeUrl(book.cover) || "https://via.placeholder.com/36x50";
     const encodedTitle = encodeURIComponent(String(book.title || ""));
+    const price = Number(book.price) || 0;
+    const priceCell = price > 0
+      ? `<strong style="color:#B45309">&#8377;${price}</strong>`
+      : `<span style="color:#9CA3AF">Free</span>`;
     return `
     <tr>
       <td><img src="${safeCover}" class="book-cover-thumb" onerror="this.src='https://via.placeholder.com/36x50'" /></td>
       <td><strong>${safeTitle}</strong></td>
       <td style="color:#6B7280">${safeAuthor}</td>
       <td><span class="genre-badge">${safeGenre}</span></td>
+      <td>${priceCell}</td>
       <td>
         ${book.trending  ? '<span class="trending-badge">🔥 Trending</span> ' : ''}
         ${book.newRelease ? '<span class="new-badge">⭐ New</span>' : ''}
       </td>
       <td>
-        <button class="edit-btn" onclick="toggleFlags('${book.id}', ${book.trending}, ${book.newRelease})">
-          <i class="fa-solid fa-pen"></i> Edit Flags
+        <button class="edit-btn" onclick="openEditBook('${book.id}', ${!!book.trending}, ${!!book.newRelease}, ${price})">
+          <i class="fa-solid fa-pen"></i> Edit
         </button>
         <button class="delete-btn" onclick="deleteBook('${book.id}', '${encodedTitle}')">
           <i class="fa-solid fa-trash"></i> Delete
@@ -675,6 +913,8 @@ function addBook() {
   const file = fileInput && fileInput.files && fileInput.files[0];
   const trending  = document.getElementById("bookTrending").checked;
   const newRelease = document.getElementById("bookNewRelease").checked;
+  const priceRaw = Number(document.getElementById("bookPrice").value);
+  const price = Number.isFinite(priceRaw) ? Math.max(0, Math.min(100000, Math.round(priceRaw))) : 0;
   const progressWrap = document.getElementById("bookUploadProgressWrap");
   const progressBar = document.getElementById("bookUploadProgressBar");
   const progressLabel = document.getElementById("bookUploadProgressLabel");
@@ -730,6 +970,7 @@ function addBook() {
       form.append("genre", genre);
       form.append("trending", String(trending));
       form.append("newRelease", String(newRelease));
+      form.append("price", String(price));
 
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -760,6 +1001,7 @@ function addBook() {
       if (driveLinkInput) driveLinkInput.value = "";
       document.getElementById("bookTrending").checked = false;
       document.getElementById("bookNewRelease").checked = false;
+      document.getElementById("bookPrice").value = "0";
       document.getElementById("coverPreview").style.display = "none";
       showToast("Book uploaded and added successfully!");
       loadBooks();
@@ -777,26 +1019,26 @@ function addBook() {
     });
 }
 
-/* ===== TOGGLE FLAGS ===== */
-function toggleFlags(id, currentTrending, currentNewRelease) {
-  // Create modal overlay
+/* ===== EDIT BOOK (flags + price) ===== */
+function openEditBook(id, currentTrending, currentNewRelease, currentPrice) {
   const overlay = document.createElement("div");
   overlay.style.cssText = `
     position:fixed;inset:0;background:rgba(0,0,0,0.5);
     display:flex;align-items:center;justify-content:center;z-index:9999;
+    padding:20px;
   `;
   overlay.id = "flagsModal";
 
   overlay.innerHTML = `
-    <div style="background:white;border-radius:16px;padding:36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="background:white;border-radius:16px;padding:32px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">
       <h3 style="font-family:'Playfair Display',serif;font-size:22px;color:#1B2A41;margin-bottom:8px;">
-        Edit Flags
+        Edit Book
       </h3>
       <p style="color:#6B7280;font-size:13px;margin-bottom:24px;">
-        Toggle trending and new release status for this book.
+        Update flags and the price. Setting a non-zero price moves this book behind the UPI / Bank checkout.
       </p>
 
-      <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:28px;">
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
 
         <label style="display:flex;align-items:center;justify-content:space-between;
                padding:14px 18px;border:1.5px solid #E2E8F0;border-radius:10px;cursor:pointer;">
@@ -824,16 +1066,25 @@ function toggleFlags(id, currentTrending, currentNewRelease) {
                  style="width:18px;height:18px;accent-color:#FF7A18;cursor:pointer;" />
         </label>
 
+        <div style="padding:14px 18px;border:1.5px solid #E2E8F0;border-radius:10px;">
+          <label style="font-size:12px;font-weight:600;color:#1B2A41;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">
+            Price (INR) &mdash; 0 = free
+          </label>
+          <input type="number" id="modalPrice" value="${Number(currentPrice) || 0}" min="0" max="100000" step="1"
+                 style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;
+                        font-family:'Poppins',sans-serif;font-size:14px;outline:none;" />
+        </div>
+
       </div>
 
       <div style="display:flex;gap:12px;">
-        <button onclick="this.closest('div[style]').parentElement.remove()"
+        <button onclick="document.getElementById('flagsModal').remove()" type="button"
           style="flex:1;padding:12px;border:1.5px solid #E2E8F0;border-radius:8px;
                  background:white;font-family:'Poppins',sans-serif;font-size:14px;
                  font-weight:600;cursor:pointer;color:#6B7280;">
           Cancel
         </button>
-        <button onclick="saveFlags('${id}')"
+        <button onclick="saveBookEdit('${id}')" type="button"
           style="flex:1;padding:12px;border:none;border-radius:8px;
                  background:linear-gradient(135deg,#1B2A41,#243B55);color:white;
                  font-family:'Poppins',sans-serif;font-size:14px;
@@ -845,27 +1096,40 @@ function toggleFlags(id, currentTrending, currentNewRelease) {
   `;
 
   document.body.appendChild(overlay);
-
-  // Close on backdrop click
   overlay.addEventListener("click", e => {
     if (e.target === overlay) overlay.remove();
   });
 }
 
-function saveFlags(id) {
+function saveBookEdit(id) {
   const trending   = document.getElementById("modalTrending").checked;
   const newRelease = document.getElementById("modalNewRelease").checked;
+  const priceRaw   = Number(document.getElementById("modalPrice").value);
+  const price = Number.isFinite(priceRaw) ? Math.max(0, Math.min(100000, Math.round(priceRaw))) : 0;
 
-  db.collection("books").doc(id).update({ trending, newRelease })
+  auth.currentUser.getIdToken()
+    .then(token => fetch(ACADEMIC_API + `/admin/books/${encodeURIComponent(id)}/set-pricing`, {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ price, trending, newRelease })
+    }))
+    .then(async r => {
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || "Update failed");
+      return body;
+    })
     .then(() => {
       const modal = document.getElementById("flagsModal");
       if (modal) modal.remove();
-      showToast("Flags updated successfully!");
+      showToast("Book updated.");
       loadBooks();
     })
     .catch(err => {
       console.error("Update error:", err);
-      showToast("Error: " + err.message, true);
+      showToast("Error: " + (err.message || "Update failed"), true);
     });
 }
 
@@ -878,6 +1142,251 @@ function deleteBook(id, encodedTitle) {
     loadBooks();
   }).catch(() => showToast("Delete failed.", true));
 }
+
+/* ===================== PAYMENTS VIEW ===================== */
+let currentOrderFilter = "pending";
+let allOrders = [];
+
+function switchView(name) {
+  const isBooks = name === "books";
+  document.getElementById("booksView").style.display = isBooks ? "block" : "none";
+  document.getElementById("paymentsView").style.display = isBooks ? "none" : "block";
+  document.getElementById("tabBtnBooks").classList.toggle("active", isBooks);
+  document.getElementById("tabBtnPayments").classList.toggle("active", !isBooks);
+  if (!isBooks) {
+    loadPaymentConfig();
+    loadOrders();
+  }
+}
+
+function loadPaymentConfig() {
+  fetch(ACADEMIC_API + "/api/payment-config")
+    .then(r => r.json())
+    .then(cfg => {
+      document.getElementById("cfgUpiId").value          = cfg.upiId || "";
+      document.getElementById("cfgUpiPayeeName").value   = cfg.upiPayeeName || "";
+      document.getElementById("cfgAccountName").value    = cfg.accountName || "";
+      document.getElementById("cfgBankName").value       = cfg.bankName || "";
+      document.getElementById("cfgAccountNumber").value  = cfg.accountNumber || "";
+      document.getElementById("cfgIfsc").value           = cfg.ifsc || "";
+      document.getElementById("cfgBranch").value         = cfg.branch || "";
+      const preview = document.getElementById("cfgQrPreview");
+      if (cfg.upiQrUrl) {
+        preview.src = cfg.upiQrUrl;
+        preview.style.display = "block";
+        preview.dataset.existing = cfg.upiQrUrl;
+      } else {
+        preview.style.display = "none";
+        preview.dataset.existing = "";
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      showToast("Could not load payment config.", true);
+    });
+}
+
+function savePaymentConfig(ev) {
+  const btn = ev && ev.target ? ev.target.closest("button") : null;
+  if (btn) { btn.disabled = true; btn.style.opacity = "0.7"; }
+  auth.currentUser.getIdToken()
+    .then(token => {
+      const form = new FormData();
+      form.append("upiId", document.getElementById("cfgUpiId").value.trim());
+      form.append("upiPayeeName", document.getElementById("cfgUpiPayeeName").value.trim());
+      form.append("accountName", document.getElementById("cfgAccountName").value.trim());
+      form.append("bankName", document.getElementById("cfgBankName").value.trim());
+      form.append("accountNumber", document.getElementById("cfgAccountNumber").value.trim());
+      form.append("ifsc", document.getElementById("cfgIfsc").value.trim().toUpperCase());
+      form.append("branch", document.getElementById("cfgBranch").value.trim());
+      form.append("clearQr", String(document.getElementById("cfgClearQr").checked));
+      const existing = document.getElementById("cfgQrPreview").dataset.existing || "";
+      form.append("existingQrUrl", existing);
+      const qrFile = document.getElementById("cfgQrFile").files[0];
+      if (qrFile) form.append("qr", qrFile);
+      return fetch(ACADEMIC_API + "/admin/payment-config", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token },
+        body: form
+      });
+    })
+    .then(async r => {
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || "Save failed");
+      return body;
+    })
+    .then(() => {
+      showToast("Payment config saved.");
+      document.getElementById("cfgQrFile").value = "";
+      document.getElementById("cfgClearQr").checked = false;
+      loadPaymentConfig();
+    })
+    .catch(err => {
+      console.error(err);
+      showToast("Error: " + (err.message || "Save failed"), true);
+    })
+    .finally(() => {
+      if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
+    });
+}
+
+function loadOrders() {
+  auth.currentUser.getIdToken()
+    .then(token => fetch(ACADEMIC_API + "/admin/orders", {
+      headers: { "Authorization": "Bearer " + token }
+    }))
+    .then(async r => {
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || "Fetch failed");
+      return body;
+    })
+    .then(body => {
+      allOrders = Array.isArray(body.orders) ? body.orders : [];
+      const pending  = allOrders.filter(o => o.status === "pending").length;
+      const approved = allOrders.filter(o => o.status === "approved");
+      const revenue  = approved.reduce((sum, o) => sum + (Number(o.bookPrice) || 0), 0);
+      document.getElementById("statPending").textContent  = pending;
+      document.getElementById("statApproved").textContent = approved.length;
+      document.getElementById("statRevenue").innerHTML    = "&#8377;" + revenue;
+      const dot = document.getElementById("pendingDot");
+      if (pending > 0) { dot.textContent = String(pending); dot.style.display = "inline-flex"; }
+      else { dot.style.display = "none"; }
+      renderOrders();
+    })
+    .catch(err => {
+      console.error(err);
+      showToast("Could not load orders: " + (err.message || ""), true);
+    });
+}
+
+function setOrderFilter(status, btn) {
+  currentOrderFilter = status;
+  document.querySelectorAll("#ordersFilterTabs .filter-tab").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderOrders();
+}
+
+function renderOrders() {
+  const tbody = document.getElementById("ordersTableBody");
+  const q = (document.getElementById("ordersSearch").value || "").toLowerCase().trim();
+  let rows = allOrders;
+  if (currentOrderFilter !== "all") rows = rows.filter(o => o.status === currentOrderFilter);
+  if (q) {
+    rows = rows.filter(o =>
+      (o.buyerEmail || "").toLowerCase().includes(q) ||
+      (o.utr || "").toLowerCase().includes(q) ||
+      (o.bookTitle || "").toLowerCase().includes(q) ||
+      (o.accessCode || "").toLowerCase().includes(q)
+    );
+  }
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-table">No orders match.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(o => {
+    const date = o.createdAt ? new Date(o.createdAt).toLocaleString() : "&mdash;";
+    const cover = safeUrl(o.bookCover) || "https://via.placeholder.com/36x50";
+    const title = escapeHTML(o.bookTitle || "");
+    const email = escapeHTML(o.buyerEmail || "");
+    const phone = escapeHTML(o.buyerPhone || "");
+    const utr = escapeHTML(o.utr || "");
+    const method = escapeHTML((o.method || "").toUpperCase());
+    const code = escapeHTML(o.accessCode || "");
+    const price = Number(o.bookPrice) || 0;
+    const status = String(o.status || "pending");
+    let actions = "";
+    if (status === "pending") {
+      actions = `
+        <button class="approve-btn" onclick="approveOrder('${o.id}')" type="button">
+          <i class="fa-solid fa-check"></i> Approve
+        </button>
+        <button class="reject-btn" onclick="rejectOrder('${o.id}')" type="button">
+          <i class="fa-solid fa-xmark"></i> Reject
+        </button>`;
+    } else if (status === "rejected") {
+      actions = `<button class="approve-btn" onclick="approveOrder('${o.id}')" type="button">
+        <i class="fa-solid fa-rotate-left"></i> Reopen
+      </button>`;
+    } else {
+      actions = `<span style="color:#059669;font-size:12px;font-weight:600;">&#10003; Done</span>`;
+    }
+    return `
+    <tr>
+      <td style="font-size:12px;color:#6B7280;white-space:nowrap;">${date}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="${cover}" class="order-cover" onerror="this.src='https://via.placeholder.com/36x50'" />
+          <strong style="font-size:13px;">${title}</strong>
+        </div>
+      </td>
+      <td>
+        <div style="font-size:13px;color:#1B2A41;">${email}</div>
+        <div style="font-size:11px;color:#9CA3AF;">${phone || ""}</div>
+      </td>
+      <td><span class="method-pill">${method}</span></td>
+      <td>
+        <div class="utr-cell" title="${utr}">${utr}</div>
+        <button class="copy-btn" onclick="copyText('${utr}')" type="button">Copy</button>
+      </td>
+      <td><strong>&#8377;${price}</strong></td>
+      <td class="code-cell">${code}</td>
+      <td><span class="status-pill ${status}">${status}</span></td>
+      <td style="white-space:nowrap;">${actions}</td>
+    </tr>`;
+  }).join("");
+}
+
+function approveOrder(id) {
+  auth.currentUser.getIdToken()
+    .then(token => fetch(ACADEMIC_API + `/admin/orders/${encodeURIComponent(id)}/approve`, {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + token }
+    }))
+    .then(async r => {
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || "Approve failed");
+    })
+    .then(() => { showToast("Order approved."); loadOrders(); })
+    .catch(err => showToast("Error: " + (err.message || "Approve failed"), true));
+}
+
+function rejectOrder(id) {
+  const reason = prompt("Reason for rejection (optional, shown to buyer):", "Payment could not be verified");
+  if (reason === null) return;
+  auth.currentUser.getIdToken()
+    .then(token => fetch(ACADEMIC_API + `/admin/orders/${encodeURIComponent(id)}/reject`, {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: String(reason || "").slice(0, 300) })
+    }))
+    .then(async r => {
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || "Reject failed");
+    })
+    .then(() => { showToast("Order rejected."); loadOrders(); })
+    .catch(err => showToast("Error: " + (err.message || "Reject failed"), true));
+}
+
+function copyText(txt) {
+  if (!txt) return;
+  navigator.clipboard.writeText(String(txt))
+    .then(() => showToast("Copied."))
+    .catch(() => showToast("Copy failed.", true));
+}
+
+/* Preview uploaded QR file before save */
+document.addEventListener("DOMContentLoaded", () => {
+  const qrInput = document.getElementById("cfgQrFile");
+  if (!qrInput) return;
+  qrInput.addEventListener("change", () => {
+    const f = qrInput.files[0];
+    const preview = document.getElementById("cfgQrPreview");
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    preview.src = url;
+    preview.style.display = "block";
+  });
+});
 </script>
 
 </body>

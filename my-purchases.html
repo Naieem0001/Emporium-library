@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Purchases | Emporium Library</title>
+    <meta name="description" content="View your Emporium Library book purchases, check payment status, and download your books with your access code." />
+    <link rel="canonical" href="https://emporiumlibrary.in/my-purchases.html" />
+    <meta name="robots" content="noindex,follow" />
+
+    <link rel="icon" type="image/png" href="images/logo.png" />
+    <link rel="apple-touch-icon" href="images/logo.png" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+
+    <style>
+        .mp-hero {
+            background: linear-gradient(155deg, #1B2A41 0%, #243B55 100%);
+            padding: 90px 20px 70px;
+            color: #fff;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .mp-hero::after {
+            content: "";
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(600px 240px at 15% 0%, rgba(255,122,24,0.22), transparent 60%),
+                radial-gradient(600px 240px at 85% 100%, rgba(255,159,67,0.14), transparent 60%);
+            pointer-events: none;
+        }
+        .mp-hero-inner { max-width: 760px; margin: 0 auto; position: relative; z-index: 1; }
+        .mp-eyebrow {
+            display: inline-block;
+            font-size: 12px; font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #FF9F43;
+            padding: 5px 14px;
+            border: 1px solid rgba(255,159,67,0.45);
+            border-radius: 999px;
+            margin-bottom: 16px;
+        }
+        .mp-hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            margin: 0 0 12px;
+            line-height: 1.2;
+        }
+        .mp-hero h1 span { color: #FFB347; }
+        .mp-hero p {
+            color: #CBD5E1; font-size: 15px;
+            line-height: 1.6;
+            max-width: 560px; margin: 0 auto;
+        }
+
+        .mp-section {
+            max-width: 960px;
+            margin: -40px auto 60px;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+        .mp-lookup {
+            background: #fff;
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 24px 48px rgba(2, 6, 23, 0.12);
+            display: flex; gap: 10px; align-items: center;
+            flex-wrap: wrap;
+        }
+        .mp-lookup label {
+            flex: 1 1 240px;
+            display: flex; flex-direction: column; gap: 6px;
+            min-width: 0;
+        }
+        .mp-lookup label span {
+            font-size: 11px; font-weight: 600;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            color: #64748B;
+        }
+        .mp-lookup input {
+            padding: 12px 14px;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            min-width: 0;
+        }
+        .mp-lookup input:focus {
+            border-color: #FF7A18;
+            box-shadow: 0 0 0 3px rgba(255,122,24,0.15);
+        }
+        .mp-lookup .mp-submit {
+            padding: 12px 22px;
+            border: none; cursor: pointer;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #FFB347 0%, #FF8C1A 100%);
+            color: #1B2A41;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px; font-weight: 700;
+            letter-spacing: 0.3px;
+            box-shadow: 0 10px 22px rgba(255, 122, 24, 0.25), inset 0 1px 0 rgba(255,255,255,0.45);
+            display: inline-flex; align-items: center; gap: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            align-self: flex-end;
+            margin-bottom: 2px;
+        }
+        .mp-lookup .mp-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(255,122,24,0.32), inset 0 1px 0 rgba(255,255,255,0.55);
+        }
+        .mp-lookup .mp-submit:disabled { opacity: 0.7; cursor: wait; transform: none; }
+
+        .mp-status-msg {
+            text-align: center;
+            padding: 36px 18px;
+            color: #64748B;
+            font-size: 14px;
+        }
+        .mp-status-msg i { font-size: 24px; display: block; margin-bottom: 8px; color: #94A3B8; }
+
+        .mp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+            margin-top: 28px;
+        }
+        .mp-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 12px 28px rgba(2,6,23,0.08);
+            display: flex; flex-direction: column; gap: 12px;
+            border: 1px solid #F1F5F9;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .mp-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(2,6,23,0.12);
+        }
+        .mp-card-top { display: flex; gap: 14px; align-items: flex-start; }
+        .mp-card-top img {
+            width: 74px; height: 100px;
+            object-fit: cover; border-radius: 6px;
+            background: #F1F5F9;
+            flex-shrink: 0;
+            border: 1px solid #E2E8F0;
+        }
+        .mp-card-meta { flex: 1; min-width: 0; }
+        .mp-card-meta h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem; line-height: 1.3;
+            margin: 0 0 4px;
+            color: #1B2A41;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .mp-card-meta .mp-price {
+            font-size: 13px; color: #B45309;
+            font-weight: 700;
+        }
+        .mp-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px; font-weight: 600;
+            text-transform: capitalize;
+            margin-top: 8px;
+        }
+        .mp-chip.pending  { background: rgba(245,158,11,0.12); color: #B45309; }
+        .mp-chip.approved { background: rgba(16,185,129,0.12); color: #047857; }
+        .mp-chip.rejected { background: rgba(220,38,38,0.10); color: #B91C1C; }
+
+        .mp-code-row {
+            background: #FFF7ED;
+            border: 1.5px dashed #FDBA74;
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 8px;
+        }
+        .mp-code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #FF7A18;
+        }
+        .mp-copy-sm {
+            border: none; cursor: pointer;
+            background: #1B2A41; color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .mp-copy-sm:hover { background: #FF7A18; }
+        .mp-copy-sm.done { background: #059669; }
+
+        .mp-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .mp-download {
+            flex: 1;
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px;
+            padding: 10px 14px;
+            border: none; cursor: pointer;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #FFB347 0%, #FF8C1A 100%);
+            color: #1B2A41;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px; font-weight: 700;
+            box-shadow: 0 8px 18px rgba(255,122,24,0.22), inset 0 1px 0 rgba(255,255,255,0.45);
+            transition: transform 0.15s, box-shadow 0.15s;
+            text-decoration: none;
+        }
+        .mp-download:hover {
+            transform: translateY(-1px);
+            color: #1B2A41;
+        }
+        .mp-download:disabled { cursor: not-allowed; opacity: 0.6; }
+        .mp-info-text {
+            font-size: 11.5px;
+            color: #64748B;
+            line-height: 1.45;
+        }
+        .mp-reject-reason {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #991B1B;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .mp-help {
+            background: #fff;
+            border-radius: 16px;
+            padding: 22px 24px;
+            box-shadow: 0 8px 20px rgba(2,6,23,0.06);
+            margin-top: 40px;
+            border-left: 4px solid #FF7A18;
+        }
+        .mp-help h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.15rem;
+            color: #1B2A41;
+            margin: 0 0 6px;
+        }
+        .mp-help p { font-size: 13px; color: #64748B; line-height: 1.55; margin: 0 0 6px; }
+        .mp-help a { color: #FF7A18; font-weight: 600; text-decoration: none; }
+        .mp-help a:hover { text-decoration: underline; }
+
+        @media (max-width: 640px) {
+            .mp-hero { padding: 70px 18px 60px; }
+            .mp-lookup { padding: 18px; }
+            .mp-lookup .mp-submit { width: 100%; align-self: stretch; justify-content: center; }
+            .mp-section { margin-top: -30px; padding: 0 14px 40px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<header class="navbar">
+    <div class="nav-container">
+        <a class="logo" href="index.html" aria-label="Emporium Library home">
+            <img src="images/logo.png" alt="Emporium Library" class="logo-img">
+        </a>
+        <nav class="nav-menu" id="navMenu">
+            <a href="index.html">Home</a>
+            <a href="index.html#genres1">Genres</a>
+            <a href="index.html#trending1">Trending</a>
+            <a href="academic.html">Academic Hub</a>
+            <a href="my-purchases.html" class="active-link">My Purchases</a>
+            <a href="about.html">About</a>
+            <a href="faq.html">FAQ</a>
+        </nav>
+        <div class="nav-right">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Search books..." aria-label="Search books">
+            </div>
+            <div class="hamburger" id="hamburger" role="button" aria-label="Open menu" tabindex="0">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="mp-hero">
+    <div class="mp-hero-inner">
+        <span class="mp-eyebrow">Your Account</span>
+        <h1>My <span>Purchases</span></h1>
+        <p>Look up your orders with the email you used at checkout. Approved books unlock instantly with your 8-character access code.</p>
+    </div>
+</section>
+
+<!-- ================= MAIN ================= -->
+<section class="mp-section">
+
+    <form class="mp-lookup" id="mpLookupForm" autocomplete="on">
+        <label>
+            <span>Email</span>
+            <input type="email" name="email" id="mpEmail" required placeholder="you@example.com" autocomplete="email" />
+        </label>
+        <button type="submit" class="mp-submit" id="mpSubmit">
+            <i class="fa-solid fa-magnifying-glass"></i> View Orders
+        </button>
+    </form>
+
+    <div id="mpResult">
+        <div class="mp-status-msg">
+            <i class="fa-solid fa-receipt"></i>
+            Enter your email above to see your purchases.
+        </div>
+    </div>
+
+    <div class="mp-help">
+        <h2>Where's my access code?</h2>
+        <p>You received an 8-character code like <code>A7X2K9PM</code> as soon as you submitted your payment reference during checkout. We also saved it to this browser &mdash; so if you bought from this device, we'll auto-fill it below.</p>
+        <p>Lost the code? Re-enter the same email you used at checkout &mdash; we'll show you every order attached to it, including any pending ones.</p>
+    </div>
+
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-col">
+            <h3>
+                <img src="images/logo.png" alt="Emporium Library" class="footer-logo-img">
+            </h3>
+            <p>A digital space for readers and students to explore books across multiple genres and access academic resources freely.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Quick Links</h4>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="genre.html?genre=all">Genres</a></li>
+                <li><a href="academic.html">Academic Hub</a></li>
+                <li><a href="my-purchases.html">My Purchases</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="faq.html">FAQ</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4>Genres</h4>
+            <ul>
+                <li><a href="genre.html?genre=literature">Literature</a></li>
+                <li><a href="genre.html?genre=fiction">Fiction</a></li>
+                <li><a href="genre.html?genre=science-fiction">Science Fiction</a></li>
+                <li><a href="genre.html?genre=non-fiction">Non-Fiction</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4>Connect</h4>
+            <div class="social-icons">
+                <a href="https://www.linkedin.com/in/naieem-qureshi-b02524255"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="https://t.me/Ebook_Emporium"><i class="fa-brands fa-telegram"></i></a>
+                <a href="https://www.instagram.com/naieem_qurashi/"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2026 Emporium Library. All rights reserved.</p>
+        <p>Developed by <a href="https://naieem0001.github.io/Portfolio/" target="_blank" rel="noopener author" class="dev-link">Naieem Qureshi</a></p>
+    </div>
+</footer>
+
+<script>
+    // Minimal hamburger toggle
+    (function () {
+        var btn = document.getElementById('hamburger');
+        var menu = document.getElementById('navMenu');
+        if (btn && menu) {
+            btn.addEventListener('click', function () { menu.classList.toggle('active'); });
+        }
+    })();
+</script>
+
+<script>
+(function () {
+    "use strict";
+
+    const API_BASE = String(
+        window.EMPORIUM_ACADEMIC_API || "https://emporium-academic-api.onrender.com"
+    ).replace(/\/$/, "");
+
+    const LS_KEY_EMAIL  = "emporium_email";
+    const LS_KEY_ORDERS = "emporium_orders";
+
+    const $  = id => document.getElementById(id);
+    const esc = s => String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const fmtDate = ms => ms ? new Date(ms).toLocaleString(undefined, {
+        dateStyle: "medium", timeStyle: "short"
+    }) : "";
+    const fmtRupees = n => "\u20B9" + (Number(n) || 0).toLocaleString("en-IN");
+
+    function getLocalOrders() {
+        try { return JSON.parse(localStorage.getItem(LS_KEY_ORDERS) || "[]"); }
+        catch { return []; }
+    }
+
+    // Pre-fill email from localStorage
+    document.addEventListener("DOMContentLoaded", () => {
+        try {
+            const saved = localStorage.getItem(LS_KEY_EMAIL);
+            if (saved) {
+                $("mpEmail").value = saved;
+                // Auto-lookup if we have a remembered email
+                setTimeout(lookupOrders, 200);
+            }
+        } catch {}
+    });
+
+    $("mpLookupForm").addEventListener("submit", ev => {
+        ev.preventDefault();
+        lookupOrders();
+    });
+
+    async function lookupOrders() {
+        const email = $("mpEmail").value.trim().toLowerCase();
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+
+        try { localStorage.setItem(LS_KEY_EMAIL, email); } catch {}
+
+        const submit = $("mpSubmit");
+        const origHTML = submit.innerHTML;
+        submit.disabled = true;
+        submit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Looking up&hellip;';
+
+        try {
+            const r = await fetch(API_BASE + "/api/purchases?email=" + encodeURIComponent(email));
+            const body = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(body.error || "Lookup failed");
+            const orders = Array.isArray(body.orders) ? body.orders : [];
+            renderOrders(orders, email);
+        } catch (err) {
+            $("mpResult").innerHTML = `
+                <div class="mp-status-msg">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#DC2626;"></i>
+                    ${esc(err.message || "Could not load your orders. Please try again.")}
+                </div>`;
+        } finally {
+            submit.disabled = false;
+            submit.innerHTML = origHTML;
+        }
+    }
+
+    function renderOrders(orders, email) {
+        if (orders.length === 0) {
+            const local = getLocalOrders().filter(o =>
+                String(o.email || "").toLowerCase() === email
+            );
+            if (local.length > 0) {
+                $("mpResult").innerHTML = `
+                    <div class="mp-status-msg">
+                        <i class="fa-solid fa-clock"></i>
+                        We found a recent checkout on this device but it hasn't landed in our system yet.
+                        Try again in a few seconds.
+                    </div>`;
+                return;
+            }
+            $("mpResult").innerHTML = `
+                <div class="mp-status-msg">
+                    <i class="fa-regular fa-folder-open"></i>
+                    No purchases found for <strong>${esc(email)}</strong>.<br>
+                    Did you use a different email at checkout?
+                </div>`;
+            return;
+        }
+
+        $("mpResult").innerHTML = `<div class="mp-grid">${orders.map(o => renderOrderCard(o, email)).join("")}</div>`;
+
+        $("mpResult").querySelectorAll(".mp-copy-sm").forEach(btn => {
+            btn.addEventListener("click", () => copyText(btn.dataset.copy || "", btn));
+        });
+        $("mpResult").querySelectorAll(".mp-download").forEach(btn => {
+            btn.addEventListener("click", () => unlock(btn, email));
+        });
+    }
+
+    function findLocalCode(bookId, emailLower) {
+        const list = getLocalOrders();
+        const hit = list.find(o =>
+            String(o.bookId || "") === String(bookId || "") &&
+            String(o.email || "").toLowerCase() === emailLower
+        );
+        return hit ? String(hit.accessCode || "") : "";
+    }
+
+    function renderOrderCard(o, email) {
+        const cover = esc(o.bookCover || "https://via.placeholder.com/150x220?text=No+Cover");
+        const title = esc(o.bookTitle || "Untitled");
+        const hint  = esc(o.accessCodeHint || "");
+        const price = fmtRupees(o.bookPrice);
+        const method = String(o.method || "upi").toUpperCase();
+        const status = String(o.status || "pending");
+        const date   = fmtDate(o.createdAt);
+        const localCode = findLocalCode(o.bookId, email);
+        const hasLocalCode = !!localCode;
+
+        let statusExtra = "";
+        let actions = "";
+        if (status === "approved") {
+            const label = hasLocalCode ? "Download now" : "Enter code &amp; download";
+            const icon  = hasLocalCode ? "fa-download" : "fa-key";
+            actions = `
+                <button class="mp-download"
+                        data-book-id="${esc(o.bookId || "")}"
+                        data-has-local="${hasLocalCode ? "1" : "0"}"
+                        type="button">
+                    <i class="fa-solid ${icon}"></i> ${label}
+                </button>`;
+        } else if (status === "rejected") {
+            statusExtra = o.rejectedReason
+                ? `<div class="mp-reject-reason"><strong>Why?</strong> ${esc(o.rejectedReason)}</div>`
+                : `<div class="mp-reject-reason">Payment could not be verified.</div>`;
+        } else {
+            statusExtra = `<p class="mp-info-text"><i class="fa-solid fa-circle-info"></i> Verification is usually complete within a few hours. Refresh this page later, or keep the access code handy.</p>`;
+        }
+
+        const codeRow = hasLocalCode
+            ? `<div class="mp-code-row">
+                    <div>
+                        <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#9A3412;margin-bottom:2px;">Access code (this device)</div>
+                        <div class="mp-code">${esc(localCode)}</div>
+                    </div>
+                    <button class="mp-copy-sm" data-copy="${esc(localCode)}" type="button">
+                        <i class="fa-regular fa-copy"></i> Copy
+                    </button>
+               </div>`
+            : `<div class="mp-code-row" style="background:#F8FAFC;border-color:#E2E8F0;">
+                    <div>
+                        <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#64748B;margin-bottom:2px;">Access code ends in</div>
+                        <div class="mp-code" style="color:#1B2A41;letter-spacing:2px;">${hint || "****"}</div>
+                    </div>
+                    <span style="font-size:11px;color:#64748B;max-width:140px;text-align:right;line-height:1.3;">Use the 8&#8209;char code from your purchase email / screenshot.</span>
+               </div>`;
+
+        return `
+        <article class="mp-card">
+            <div class="mp-card-top">
+                <img src="${cover}" alt="${title}" onerror="this.src='https://via.placeholder.com/150x220?text=No+Cover'" />
+                <div class="mp-card-meta">
+                    <h3>${title}</h3>
+                    <div class="mp-price">${price} &middot; ${esc(method)}</div>
+                    <span class="mp-chip ${status}">${status}</span>
+                    <p class="mp-info-text" style="margin-top:6px;">${esc(date)}</p>
+                </div>
+            </div>
+            ${codeRow}
+            ${statusExtra}
+            <div class="mp-actions">${actions}</div>
+        </article>`;
+    }
+
+    async function unlock(btn, email) {
+        const bookId = btn.dataset.bookId;
+        const hasLocal = btn.dataset.hasLocal === "1";
+        let code = hasLocal ? findLocalCode(bookId, email) : "";
+        if (!code) {
+            const entered = window.prompt(
+                "Enter the 8-character access code you received at checkout:",
+                ""
+            );
+            if (entered === null) return;
+            code = String(entered).trim().toUpperCase();
+        }
+        if (!code || code.length < 4) {
+            alert("That access code doesn't look right. Check the code from your checkout screenshot.");
+            return;
+        }
+        const origHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Unlocking&hellip;';
+        try {
+            const r = await fetch(API_BASE + "/api/unlock", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, accessCode: code })
+            });
+            const body = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(body.error || "Unlock failed");
+            if (body.driveLink) {
+                try {
+                    const list = JSON.parse(localStorage.getItem(LS_KEY_ORDERS) || "[]");
+                    const exists = list.some(o =>
+                        String(o.bookId || "") === String(bookId || "") &&
+                        String(o.email || "").toLowerCase() === email
+                    );
+                    if (!exists) {
+                        list.unshift({
+                            bookId: bookId,
+                            accessCode: code,
+                            email: email,
+                            createdAt: Date.now()
+                        });
+                        localStorage.setItem(LS_KEY_ORDERS, JSON.stringify(list.slice(0, 50)));
+                    }
+                } catch {}
+                window.open(body.driveLink, "_blank", "noopener");
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Opened in new tab';
+                setTimeout(() => { btn.innerHTML = origHTML; btn.disabled = false; }, 2500);
+            } else {
+                throw new Error("No download link returned");
+            }
+        } catch (err) {
+            alert(err.message || "Could not unlock this book.");
+            btn.innerHTML = origHTML;
+            btn.disabled = false;
+        }
+    }
+
+    function copyText(txt, btn) {
+        if (!txt) return;
+        const done = () => {
+            if (!btn) return;
+            btn.classList.add("done");
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+            setTimeout(() => { btn.innerHTML = original; btn.classList.remove("done"); }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(txt).then(done).catch(() => fallback());
+        } else { fallback(); }
+        function fallback() {
+            const ta = document.createElement("textarea");
+            ta.value = txt;
+            ta.style.position = "fixed"; ta.style.opacity = "0";
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand("copy"); done(); } catch {}
+            ta.remove();
+        }
+    }
+})();
+</script>
+
+</body>
+</html>

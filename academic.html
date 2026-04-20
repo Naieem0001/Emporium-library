@@ -3,7 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Academic Hub | Emporium Library</title>
+
+  <!-- ================= PRIMARY SEO ================= -->
+  <title>Academic Hub | Emporium Library &ndash; Free Student Notes, Assignments &amp; Study Resources</title>
+  <meta name="description" content="The Emporium Academic Hub is a free, community-driven archive of student study notes, lecture summaries, assignments and exam resources. Download notes or upload your own to earn contributor points." />
+  <meta name="keywords" content="Emporium Academic Hub, student notes, study notes, lecture notes, assignments, exam resources, free study material, college notes, university notes, Emporium Library" />
+  <meta name="author" content="Naieem Qureshi" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <meta name="theme-color" content="#1B2A41" />
+  <link rel="canonical" href="https://emporiumlibrary.me/academic.html" />
+
+  <!-- ================= FAVICON ================= -->
+  <link rel="icon" type="image/png" href="images/logo.png" />
+  <link rel="apple-touch-icon" href="images/logo.png" />
+  <link rel="shortcut icon" href="images/logo.png" />
+
+  <!-- ================= OPEN GRAPH ================= -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Emporium Library" />
+  <meta property="og:title" content="Academic Hub | Emporium Library &ndash; Free Student Notes &amp; Study Resources" />
+  <meta property="og:description" content="Download free student notes and upload your own study material on the Emporium Academic Hub." />
+  <meta property="og:url" content="https://emporiumlibrary.me/academic.html" />
+  <meta property="og:image" content="https://emporiumlibrary.me/images/logo.png" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- ================= TWITTER ================= -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Academic Hub | Emporium Library" />
+  <meta name="twitter:description" content="Free student notes, assignments and study resources. Upload and earn contributor points." />
+  <meta name="twitter:image" content="https://emporiumlibrary.me/images/logo.png" />
+
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="style.css" />
@@ -977,11 +1006,16 @@
   <!-- ===== NAVBAR ===== -->
   <header class="navbar academic-page-nav">
     <div class="nav-container">
-      <a href="index.html" class="logo">Emporium Library</a>
+      <a href="index.html" class="logo" aria-label="Emporium Library home">
+        <img src="images/logo.png" alt="Emporium Library" class="logo-img">
+      </a>
       <nav class="nav-menu" id="navMenu" aria-label="Main navigation">
         <a href="index.html">Home</a>
         <a href="genre.html?genre=all">Library</a>
         <a href="academic.html" class="active-link">Academic Hub</a>
+        <a href="my-purchases.html">My Purchases</a>
+        <a href="about.html">About</a>
+        <a href="faq.html">FAQ</a>
         <a href="index.html#feedbackForm">Feedback</a>
       </nav>
       <div class="nav-right">
@@ -1157,7 +1191,9 @@
   <footer class="footer">
     <div class="footer-container">
       <div class="footer-col">
-        <h3>Emporium Library</h3>
+        <h3>
+          <img src="images/logo.png" alt="Emporium Library" class="footer-logo-img">
+        </h3>
         <p>A digital home for readers and students where you can explore, download, and share knowledge freely.</p>
       </div>
       <div class="footer-col">
@@ -1166,6 +1202,7 @@
           <li><a href="index.html">Home</a></li>
           <li><a href="genre.html?genre=all">Library</a></li>
           <li><a href="academic.html">Academic Hub</a></li>
+          <li><a href="my-purchases.html">My Purchases</a></li>
           <li><a href="#uploadPanel">Upload notes</a></li>
         </ul>
       </div>

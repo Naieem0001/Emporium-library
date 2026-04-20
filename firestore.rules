@@ -7,8 +7,9 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn()
-        && request.auth.token.email_verified == true
-        && request.auth.token.email in [
+        && request.auth.token.email is string
+        && request.auth.token.email.size() > 0
+        && request.auth.token.email.lower() in [
           'naieemq111@gmail.com'
         ];
     }
@@ -22,7 +23,7 @@ service cloud.firestore {
 
     function isValidBookShape() {
       return request.resource.data.keys().hasOnly([
-        'title', 'author', 'genre', 'cover', 'driveLink', 'trending', 'newRelease', 'createdAt'
+        'title', 'author', 'genre', 'cover', 'driveLink', 'trending', 'newRelease', 'price', 'createdAt'
       ])
       && request.resource.data.title is string
       && request.resource.data.title.size() > 0
@@ -35,9 +36,14 @@ service cloud.firestore {
       && request.resource.data.genre.size() <= 80
       && request.resource.data.cover is string
       && request.resource.data.cover.matches('^https?://.*$')
-      && isValidDriveUrl(request.resource.data.driveLink)
+      && request.resource.data.driveLink is string
+      && request.resource.data.driveLink.size() <= 1000
+      && (request.resource.data.driveLink.size() == 0 || request.resource.data.driveLink.matches('^https://drive\\.google\\.com/.*$'))
       && request.resource.data.trending is bool
-      && request.resource.data.newRelease is bool;
+      && request.resource.data.newRelease is bool
+      && request.resource.data.price is number
+      && request.resource.data.price >= 0
+      && request.resource.data.price <= 100000;
     }
 
     function isValidResourceCreate() {
@@ -83,9 +89,12 @@ service cloud.firestore {
     }
 
     function isSafeFlagsUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['trending', 'newRelease'])
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['trending', 'newRelease', 'price'])
         && request.resource.data.trending is bool
-        && request.resource.data.newRelease is bool;
+        && request.resource.data.newRelease is bool
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0
+        && request.resource.data.price <= 100000;
     }
 
     match /books/{bookId} {
@@ -135,6 +144,22 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create, update, delete: if false;
+    }
+
+    // Payment config (UPI id, QR, bank details). Public read for checkout; admin-only write.
+    match /payment_config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Buyer orders. Clients go through the Render backend (Admin SDK) for all reads/writes.
+    match /orders/{orderId} {
+      allow read, write: if false;
+    }
+
+    // Private drive links for paid books. Backend-only access via Admin SDK.
+    match /paid_book_assets/{bookId} {
+      allow read, write: if false;
     }
   }
 }

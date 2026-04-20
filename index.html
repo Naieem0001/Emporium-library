@@ -5,20 +5,238 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Emporium Library</title>
+    <!-- ================= PRIMARY SEO ================= -->
+    <title>Emporium Library | Free Ebooks, Academic Notes &amp; Digital Books Across Genres</title>
+    <meta name="description" content="Emporium Library is a free digital library of ebooks across literature, fiction, religion, philosophy and science, plus an Academic Hub where students share study notes and assignments.">
+    <meta name="keywords" content="Emporium Library, free ebooks, digital library, online books, academic notes, study notes, literature, fiction, non-fiction, religion, philosophy, science fiction, student resources, free book downloads">
+    <meta name="author" content="Naieem Qureshi">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="theme-color" content="#1B2A41">
+    <link rel="canonical" href="https://emporiumlibrary.me/">
 
+    <!-- ================= FAVICON ================= -->
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link rel="apple-touch-icon" href="images/logo.png">
+    <link rel="shortcut icon" href="images/logo.png">
+
+    <!-- ================= OPEN GRAPH ================= -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Emporium Library">
+    <meta property="og:title" content="Emporium Library | Free Ebooks, Academic Notes &amp; Digital Books">
+    <meta property="og:description" content="Discover thousands of free ebooks across literature, fiction, religion, philosophy and science. Share and download student study notes in the Emporium Academic Hub.">
+    <meta property="og:url" content="https://emporiumlibrary.me/">
+    <meta property="og:image" content="https://emporiumlibrary.me/images/logo.png">
+    <meta property="og:image:alt" content="Emporium Library logo">
+    <meta property="og:locale" content="en_US">
+
+    <!-- ================= TWITTER CARD ================= -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Emporium Library | Free Ebooks &amp; Academic Notes">
+    <meta name="twitter:description" content="A free digital library of ebooks across literature, fiction, religion, philosophy and science, with a student-driven Academic Hub for study notes.">
+    <meta name="twitter:image" content="https://emporiumlibrary.me/images/logo.png">
+    <meta name="twitter:image:alt" content="Emporium Library logo">
+
+    <!-- ================= GOOGLE SEARCH CONSOLE ================= -->
+    <meta name="google-site-verification" content="AyVal9GrrfxwropZoTBOaihp_TAiunCTr9MlhWo272Q" />
+
+    <!-- ================= FONTS & STYLES ================= -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
-
-    <!-- Main CSS -->
     <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
-<meta name="google-site-verification" content="AyVal9GrrfxwropZoTBOaihp_TAiunCTr9MlhWo272Q" />
+    <!-- ================= FIREBASE ================= -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+    <!-- ================= STRUCTURED DATA (JSON-LD) ================= -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Emporium Library",
+      "alternateName": "Emporium Digital Library",
+      "url": "https://emporiumlibrary.me/",
+      "description": "A free digital library of ebooks across literature, fiction, religion, philosophy and science, with an Academic Hub for student-shared study notes.",
+      "inLanguage": "en",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://emporiumlibrary.me/genre.html?search={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Emporium Library",
+      "url": "https://emporiumlibrary.me/",
+      "logo": "https://emporiumlibrary.me/images/logo.png",
+      "founder": {
+        "@type": "Person",
+        "name": "Naieem Qureshi",
+        "url": "https://naieem0001.github.io/Portfolio/",
+        "sameAs": [
+          "https://naieem0001.github.io/Portfolio/",
+          "https://www.linkedin.com/in/naieem-qureshi-b02524255"
+        ]
+      },
+      "sameAs": [
+        "https://www.linkedin.com/in/naieem-qureshi-b02524255",
+        "https://t.me/Ebook_Emporium",
+        "https://www.instagram.com/naieem_qurashi/",
+        "https://naieem0001.github.io/Portfolio/"
+      ]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How do I download books from Emporium Library?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Open any book card on the home page or a genre page, click the book to view its details and use the Download button. All downloads are free and require no subscription."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Are all books on Emporium Library free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Every ebook and every study note on Emporium Library is completely free to read and download. There are no paywalls and no hidden charges."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I access the Academic Hub?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Click Academic Hub in the top navigation or visit /academic.html directly. You can browse and download student notes without an account."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How can I upload my own study notes and earn points?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Go to the Academic Hub, sign in, and use the upload form. Each approved upload earns you 5 contributor points, and top contributors get featured on the platform."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need an account to read books?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. You can browse, read and download books without any account. An account is only required to upload content to the Academic Hub or track your contributor points."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- ================= HOME-FAQ SCOPED STYLES (scoped by .home-faq prefix, zero global overrides) ================= -->
+    <style>
+        .home-faq .home-faq-list {
+            width: min(820px, 92%);
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .home-faq-item {
+            background: #ffffff;
+            border: 1px solid var(--color-border, #e2e8f0);
+            border-radius: var(--radius-md, 14px);
+            overflow: hidden;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .home-faq-item[open] {
+            border-color: #fed7aa;
+            box-shadow: var(--shadow-soft, 0 10px 28px rgba(15,23,42,0.08));
+        }
+        .home-faq-item > summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            font-family: "Playfair Display", serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-navy, #1b2a41);
+            transition: color 0.2s ease;
+        }
+        .home-faq-item > summary::-webkit-details-marker { display: none; }
+        .home-faq-item > summary::marker { content: ""; }
+        .home-faq-item > summary:hover { color: var(--color-orange, #ff7a18); }
+        .home-faq-icon {
+            width: 28px;
+            height: 28px;
+            flex: 0 0 28px;
+            border-radius: 50%;
+            background: var(--color-bg-soft, #f1f5f9);
+            color: var(--color-navy, #1b2a41);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            transition: transform 0.3s ease, background 0.2s ease, color 0.2s ease;
+        }
+        .home-faq-item[open] .home-faq-icon {
+            transform: rotate(180deg);
+            background: linear-gradient(135deg, var(--color-orange, #ff7a18), var(--color-orange-2, #ff9f43));
+            color: #fff;
+        }
+        .home-faq-answer {
+            padding: 0 22px 20px;
+            font-family: "Poppins", sans-serif;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #4b5563;
+        }
+        .home-faq-answer a {
+            color: var(--color-orange, #ff7a18);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .home-faq-answer a:hover { text-decoration: underline; }
+        .home-faq-more {
+            width: min(820px, 92%);
+            margin: 26px auto 0;
+            text-align: center;
+        }
+        .home-faq-more a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 999px;
+            border: 1px solid var(--color-border, #e2e8f0);
+            background: #ffffff;
+            color: var(--color-navy, #1b2a41);
+            font-weight: 600;
+            font-size: 13.5px;
+            text-decoration: none;
+            transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+        .home-faq-more a:hover {
+            transform: translateY(-1px);
+            border-color: var(--color-orange, #ff7a18);
+            color: var(--color-orange, #ff7a18);
+        }
+    </style>
 </head>
 
 <body>
@@ -27,7 +245,9 @@
 
 <header class="navbar">
     <div class="nav-container">
-        <a class="logo" href="index.html">Emporium Library</a>
+        <a class="logo" href="index.html" aria-label="Emporium Library home">
+            <img src="images/logo.png" alt="Emporium Library" class="logo-img">
+        </a>
 
         <nav class="nav-menu" id="navMenu">
 
@@ -35,6 +255,9 @@
             <a href="#genres1">Genres</a>
             <a href="#trending1">Trending</a>
             <a href="academic.html">Academic Hub</a>
+            <a href="my-purchases.html">My Purchases</a>
+            <a href="about.html">About</a>
+            <a href="faq.html">FAQ</a>
             <a href="#feedbackForm">Feedback</a>
             <a href="admin.html"><i class="fa-solid fa-shield-halved"></i> Admin</a>
         </nav>
@@ -222,6 +445,87 @@ required></textarea>
 
 </section>
 
+<!-- ================= FAQ SECTION ================= -->
+
+<section id="faq" class="section section-alt home-faq" aria-labelledby="home-faq-heading">
+
+    <div class="section-header">
+        <h2 id="home-faq-heading">Frequently Asked Questions</h2>
+        <p>Quick answers to the most common questions about Emporium Library.</p>
+    </div>
+
+    <div class="home-faq-list">
+
+        <details class="home-faq-item">
+            <summary>
+                <span>How do I download books from Emporium Library?</span>
+                <span class="home-faq-icon"><i class="fa-solid fa-chevron-down"></i></span>
+            </summary>
+            <div class="home-faq-answer">
+                Open any book card on the home page or a
+                <a href="genre.html?genre=all">genre page</a>, click the book to view its
+                details and use the <strong>Download</strong> button. All downloads are
+                free and require no subscription.
+            </div>
+        </details>
+
+        <details class="home-faq-item">
+            <summary>
+                <span>Are all books on Emporium Library free?</span>
+                <span class="home-faq-icon"><i class="fa-solid fa-chevron-down"></i></span>
+            </summary>
+            <div class="home-faq-answer">
+                Yes. Every ebook and every study note on Emporium Library is completely
+                free to read and download. There are no paywalls and no hidden charges.
+            </div>
+        </details>
+
+        <details class="home-faq-item">
+            <summary>
+                <span>How do I access the Academic Hub?</span>
+                <span class="home-faq-icon"><i class="fa-solid fa-chevron-down"></i></span>
+            </summary>
+            <div class="home-faq-answer">
+                Click <a href="academic.html">Academic Hub</a> in the top navigation or
+                visit <code>/academic.html</code> directly. You can browse and download
+                student notes without an account.
+            </div>
+        </details>
+
+        <details class="home-faq-item">
+            <summary>
+                <span>How can I upload my own study notes and earn points?</span>
+                <span class="home-faq-icon"><i class="fa-solid fa-chevron-down"></i></span>
+            </summary>
+            <div class="home-faq-answer">
+                Go to the <a href="academic.html">Academic Hub</a>, sign in, and use the
+                upload form. Each approved upload earns you <strong>5 contributor
+                points</strong>, and top contributors get featured on the platform.
+            </div>
+        </details>
+
+        <details class="home-faq-item">
+            <summary>
+                <span>Do I need an account to read books?</span>
+                <span class="home-faq-icon"><i class="fa-solid fa-chevron-down"></i></span>
+            </summary>
+            <div class="home-faq-answer">
+                No. You can browse, read and download books without any account. An
+                account is only required to upload content to the Academic Hub or track
+                your contributor points.
+            </div>
+        </details>
+
+    </div>
+
+    <div class="home-faq-more">
+        <a href="faq.html">
+            See all FAQs <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </div>
+
+</section>
+
 <!-- ================= FOOTER ================= -->
 
 <footer class="footer">
@@ -230,7 +534,9 @@ required></textarea>
 
         <div class="footer-col">
 
-            <h3>Emporium Library</h3>
+            <h3>
+                <img src="images/logo.png" alt="Emporium Library" class="footer-logo-img">
+            </h3>
 
             <p>
                 A digital space for readers and students to explore books across
@@ -248,6 +554,9 @@ required></textarea>
                 <li><a href="genre.html?genre=all">Genres</a></li>
                 <li><a href="#trending1">Trending</a></li>
                 <li><a href="academic.html">Academic Hub</a></li>
+                <li><a href="my-purchases.html">My Purchases</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="faq.html">FAQ</a></li>
                 <li><a href="admin.html">Admin Login</a></li>
             </ul>
 
@@ -282,11 +591,12 @@ required></textarea>
 
     <div class="footer-bottom">
         <p>© 2026 Emporium Library. All rights reserved.</p>
-        <p>Developed by Naieem Qureshi</p>
+        <p>Developed by <a href="https://naieem0001.github.io/Portfolio/" target="_blank" rel="noopener author" class="dev-link">Naieem Qureshi</a></p>
     </div>
 
 </footer>
-<script src="script.js?v=genre-filter-fix-2"></script>
+<script src="payment.js?v=paid-v1"></script>
+<script src="script.js?v=paid-v1"></script>
 
 
 </body>
