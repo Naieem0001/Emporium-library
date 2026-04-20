@@ -91,6 +91,26 @@
     }, 1400);
   }
 
+  async function downloadQrImage(url) {
+    if (!url) return;
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) throw new Error("download failed");
+      const blob = await res.blob();
+      const extFromType = (blob.type || "").split("/")[1] || "png";
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `emporium-upi-qr.${extFromType.replace(/[^a-z0-9]/gi, "") || "png"}`;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    } catch (_err) {
+      // Fallback when remote host blocks CORS: open the image in a new tab.
+      window.open(url, "_blank", "noopener");
+    }
+  }
+
   function closeModal() {
     const el = document.getElementById("pmOverlay");
     if (el) el.remove();
@@ -179,7 +199,7 @@
     panel.innerHTML = `
       <header class="pm-head">
         <h4>Pay <span>${fmtPrice(book.price)}</span></h4>
-        <p>Pay using either option below, then paste the transaction reference to unlock.</p>
+        <p>Pay using either option below, then submit your payment screenshot to unlock.</p>
         <p class="pm-ref-shortcut">
           Already paid?
           <button type="button" class="pm-link-btn pm-paid-btn-inline">Submit reference</button>
@@ -224,6 +244,10 @@
       btn.addEventListener("click", () => copyToClipboard(btn.dataset.copy || "", btn));
     });
 
+    panel.querySelectorAll(".pm-qr-download").forEach(btn => {
+      btn.addEventListener("click", () => downloadQrImage(btn.dataset.url || ""));
+    });
+
     // Deep-link UPI buttons (fall back to copy on desktop)
     panel.querySelectorAll(".pm-upi-app").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -255,7 +279,10 @@
       <div class="pm-upi-grid">
         <div class="pm-qr-wrap">
           ${hasQr
-            ? `<img class="pm-qr" src="${esc(cfg.upiQrUrl)}" alt="UPI QR code" />`
+            ? `<img class="pm-qr" src="${esc(cfg.upiQrUrl)}" alt="UPI QR code" />
+               <button type="button" class="pm-copy pm-qr-download" data-url="${esc(cfg.upiQrUrl)}">
+                 <i class="fa-solid fa-download"></i> Download QR
+               </button>`
             : `<div class="pm-qr-placeholder"><i class="fa-solid fa-qrcode"></i><span>Scan with any UPI app</span></div>`}
         </div>
         <div class="pm-upi-right">
@@ -325,7 +352,7 @@
       <header class="pm-head">
         <button type="button" class="pm-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
         <h4>Submit your reference</h4>
-        <p>After you've paid, fill this in. You'll get an access code immediately, and the download unlocks once verified.</p>
+        <p>After you've paid, add your payment screenshot link. You'll get an access code immediately, and the download unlocks once verified.</p>
       </header>
       <form class="pm-form" id="pmForm" autocomplete="on">
         <label class="pm-field">
@@ -346,10 +373,10 @@
           </select>
         </label>
         <label class="pm-field">
-          <span>Transaction ID / UTR <i>*</i></span>
-          <input type="text" name="utr" required minlength="4" maxlength="40"
-                 pattern="[A-Za-z0-9\\-_]+" placeholder="12-digit UTR or UPI reference"
-                 autocomplete="off" style="font-family:'Courier New',monospace;letter-spacing:1px;" />
+          <span>Payment Screenshot URL <i>*</i></span>
+          <input type="url" name="proofUrl" inputmode="url" required
+                 placeholder="https://... (receipt image link)"
+                 autocomplete="off" />
         </label>
         <div class="pm-form-error" id="pmFormError"></div>
         <button type="submit" class="pm-primary">
@@ -371,7 +398,7 @@
         email: form.email.value.trim().toLowerCase(),
         phone: form.phone.value.trim(),
         method: form.method.value,
-        utr: form.utr.value.trim()
+        screenshotUrl: form.proofUrl.value.trim()
       };
       const submitBtn = form.querySelector("button[type='submit']");
       submitBtn.disabled = true;

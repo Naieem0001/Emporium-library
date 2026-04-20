@@ -665,7 +665,8 @@
               <th>Book</th>
               <th>Buyer</th>
               <th>Method</th>
-              <th>UTR / Ref</th>
+              <th>Ref (optional)</th>
+              <th>Proof</th>
               <th>Amount</th>
               <th>Code</th>
               <th>Status</th>
@@ -673,7 +674,7 @@
             </tr>
           </thead>
           <tbody id="ordersTableBody">
-            <tr><td colspan="9" class="empty-table">Loading orders&hellip;</td></tr>
+            <tr><td colspan="10" class="empty-table">Loading orders&hellip;</td></tr>
           </tbody>
         </table>
       </div>
@@ -1288,7 +1289,7 @@ function renderOrders() {
     );
   }
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty-table">No orders match.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="empty-table">No orders match.</td></tr>`;
     return;
   }
   tbody.innerHTML = rows.map(o => {
@@ -1298,6 +1299,7 @@ function renderOrders() {
     const email = escapeHTML(o.buyerEmail || "");
     const phone = escapeHTML(o.buyerPhone || "");
     const utr = escapeHTML(o.utr || "");
+    const proofUrl = safeUrl(o.screenshotUrl || "");
     const method = escapeHTML((o.method || "").toUpperCase());
     const code = escapeHTML(o.accessCode || "");
     const price = Number(o.bookPrice) || 0;
@@ -1333,8 +1335,15 @@ function renderOrders() {
       </td>
       <td><span class="method-pill">${method}</span></td>
       <td>
-        <div class="utr-cell" title="${utr}">${utr}</div>
-        <button class="copy-btn" onclick="copyText('${utr}')" type="button">Copy</button>
+        ${utr
+          ? `<div class="utr-cell" title="${utr}">${utr}</div>
+             <button class="copy-btn" onclick="copyText('${utr}')" type="button">Copy</button>`
+          : `<span style="font-size:11px;color:#9CA3AF;">—</span>`}
+      </td>
+      <td>
+        ${proofUrl
+          ? `<a href="${proofUrl}" target="_blank" rel="noopener noreferrer" class="copy-btn">View</a>`
+          : `<span style="font-size:11px;color:#9CA3AF;">—</span>`}
       </td>
       <td><strong>&#8377;${price}</strong></td>
       <td class="code-cell">${code}</td>

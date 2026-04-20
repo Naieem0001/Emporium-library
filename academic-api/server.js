@@ -828,6 +828,7 @@ app.post("/api/orders", async (req, res) => {
     const phone = String(req.body.phone || "").trim();
     const method = String(req.body.method || "").toLowerCase().trim();
     const utr = String(req.body.utr || "").trim();
+    const screenshotUrl = String(req.body.screenshotUrl || "").trim();
 
     if (!bookId || bookId.length > 200) return res.status(400).json({ error: "Invalid bookId" });
     if (!isValidEmail(emailRaw)) return res.status(400).json({ error: "Invalid email" });
@@ -835,8 +836,11 @@ app.post("/api/orders", async (req, res) => {
       return res.status(400).json({ error: "Invalid phone" });
     }
     if (!["upi", "bank"].includes(method)) return res.status(400).json({ error: "Invalid payment method" });
-    if (!utr || utr.length < 4 || utr.length > 40 || !/^[A-Za-z0-9\-_]+$/.test(utr)) {
+    if (utr && (utr.length < 4 || utr.length > 40 || !/^[A-Za-z0-9\-_]+$/.test(utr))) {
       return res.status(400).json({ error: "Invalid UTR / transaction id" });
+    }
+    if (!screenshotUrl || !/^https:\/\/[^\s<>"']{4,500}$/i.test(screenshotUrl)) {
+      return res.status(400).json({ error: "Payment screenshot URL is required (https link)" });
     }
 
     initFirebaseAdmin();
@@ -847,18 +851,18 @@ app.post("/api/orders", async (req, res) => {
     const price = Number(bookData.price) || 0;
     if (price <= 0) return res.status(400).json({ error: "This book is free — no purchase needed" });
 
-    // Reject exact-duplicate (same UTR already submitted for same book+email)
-    const dupUtr = await db.collection("orders")
-      .where("utr", "==", utr)
+    // Reject exact duplicate screenshot proof for the same book.
+    const dupProof = await db.collection("orders")
+      .where("screenshotUrl", "==", screenshotUrl)
       .where("bookId", "==", bookId)
       .limit(1)
       .get();
-    if (!dupUtr.empty) {
-      const existing = dupUtr.docs[0].data() || {};
+    if (!dupProof.empty) {
+      const existing = dupProof.docs[0].data() || {};
       return res.status(409).json({
-        error: "This UTR is already on file for this book",
+        error: "This payment screenshot is already on file for this book",
         accessCode: existing.accessCode || "",
-        orderId: dupUtr.docs[0].id
+        orderId: dupProof.docs[0].id
       });
     }
 
@@ -880,6 +884,7 @@ app.post("/api/orders", async (req, res) => {
       buyerPhone: phone,
       method,
       utr,
+      screenshotUrl,
       status: "pending",
       accessCode,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
@@ -1010,6 +1015,7 @@ app.get("/admin/orders", async (req, res) => {
         buyerPhone: x.buyerPhone || "",
         method: x.method || "",
         utr: x.utr || "",
+        screenshotUrl: x.screenshotUrl || "",
         status: x.status || "pending",
         accessCode: x.accessCode || "",
         createdAt: x.createdAt?.toMillis ? x.createdAt.toMillis() : null,
