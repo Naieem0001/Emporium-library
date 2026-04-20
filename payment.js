@@ -373,10 +373,9 @@
           </select>
         </label>
         <label class="pm-field">
-          <span>Payment Screenshot URL <i>*</i></span>
-          <input type="url" name="proofUrl" inputmode="url" required
-                 placeholder="https://... (receipt image link)"
-                 autocomplete="off" />
+          <span>Payment Screenshot <i>*</i> <small style="text-transform:none;letter-spacing:normal;color:#94A3B8;">(image, max 5MB)</small></span>
+          <input type="file" name="proofFile" required
+                 accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
         </label>
         <div class="pm-form-error" id="pmFormError"></div>
         <button type="submit" class="pm-primary">
@@ -393,33 +392,42 @@
       const form = ev.currentTarget;
       const err = panel.querySelector("#pmFormError");
       err.textContent = "";
-      const data = {
-        bookId: book.id,
-        email: form.email.value.trim().toLowerCase(),
-        phone: form.phone.value.trim(),
-        method: form.method.value,
-        screenshotUrl: form.proofUrl.value.trim()
-      };
+      const proofFile = form.proofFile.files && form.proofFile.files[0];
+      if (!proofFile) {
+        err.textContent = "Please upload your payment screenshot.";
+        return;
+      }
+      if (proofFile.size > 5 * 1024 * 1024) {
+        err.textContent = "Screenshot is too large (max 5MB).";
+        return;
+      }
+      const data = new FormData();
+      data.append("bookId", book.id);
+      data.append("email", form.email.value.trim().toLowerCase());
+      data.append("phone", form.phone.value.trim());
+      data.append("method", form.method.value);
+      data.append("proof", proofFile);
       const submitBtn = form.querySelector("button[type='submit']");
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting&hellip;';
       try {
         const r = await fetch(API_BASE + "/api/orders", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
+          body: data
         });
         const body = await r.json().catch(() => ({}));
         if (!r.ok) {
           if (r.status === 409 && body.accessCode) {
-            saveLocalOrder(book, body.accessCode, data.email);
-            renderSuccess(book, body.accessCode, data.email, true);
+            const buyerEmail = String(form.email.value || "").trim().toLowerCase();
+            saveLocalOrder(book, body.accessCode, buyerEmail);
+            renderSuccess(book, body.accessCode, buyerEmail, true);
             return;
           }
           throw new Error(body.error || "Could not create order");
         }
-        saveLocalOrder(book, body.accessCode, data.email);
-        renderSuccess(book, body.accessCode, data.email, false);
+        const buyerEmail = String(form.email.value || "").trim().toLowerCase();
+        saveLocalOrder(book, body.accessCode, buyerEmail);
+        renderSuccess(book, body.accessCode, buyerEmail, false);
       } catch (e) {
         err.textContent = e.message || "Something went wrong";
         submitBtn.disabled = false;

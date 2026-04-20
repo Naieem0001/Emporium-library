@@ -279,6 +279,18 @@ const uploadQR = multer({
   }
 });
 
+const uploadProof = multer({
+  dest: os.tmpdir(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    if (!IMAGE_ALLOWED_EXT.has(ext)) return cb(new Error("Invalid screenshot image type"));
+    if (!file.mimetype || file.mimetype === "application/octet-stream") return cb(null, true);
+    if (IMAGE_ALLOWED_MIME.has(file.mimetype)) return cb(null, true);
+    return cb(new Error("Invalid screenshot image type"));
+  }
+});
+
 function generateAccessCode(len = 8) {
   const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   const buf = crypto.randomBytes(len);
@@ -820,15 +832,17 @@ app.post("/admin/books/:id/set-pricing", async (req, res) => {
   }
 });
 
-// Public: create a pending order after buyer submits UTR.
-app.post("/api/orders", async (req, res) => {
+// Public: create a pending order after buyer submits payment screenshot.
+app.post("/api/orders", uploadProof.single("proof"), async (req, res) => {
+  const proofTmpPath = req.file?.path;
+  const cleanup = () => { if (proofTmpPath) fs.unlink(proofTmpPath, () => {}); };
   try {
     const bookId = String(req.body.bookId || "").trim();
     const emailRaw = String(req.body.email || "").trim().toLowerCase();
     const phone = String(req.body.phone || "").trim();
     const method = String(req.body.method || "").toLowerCase().trim();
     const utr = String(req.body.utr || "").trim();
-    const screenshotUrl = String(req.body.screenshotUrl || "").trim();
+    const proofFile = req.file;
 
     if (!bookId || bookId.length > 200) return res.status(400).json({ error: "Invalid bookId" });
     if (!isValidEmail(emailRaw)) return res.status(400).json({ error: "Invalid email" });
@@ -839,8 +853,8 @@ app.post("/api/orders", async (req, res) => {
     if (utr && (utr.length < 4 || utr.length > 40 || !/^[A-Za-z0-9\-_]+$/.test(utr))) {
       return res.status(400).json({ error: "Invalid UTR / transaction id" });
     }
-    if (!screenshotUrl || !/^https:\/\/[^\s<>"']{4,500}$/i.test(screenshotUrl)) {
-      return res.status(400).json({ error: "Payment screenshot URL is required (https link)" });
+    if (!proofFile) {
+      return res.status(400).json({ error: "Payment screenshot is required" });
     }
 
     initFirebaseAdmin();
@@ -851,20 +865,45 @@ app.post("/api/orders", async (req, res) => {
     const price = Number(bookData.price) || 0;
     if (price <= 0) return res.status(400).json({ error: "This book is free — no purchase needed" });
 
-    // Reject exact duplicate screenshot proof for the same book.
-    const dupProof = await db.collection("orders")
-      .where("screenshotUrl", "==", screenshotUrl)
-      .where("bookId", "==", bookId)
-      .limit(1)
-      .get();
-    if (!dupProof.empty) {
-      const existing = dupProof.docs[0].data() || {};
-      return res.status(409).json({
-        error: "This payment screenshot is already on file for this book",
-        accessCode: existing.accessCode || "",
-        orderId: dupProof.docs[0].id
+    if (utr) {
+      const dupUtr = await db.collection("orders")
+        .where("utr", "==", utr)
+        .where("bookId", "==", bookId)
+        .limit(1)
+        .get();
+      if (!dupUtr.empty) {
+        const existing = dupUtr.docs[0].data() || {};
+        cleanup();
+        return res.status(409).json({
+          error: "This UTR is already on file for this book",
+          accessCode: existing.accessCode || "",
+          orderId: dupUtr.docs[0].id
+        });
+      }
+    }
+
+    const proofFolderRaw =
+      process.env.PAYMENT_PROOF_DRIVE_FOLDER_ID ||
+      process.env.DRIVE_PARENT_FOLDER_ID;
+    const folderId = normalizeDriveFolderId(proofFolderRaw);
+    if (!folderId) {
+      cleanup();
+      return res.status(500).json({
+        error: "Server missing PAYMENT_PROOF_DRIVE_FOLDER_ID (or DRIVE_PARENT_FOLDER_ID fallback)"
       });
     }
+    const bundle = getDriveClient();
+    const drive = bundle.drive;
+    let parentId = folderId;
+    try {
+      parentId = await resolveDriveParentFolderId(drive, folderId);
+    } catch (e) {
+      const detail = driveApiDetail(e) || e.message || "Cannot read folder";
+      cleanup();
+      return res.status(400).json({ error: `Drive parent folder: ${detail}` });
+    }
+    const proofId = await uploadPublicFileToDrive(drive, parentId, proofFile, "payment-proof");
+    const screenshotUrl = `https://drive.google.com/thumbnail?id=${proofId}&sz=w1200`;
 
     let accessCode = "";
     for (let i = 0; i < 6; i++) {
@@ -890,9 +929,11 @@ app.post("/api/orders", async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
+    cleanup();
     return res.json({ ok: true, orderId: orderRef.id, accessCode });
   } catch (err) {
     console.error(err);
+    cleanup();
     return res.status(500).json({ error: err?.message || "Order creation failed" });
   }
 });
@@ -1092,6 +1133,9 @@ app.use((err, _req, res, _next) => {
       }
       if (_req.path === "/admin/payment-config") {
         return res.status(400).json({ error: "QR image too large (max 5MB)" });
+      }
+      if (_req.path === "/api/orders") {
+        return res.status(400).json({ error: "Payment screenshot too large (max 5MB)" });
       }
       return res.status(400).json({ error: "File too large (max 400MB for admin book uploads)" });
     }
