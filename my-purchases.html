@@ -409,6 +409,24 @@
         dateStyle: "medium", timeStyle: "short"
     }) : "";
     const fmtRupees = n => "\u20B9" + (Number(n) || 0).toLocaleString("en-IN");
+    const toDirectDownloadUrl = raw => {
+        const url = String(raw || "").trim();
+        if (!url) return "";
+        try {
+            const u = new URL(url);
+            if (!/^https?:$/i.test(u.protocol)) return "";
+            if (u.hostname.includes("drive.google.com")) {
+                const m = u.pathname.match(/\/file\/d\/([^/]+)/);
+                const id = m ? m[1] : u.searchParams.get("id");
+                if (id) {
+                    return `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download&confirm=t`;
+                }
+            }
+            return u.href;
+        } catch {
+            return "";
+        }
+    };
 
     function getLocalOrders() {
         try { return JSON.parse(localStorage.getItem(LS_KEY_ORDERS) || "[]"); }
@@ -613,8 +631,17 @@
                         localStorage.setItem(LS_KEY_ORDERS, JSON.stringify(list.slice(0, 50)));
                     }
                 } catch {}
-                window.open(body.driveLink, "_blank", "noopener");
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> Opened in new tab';
+                const direct = toDirectDownloadUrl(body.driveLink) || String(body.driveLink || "");
+                if (!direct) throw new Error("No valid download link returned");
+                // Trigger direct download URL instead of opening the Drive viewer page.
+                const a = document.createElement("a");
+                a.href = direct;
+                a.target = "_blank";
+                a.rel = "noopener";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Download started';
                 setTimeout(() => { btn.innerHTML = origHTML; btn.disabled = false; }, 2500);
             } else {
                 throw new Error("No download link returned");
