@@ -6,39 +6,40 @@
 # ---- Good bots: Allow full crawl ----
 
 User-agent: Googlebot
-Allow: /images/logo.png
+Allow: /Images/brand/logo-icon.svg
+Allow: /Images/brand/logo-social.svg
 Allow: /
 Disallow: /books/
 Disallow: /admin.html
 Disallow: /images/
 
 User-agent: Googlebot-Image
-Allow: /images/logo.png
+Allow: /Images/brand/logo-icon.svg
 Disallow: /
 
 User-agent: Bingbot
-Allow: /images/logo.png
+Allow: /Images/brand/logo-icon.svg
 Allow: /
 Disallow: /books/
 Disallow: /admin.html
 Disallow: /images/
 
 User-agent: Slurp
-Allow: /images/logo.png
+Allow: /Images/brand/logo-icon.svg
 Allow: /
 Disallow: /books/
 Disallow: /admin.html
 Disallow: /images/
 
 User-agent: DuckDuckBot
-Allow: /images/logo.png
+Allow: /Images/brand/logo-icon.svg
 Allow: /
 Disallow: /books/
 Disallow: /admin.html
 Disallow: /images/
 
 User-agent: Baiduspider
-Allow: /images/logo.png
+Allow: /Images/brand/logo-icon.svg
 Allow: /
 Disallow: /books/
 Disallow: /admin.html
@@ -124,7 +125,8 @@ Disallow: /
 # Allow the whole public site; backend API lives on Render, not under these paths.
 
 User-agent: *
-Allow: /images/logo.png
+Allow: /Images/brand/logo-icon.svg
+Allow: /Images/brand/logo-social.svg
 Allow: /
 Disallow: /books/
 Disallow: /admin.html

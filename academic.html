@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- ================= PRIMARY SEO ================= -->
-  <title>Academic Hub | Emporium Library &ndash; Free Student Notes, Assignments &amp; Study Resources</title>
-  <meta name="description" content="The Emporium Academic Hub is a free, community-driven archive of student study notes, lecture summaries, assignments and exam resources. Download notes or upload your own to earn contributor points." />
+  <title>Academic Hub | Emporium Library Student Notes &amp; Study Resources</title>
+  <meta name="description" content="Emporium Library Academic Hub is a student-focused archive of notes, lecture summaries, assignments and exam resources. Browse resources or upload your own notes." />
   <meta name="keywords" content="Emporium Academic Hub, student notes, study notes, lecture notes, assignments, exam resources, free study material, college notes, university notes, Emporium Library" />
   <meta name="author" content="Naieem Qureshi" />
   <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -14,24 +14,24 @@
   <link rel="canonical" href="https://emporiumlibrary.me/academic.html" />
 
   <!-- ================= FAVICON ================= -->
-  <link rel="icon" type="image/png" href="images/logo.png" />
-  <link rel="apple-touch-icon" href="images/logo.png" />
-  <link rel="shortcut icon" href="images/logo.png" />
+  <link rel="icon" type="image/svg+xml" href="Images/brand/logo-icon.svg" />
+  <link rel="apple-touch-icon" href="Images/brand/logo-icon.svg" />
+  <link rel="shortcut icon" href="Images/brand/logo-icon.svg" />
 
   <!-- ================= OPEN GRAPH ================= -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Emporium Library" />
-  <meta property="og:title" content="Academic Hub | Emporium Library &ndash; Free Student Notes &amp; Study Resources" />
-  <meta property="og:description" content="Download free student notes and upload your own study material on the Emporium Academic Hub." />
+  <meta property="og:title" content="Academic Hub | Emporium Library Student Resources" />
+  <meta property="og:description" content="Browse student notes, assignments and study resources in the Emporium Academic Hub." />
   <meta property="og:url" content="https://emporiumlibrary.me/academic.html" />
-  <meta property="og:image" content="https://emporiumlibrary.me/images/logo.png" />
+  <meta property="og:image" content="https://emporiumlibrary.me/Images/brand/logo-social.svg" />
   <meta property="og:locale" content="en_US" />
 
   <!-- ================= TWITTER ================= -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Academic Hub | Emporium Library" />
-  <meta name="twitter:description" content="Free student notes, assignments and study resources. Upload and earn contributor points." />
-  <meta name="twitter:image" content="https://emporiumlibrary.me/images/logo.png" />
+  <meta name="twitter:title" content="Academic Hub | Emporium Library Student Resources" />
+  <meta name="twitter:description" content="Browse student notes, assignments and study resources in the Emporium Academic Hub." />
+  <meta name="twitter:image" content="https://emporiumlibrary.me/Images/brand/logo-social.svg" />
 
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -317,6 +317,75 @@
         opacity: 1;
         pointer-events: auto;
         transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .academic-page-nav .nav-container {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "logo menu"
+          "tools tools";
+        column-gap: 10px;
+        row-gap: 10px;
+        align-items: center;
+      }
+      .academic-page-nav .logo {
+        grid-area: logo;
+        padding-right: 0;
+      }
+      .academic-page-nav .logo-img {
+        height: 90px;
+        max-width: 290px;
+      }
+      .academic-page-nav .nav-right {
+        grid-area: tools;
+        width: 100%;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+      }
+      .academic-page-nav .search-box {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 12px;
+      }
+      .academic-page-nav .search-box input {
+        width: 100% !important;
+        min-width: 0;
+      }
+      .academic-page-nav .auth-nav {
+        display: inline-flex !important;
+        justify-content: flex-end;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: nowrap;
+        min-width: 0;
+      }
+      .academic-page-nav .auth-nav .auth-name {
+        max-width: 110px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .academic-page-nav .hamburger {
+        grid-area: menu;
+        align-self: center;
+        justify-self: end;
+        width: 42px;
+        height: 42px;
+      }
+      .academic-page-nav .nav-menu {
+        top: calc(100% + 10px);
+      }
+    }
+
+    @media (max-width: 420px) {
+      .academic-page-nav .logo-img {
+        height: 82px;
+        max-width: 255px;
       }
     }
 
@@ -1007,7 +1076,7 @@
   <header class="navbar academic-page-nav">
     <div class="nav-container">
       <a href="index.html" class="logo" aria-label="Emporium Library home">
-        <img src="images/logo.png" alt="Emporium Library" class="logo-img">
+        <img src="Images/logo-animated.svg" alt="Emporium Library" class="logo-img">
       </a>
       <nav class="nav-menu" id="navMenu" aria-label="Main navigation">
         <a href="index.html">Home</a>
@@ -1192,7 +1261,7 @@
     <div class="footer-container">
       <div class="footer-col">
         <h3>
-          <img src="images/logo.png" alt="Emporium Library" class="footer-logo-img">
+          <img src="Images/logo-animated-static.svg" alt="Emporium Library" class="footer-logo-img">
         </h3>
         <p>A digital home for readers and students where you can explore, download, and share knowledge freely.</p>
       </div>

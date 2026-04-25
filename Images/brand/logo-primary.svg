@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 220" role="img" aria-labelledby="title desc">
+  <title id="title">Emporium Library Logo</title>
+  <desc id="desc">Open book emblem with Emporium Library wordmark.</desc>
+  <defs>
+    <linearGradient id="warmAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF7A18"/>
+      <stop offset="100%" stop-color="#FF9F43"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(30 20)">
+    <circle cx="90" cy="90" r="76" fill="none" stroke="#1B2A41" stroke-width="8"/>
+    <path d="M38 80c16-20 34-29 52-29s36 9 52 29v44c-16-17-34-25-52-25s-36 8-52 25z" fill="none" stroke="#1B2A41" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M90 53v68" stroke="#1B2A41" stroke-width="6" stroke-linecap="round"/>
+    <path d="M56 83h28M56 97h28M96 83h28M96 97h28" stroke="#243B55" stroke-width="4" stroke-linecap="round"/>
+    <path d="M40 152c12 10 30 17 50 17s38-7 50-17" fill="none" stroke="url(#warmAccent)" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(220 58)">
+    <text x="0" y="48" fill="#1B2A41" font-size="56" font-family="Georgia, 'Times New Roman', serif" font-weight="700" letter-spacing="1.5">EMPORIUM</text>
+    <text x="0" y="108" fill="#243B55" font-size="56" font-family="Georgia, 'Times New Roman', serif" font-weight="700" letter-spacing="1.5">LIBRARY</text>
+    <rect x="2" y="126" width="525" height="6" rx="3" fill="url(#warmAccent)"/>
+  </g>
+</svg>

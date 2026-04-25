@@ -21,3 +21,14 @@ Emporium Library is a modern digital e-library web platform that provides free a
 ## Developed By
 
 Naieem Qureshi
+
+## Brand Logo Assets
+
+UI logo files now live in `Images/brand/` with stable names:
+
+- `logo-primary.svg` for light backgrounds and structured data logo URL
+- `logo-inverse.svg` for dark navbar/footer rendering
+- `logo-icon.svg` for favicon and touch icon
+- `logo-social.svg` for Open Graph/Twitter share previews
+
+If you later provide a clean official source logo, keep the same filenames and replace only the matching files in `Images/brand/`. This updates the entire site without editing page markup again.

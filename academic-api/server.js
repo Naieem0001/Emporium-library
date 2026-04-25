@@ -231,6 +231,219 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "emporium-academic-api" });
 });
 
+const GOOGLE_BOOKS_API_KEY = String(process.env.GOOGLE_BOOKS_API_KEY || "").trim();
+const EXTERNAL_TIMEOUT_MS = 12000;
+
+const EXTERNAL_GENRE_QUERY_MAP = {
+  fiction: "fiction",
+  literature: "classic literature",
+  "horror-thriller": "horror thriller",
+  religion: "religion islam",
+  spirituality: "spirituality",
+  "science-fiction": "science fiction",
+  "rom-com": "romantic comedy",
+  "non-fiction": "non fiction",
+  academic: "academic textbook",
+  all: "books"
+};
+
+function normalizeLooseText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function normalizeExternalGenre(value) {
+  const v = normalizeLooseText(value).replace(/\s+/g, "-");
+  const alias = {
+    "sci-fi": "science-fiction",
+    scifi: "science-fiction",
+    romance: "rom-com",
+    "horror-&-thriller": "horror-thriller"
+  };
+  return alias[v] || v;
+}
+
+function getGenreQuery(genreName) {
+  const k = normalizeExternalGenre(genreName);
+  return EXTERNAL_GENRE_QUERY_MAP[k] || String(genreName || "").trim() || "books";
+}
+
+function normalizeAuthorList(authors) {
+  if (Array.isArray(authors)) return authors.map(x => String(x || "").trim()).filter(Boolean).join(", ");
+  return String(authors || "").trim();
+}
+
+function withTimeout(ms, promiseFactory) {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve([]), ms);
+    promiseFactory()
+      .then(data => {
+        clearTimeout(t);
+        resolve(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        clearTimeout(t);
+        resolve([]);
+      });
+  });
+}
+
+function dedupeExternalBooks(items) {
+  const out = [];
+  const seen = new Set();
+  for (const x of items) {
+    const isbn = String(x?.isbn || "").trim().toLowerCase();
+    const titleAuthor = `${normalizeLooseText(x?.title)}|${normalizeLooseText(x?.author)}`;
+    const key = isbn ? `isbn:${isbn}` : `ta:${titleAuthor}`;
+    if (!titleAuthor || seen.has(key)) continue;
+    seen.add(key);
+    out.push(x);
+  }
+  return out;
+}
+
+async function fetchGoogleBooks(query) {
+  if (!GOOGLE_BOOKS_API_KEY) return [];
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=20&key=${encodeURIComponent(GOOGLE_BOOKS_API_KEY)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Google Books failed (${res.status})`);
+  const data = await res.json();
+  return (Array.isArray(data.items) ? data.items : []).map((item) => {
+    const vi = item.volumeInfo || {};
+    const access = item.accessInfo || {};
+    const isbn13 = Array.isArray(vi.industryIdentifiers)
+      ? (vi.industryIdentifiers.find(x => String(x?.type).toUpperCase() === "ISBN_13")
+          || vi.industryIdentifiers.find(x => String(x?.type).toUpperCase() === "ISBN_10")
+          || {}).identifier
+      : "";
+    const pdfAvailable = access.pdf?.isAvailable === true;
+    const epubAvailable = access.epub?.isAvailable === true;
+    const isPublicDomain = access.publicDomain === true;
+    const pdfLink = pdfAvailable ? String(access.pdf?.downloadLink || "").trim() : "";
+    const epubLink = epubAvailable ? String(access.epub?.downloadLink || "").trim() : "";
+    const direct = epubLink || pdfLink;
+    const isDownloadable = (isPublicDomain || pdfAvailable || epubAvailable) && !!direct;
+    return {
+      id: `google_${item.id || crypto.randomUUID()}`,
+      title: String(vi.title || "").trim(),
+      author: normalizeAuthorList(vi.authors) || "Unknown",
+      genre: String(Array.isArray(vi.categories) ? vi.categories[0] || "" : "").trim(),
+      cover: String(vi.imageLinks?.thumbnail || vi.imageLinks?.smallThumbnail || "").trim(),
+      driveLink: String(direct || "").trim(),
+      price: 0,
+      source: "google",
+      sourceLabel: "Google Books",
+      externalType: "free",
+      externalUrl: String(direct || "").trim(),
+      isbn: String(isbn13 || "").trim()
+    };
+  }).filter(x => x.title && x.driveLink && x.externalUrl && x.externalType === "free");
+}
+
+async function fetchOpenLibrary(query) {
+  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=24`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "EmporiumLibrary/1.0 (https://emporiumlibrary.me)"
+    }
+  });
+  if (!res.ok) throw new Error(`Open Library failed (${res.status})`);
+  const data = await res.json();
+  return (Array.isArray(data.docs) ? data.docs : []).map((doc) => {
+    const ebookAccess = String(doc.ebook_access || "").trim().toLowerCase();
+    const ia = Array.isArray(doc.ia) && doc.ia.length ? String(doc.ia[0] || "").trim() : "";
+    const epubLink = ia ? `https://archive.org/download/${encodeURIComponent(ia)}/${encodeURIComponent(ia)}.epub` : "";
+    const pdfLink = ia ? `https://archive.org/download/${encodeURIComponent(ia)}/${encodeURIComponent(ia)}.pdf` : "";
+    const txtLink = ia ? `https://archive.org/download/${encodeURIComponent(ia)}/${encodeURIComponent(ia)}.txt` : "";
+    const downloadLink = epubLink || pdfLink || txtLink;
+    const isbn = Array.isArray(doc.isbn) ? String(doc.isbn[0] || "").trim() : "";
+    const coverId = doc.cover_i;
+    return {
+      id: `openlib_${doc.cover_edition_key || doc.edition_key?.[0] || doc.key || crypto.randomUUID()}`,
+      title: String(doc.title || "").trim(),
+      author: normalizeAuthorList(doc.author_name) || "Unknown",
+      genre: normalizeAuthorList(doc.subject?.slice(0, 1) || []),
+      cover: coverId ? `https://covers.openlibrary.org/b/id/${encodeURIComponent(coverId)}-L.jpg` : "",
+      driveLink: downloadLink,
+      price: 0,
+      source: "openlibrary",
+      sourceLabel: "Open Library",
+      externalType: "free",
+      externalUrl: downloadLink,
+      isbn,
+      ebookAccess
+    };
+  }).filter(x => x.title && x.driveLink && x.ebookAccess === "public");
+}
+
+async function fetchGutendex(query) {
+  const url = `https://gutendex.com/books?search=${encodeURIComponent(query)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Gutendex failed (${res.status})`);
+  const data = await res.json();
+  return (Array.isArray(data.results) ? data.results : []).map((book) => {
+    const formats = book.formats || {};
+    const epub = String(formats["application/epub+zip"] || "").trim();
+    const pdf = String(formats["application/pdf"] || "").trim();
+    const text = String(formats["text/plain; charset=utf-8"] || formats["text/plain"] || "").trim();
+    const link = epub || pdf || text;
+    const author = Array.isArray(book.authors) && book.authors.length
+      ? normalizeAuthorList(book.authors.map(a => a?.name))
+      : "Unknown";
+    return {
+      id: `gutendex_${book.id || crypto.randomUUID()}`,
+      title: String(book.title || "").trim(),
+      author,
+      genre: "",
+      cover: String(formats["image/jpeg"] || "").trim(),
+      driveLink: String(link || "").trim(),
+      price: 0,
+      source: "gutenberg",
+      sourceLabel: "Gutenberg",
+      externalType: "free",
+      externalUrl: String(link || "").trim(),
+      isbn: ""
+    };
+  }).filter(x => x.title && x.driveLink && x.externalUrl);
+}
+
+async function aggregateExternalBooks(query) {
+  const q = String(query || "").trim();
+  if (!q) return [];
+  const [googleRows, openRows, gutenRows] = await Promise.all([
+    withTimeout(EXTERNAL_TIMEOUT_MS, () => fetchGoogleBooks(q)),
+    withTimeout(EXTERNAL_TIMEOUT_MS, () => fetchOpenLibrary(q)),
+    withTimeout(EXTERNAL_TIMEOUT_MS, () => fetchGutendex(q))
+  ]);
+  return dedupeExternalBooks([...googleRows, ...openRows, ...gutenRows]).slice(0, 60);
+}
+
+app.get("/api/external/search", async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    if (!q || q.length < 2) return res.json({ ok: true, query: q, books: [] });
+    const books = await aggregateExternalBooks(q);
+    return res.json({ ok: true, query: q, books });
+  } catch (err) {
+    console.error("External search failed:", err);
+    return res.status(500).json({ ok: false, error: "External search failed", books: [] });
+  }
+});
+
+app.get("/api/external/genre", async (req, res) => {
+  try {
+    const genre = String(req.query.genre || "").trim();
+    const mappedQuery = getGenreQuery(genre);
+    const books = await aggregateExternalBooks(mappedQuery);
+    return res.json({ ok: true, genre, query: mappedQuery, books });
+  } catch (err) {
+    console.error("External genre failed:", err);
+    return res.status(500).json({ ok: false, error: "External genre failed", books: [] });
+  }
+});
+
 const upload = multer({
   dest: os.tmpdir(),
   limits: { fileSize: NOTES_MAX_BYTES },

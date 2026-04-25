@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 280" role="img" aria-labelledby="logoTitle logoDesc">
+  <title id="logoTitle">Emporium Library</title>
+  <desc id="logoDesc">Static medallion logo with monogram E and quill.</desc>
+
+  <g>
+    <circle cx="110" cy="100" r="82" fill="none" stroke="#D4A030" stroke-width="0.9" stroke-dasharray="4 6" opacity="0.55"/>
+  </g>
+  <g>
+    <circle cx="110" cy="100" r="70" fill="none" stroke="#E8890C" stroke-width="0.7" stroke-dasharray="2 9" opacity="0.45"/>
+  </g>
+  <circle cx="110" cy="100" r="82" fill="none" stroke="#FAD87A" stroke-width="2.1" stroke-dasharray="34 486" opacity="0.7"/>
+
+  <circle cx="110" cy="100" r="60" fill="#0F0E17"/>
+  <circle cx="110" cy="100" r="60" fill="none" stroke="#D4A030" stroke-width="2"/>
+  <circle cx="110" cy="100" r="52" fill="none" stroke="#D4A030" stroke-width="0.8"/>
+
+  <g>
+    <text x="110" y="120" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="700" fill="#D4A030" fill-opacity=".10" stroke="#D4A030" stroke-width="1.15">E</text>
+  </g>
+
+  <g>
+    <path d="M110 62 C122 72 128 84 124 98 C120 112 112 118 110 124" stroke="#D4A030" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="M110 62 C98 72 92 84 96 98 C100 112 108 118 110 124" stroke="#E8890C" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.78"/>
+    <path d="M110 62 C113 78 114 100 110 124" stroke="#FAD87A" stroke-width="0.9" fill="none" stroke-linecap="round" opacity="0.74"/>
+    <path d="M110 124 L107 138 L110 134 L113 138 Z" fill="#D4A030"/>
+  </g>
+
+  <g>
+    <circle cx="66" cy="70" r="2" fill="#FAD87A" opacity="0.9"/>
+    <circle cx="154" cy="67" r="1.8" fill="#FAD87A" opacity="0.9"/>
+    <circle cx="60" cy="130" r="1.7" fill="#E8890C" opacity="0.85"/>
+    <circle cx="160" cy="127" r="1.6" fill="#FAD87A" opacity="0.85"/>
+  </g>
+
+  <g>
+    <text x="110" y="192" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="700" fill="#D4A030" letter-spacing="4">EMPORIUM</text>
+    <line x1="52" y1="200" x2="168" y2="200" stroke="#D4A030" stroke-width="0.8" opacity="0.56"/>
+    <circle cx="110" cy="200" r="2" fill="#D4A030" opacity="0.75"/>
+    <text x="110" y="216" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="10" font-weight="500" fill="#C4922A" letter-spacing="7">LIBRARY</text>
+  </g>
+</svg>

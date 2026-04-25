@@ -9,6 +9,13 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const LOCAL_API_BASE = "http://127.0.0.1:3000";
+const REMOTE_API_BASE = "https://emporium-academic-api.onrender.com";
+const isLocalHostRuntime =
+  window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+const API_BASE = String(
+  window.EMPORIUM_ACADEMIC_API || (isLocalHostRuntime ? LOCAL_API_BASE : REMOTE_API_BASE)
+).replace(/\/$/, "");
 
 /* ========== HAMBURGER ========== */
 const hamburger = document.getElementById("hamburger");
@@ -33,6 +40,7 @@ if (hamburger && navMenu) {
 
 /* ========== SEARCH ========== */
 const searchInput = document.querySelector(".search-box input");
+const isGenrePage = !!document.getElementById("libraryGrid");
 if (searchInput) {
   searchInput.addEventListener("keydown", e => {
     if (e.key === "Enter" && e.target.value.trim()) {
@@ -47,7 +55,8 @@ function escapeHTML(str) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function toDirectDownloadUrl(url) {
@@ -138,26 +147,69 @@ function getStoredParam(name) {
   }
 }
 
+function debounce(fn, wait = 500) {
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+
 /* ========== RENDER BOOK CARD ========== */
 const bookCache = new Map();
+let externalBooks = [];
+let externalMeta = { loading: false, label: "" };
+let activeSearchRequest = 0;
+let allFirestoreBooks = [];
+let firestoreFilteredCount = 0;
+
+function updateGenreCountDisplay() {
+  const count = document.getElementById("genreCount");
+  if (!count) return;
+  if (externalMeta.loading) {
+    if (firestoreFilteredCount > 0) {
+      count.textContent = `${firestoreFilteredCount}+ results`;
+    } else {
+      count.textContent = "Searching books...";
+    }
+    return;
+  }
+  const total = firestoreFilteredCount + externalBooks.length;
+  count.textContent = `${total} result${total !== 1 ? "s" : ""}`;
+}
 
 function renderCard(book) {
+  const isExternal = !!book.externalSource;
   const price = Number(book.price) || 0;
-  const isPaid = price > 0;
+  const isPaid = !isExternal && price > 0;
   if (book.id) bookCache.set(book.id, book);
-  const cardClass = isPaid ? "book-card is-paid" : "book-card";
-  const badge = isPaid
+  const cardClass = `book-card${isPaid ? " is-paid" : ""}${isExternal ? " is-external" : ""}`;
+  const paidBadge = isPaid
     ? `<span class="paid-badge"><i class="fa-solid fa-lock"></i> Paid</span>`
     : "";
+  const sourceBadge = isExternal
+    ? `<span class="source-badge source-${escapeHTML(book.externalSource)}">${escapeHTML(book.externalSourceLabel || "Web")}</span>`
+    : "";
+  const availabilityBadge = isExternal
+    ? `<span class="availability-badge availability-free">FREE DOWNLOAD</span>`
+    : "";
+  const badge = `${paidBadge}${sourceBadge}${availabilityBadge}`;
   const action = isPaid
     ? `<button type="button" class="buy-btn" data-book-id="${escapeHTML(book.id || "")}" onclick="openEmporiumCheckout(this)">
          <i class="fa-solid fa-indian-rupee-sign"></i> Buy &mdash; &#8377;${price}
        </button>`
+    : isExternal
+    ? `<a href="${escapeHTML(book.externalUrl || book.driveLink)}" target="_blank" rel="noopener noreferrer" class="download-btn">
+         <i class="fa-solid fa-download"></i> Download
+       </a>`
     : `<a href="${escapeHTML(toDirectDownloadUrl(book.driveLink))}" rel="noopener noreferrer" class="download-btn" download>
          <i class="fa-solid fa-download"></i> Download
        </a>`;
+  const externalClickAttrs = isExternal
+    ? ` role="link" tabindex="0" onclick="openExternalBookCard(event, '${escapeHTML(book.externalUrl || book.driveLink)}')" onkeydown="openExternalBookCard(event, '${escapeHTML(book.externalUrl || book.driveLink)}')"`
+    : "";
   return `
-    <div class="${cardClass}">
+    <div class="${cardClass}"${externalClickAttrs}>
       ${badge}
       <div class="book-cover">
         <img src="${escapeHTML(book.cover)}" alt="${escapeHTML(book.title)}"
@@ -169,6 +221,15 @@ function renderCard(book) {
         ${action}
       </div>
     </div>`;
+}
+
+function openExternalBookCard(event, url) {
+  if (!url) return;
+  const triggerKey = event && (event.key === "Enter" || event.key === " ");
+  if (event && event.type === "keydown" && !triggerKey) return;
+  if (event && event.target && event.target.closest("a, button")) return;
+  if (event && triggerKey) event.preventDefault();
+  window.open(url, "_blank", "noopener");
 }
 
 function openEmporiumCheckout(btn) {
@@ -230,11 +291,18 @@ function renderCurrentPage() {
   const end   = start + booksPerPage;
   const page  = currentBooks.slice(start, end);
 
-  grid.innerHTML = page.length
-    ? page.map(renderCard).join("")
-    : `<p class="state-message">No books found.</p>`;
+  if (page.length) {
+    grid.innerHTML = page.map(renderCard).join("");
+  } else if (externalMeta.loading) {
+    grid.innerHTML = "";
+  } else if (!externalBooks.length) {
+    grid.innerHTML = `<p class="state-message">No books found.</p>`;
+  } else {
+    grid.innerHTML = "";
+  }
 
   setupPagination();
+  renderExternalSection();
 }
 
 function setupPagination() {
@@ -278,6 +346,102 @@ function goToPage(page) {
   if (genreHeader) genreHeader.scrollIntoView({ behavior: "smooth" });
 }
 
+function normalizeExternalBook(raw) {
+  return {
+    id: String(raw.id || ""),
+    title: String(raw.title || "").trim(),
+    author: String(raw.author || "Unknown").trim() || "Unknown",
+    genre: String(raw.genre || "").trim(),
+    cover: String(raw.cover || "").trim() || "https://via.placeholder.com/150x220?text=No+Cover",
+    driveLink: String(raw.driveLink || raw.externalUrl || "").trim(),
+    price: 0,
+    externalSource: String(raw.source || "").trim().toLowerCase(),
+    externalSourceLabel: String(raw.sourceLabel || "Web").trim(),
+    externalType: "free",
+    externalUrl: String(raw.externalUrl || raw.driveLink || "").trim()
+  };
+}
+
+function externalDividerLabel() {
+  return externalMeta.label || "More from the web";
+}
+
+function renderExternalSection() {
+  const grid = document.getElementById("libraryGrid");
+  if (!grid || currentPage !== 1) return;
+
+  const old = grid.querySelector(".external-books-block");
+  if (old) old.remove();
+
+  if (externalMeta.loading) {
+    grid.insertAdjacentHTML("beforeend", `
+      <div class="external-books-block">
+        <div class="external-divider">${escapeHTML(externalDividerLabel())}</div>
+        <div class="external-books-grid">
+          ${Array.from({ length: 6 }).map(() => `<div class="external-skeleton"></div>`).join("")}
+        </div>
+      </div>
+    `);
+    updateGenreCountDisplay();
+    return;
+  }
+
+  if (!externalBooks.length) {
+    updateGenreCountDisplay();
+    return;
+  }
+
+  grid.insertAdjacentHTML("beforeend", `
+    <div class="external-books-block">
+      <div class="external-divider">${escapeHTML(externalDividerLabel())}</div>
+      <div class="external-books-grid">
+        ${externalBooks.map(renderCard).join("")}
+      </div>
+    </div>
+  `);
+  updateGenreCountDisplay();
+}
+
+const scheduleExternalFetch = debounce(async (mode, value, requestId) => {
+  const grid = document.getElementById("libraryGrid");
+  if (!grid) return;
+  try {
+    const endpoint = mode === "search"
+      ? `${API_BASE}/api/external/search?q=${encodeURIComponent(value)}`
+      : `${API_BASE}/api/external/genre?genre=${encodeURIComponent(value)}`;
+    const res = await fetch(endpoint);
+    if (requestId !== activeSearchRequest) return;
+    if (!res.ok) throw new Error(`External fetch failed: ${res.status}`);
+    const data = await res.json();
+    if (requestId !== activeSearchRequest) return;
+    externalBooks = (Array.isArray(data.books) ? data.books : [])
+      .map(normalizeExternalBook)
+      .filter(x => x.title && x.externalUrl);
+  } catch (err) {
+    console.warn("External books fetch error:", err);
+    if (requestId !== activeSearchRequest) return;
+    externalBooks = [];
+  } finally {
+    if (requestId !== activeSearchRequest) return;
+    externalMeta.loading = false;
+    renderExternalSection();
+    renderCurrentPage();
+  }
+}, 500);
+
+function loadExternalBooks(params) {
+  const { search, genre, sectionLabel } = params;
+  const mode = search ? "search" : "genre";
+  const value = search || genre || "all";
+  activeSearchRequest += 1;
+  const reqId = activeSearchRequest;
+  externalBooks = [];
+  externalMeta = { loading: true, label: sectionLabel || "More from the web" };
+  updateGenreCountDisplay();
+  renderExternalSection();
+  scheduleExternalFetch(mode, value, reqId);
+}
+
 /* ========== GENRE / SEARCH PAGE ========== */
 function getGenreFromURL() {
   return getQueryParam("genre") ?? getStoredParam("genre");
@@ -297,6 +461,7 @@ function loadGenrePage(books) {
   const flag = normalizeText(getFlagFromURL());
   const title  = document.getElementById("genreTitle");
   const count  = document.getElementById("genreCount");
+  let externalLabel = "More from the web";
 
   let filtered = books;
 
@@ -308,12 +473,15 @@ function loadGenrePage(books) {
       normalizeGenre(b.genre).includes(q)
     );
     if (title) title.textContent = `Search: "${search}"`;
+    externalLabel = "More from the web";
   } else if (flag === "trending") {
     filtered = books.filter(b => isTruthy(b.trending));
     if (title) title.textContent = "All Trending Books";
+    externalLabel = "Trending picks from the web";
   } else if (flag === "new") {
     filtered = books.filter(b => isTruthy(b.newRelease));
     if (title) title.textContent = "All New Releases";
+    externalLabel = "New picks from the web";
   } else if (genreParam !== null && genreParam !== "") {
     const genre = normalizeGenre(genreParam);
     if (genre && genre !== "all") {
@@ -322,15 +490,25 @@ function loadGenrePage(books) {
       .split("-")
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join(" ");
+      externalLabel = `${title ? title.textContent : "Genre"} from the web`;
     } else {
       if (title) title.textContent = "All Books";
+      externalLabel = "More books from the web";
     }
   } else {
     if (title) title.textContent = "All Books";
+    externalLabel = "More books from the web";
   }
 
-  if (count) count.textContent = `${filtered.length} book${filtered.length !== 1 ? "s" : ""} available`;
+  firestoreFilteredCount = filtered.length;
+  updateGenreCountDisplay();
   displayBooks(filtered);
+
+  if (search) {
+    loadExternalBooks({ search, sectionLabel: externalLabel });
+  } else {
+    loadExternalBooks({ genre: genreParam || "all", sectionLabel: externalLabel });
+  }
 }
 
 /* ========== LOAD ALL BOOKS FROM FIREBASE ========== */
@@ -338,6 +516,7 @@ function loadAllBooks() {
   db.collection("books").orderBy("createdAt", "desc").get().then(snapshot => {
     const books = [];
     snapshot.forEach(doc => books.push({ id: doc.id, ...doc.data() }));
+    allFirestoreBooks = books;
 
     /* homepage */
     displayTrendingBooks(books);
@@ -355,6 +534,26 @@ function loadAllBooks() {
   });
 }
 
+const onGenreSearchInput = debounce((value) => {
+  if (!isGenrePage || !allFirestoreBooks.length) return;
+  const v = String(value || "").trim();
+  const url = new URL(window.location.href);
+  if (v) {
+    url.searchParams.set("search", v);
+    url.searchParams.delete("genre");
+    url.searchParams.delete("flag");
+  } else {
+    url.searchParams.delete("search");
+  }
+  window.history.replaceState({}, "", url.toString());
+  loadGenrePage(allFirestoreBooks);
+}, 500);
+
 /* ========== INIT ========== */
 persistNavigationFilter();
+if (searchInput && isGenrePage) {
+  const currentSearch = getSearchFromURL();
+  if (currentSearch) searchInput.value = currentSearch;
+  searchInput.addEventListener("input", e => onGenreSearchInput(e.target.value));
+}
 loadAllBooks();

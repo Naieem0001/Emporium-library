@@ -1,0 +1,117 @@
+<svg class="logo-animated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 280" role="img" aria-labelledby="logoTitle logoDesc">
+  <title id="logoTitle">Emporium Library</title>
+  <desc id="logoDesc">Animated medallion logo with monogram E and quill.</desc>
+  <style>
+    .logo-animated { height: 44px; width: auto; overflow: visible; }
+    .logo-animated .ring-outer,
+    .logo-animated .ring-inner,
+    .logo-animated .shimmer-ring,
+    .logo-animated .medallion-bg,
+    .logo-animated .outer-circle,
+    .logo-animated .inner-circle,
+    .logo-animated .mono-e,
+    .logo-animated .quill-group,
+    .logo-animated .ink-drop,
+    .logo-animated .wordmark,
+    .logo-animated .divider,
+    .logo-animated .submark,
+    .logo-animated .stars > * { transform-box: fill-box; transform-origin: center; }
+
+    @keyframes ringSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes ringSpinReverse { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+    @keyframes shimmerSweep { from { stroke-dashoffset: 520; opacity: .25; } 50% { opacity: .9; } to { stroke-dashoffset: -520; opacity: .25; } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(.62); } to { opacity: 1; transform: scale(1); } }
+    @keyframes drawStroke { from { stroke-dashoffset: 420; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes quillDrop { 0% { opacity: 0; transform: translateY(-18px); } 65% { opacity: 1; transform: translateY(4px); } 100% { opacity: 1; transform: translateY(0); } }
+    @keyframes ripple { 0% { opacity: 0; r: 0; } 45% { opacity: .6; } 100% { opacity: 0; r: 10; } }
+    @keyframes textRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes twinkle { 0%,100% { opacity: .2; transform: scale(.72); } 50% { opacity: 1; transform: scale(1.25); } }
+
+    .logo-animated .ring-outer { transform-origin: 110px 100px; animation: ringSpin 18s linear infinite; }
+    .logo-animated .ring-inner { transform-origin: 110px 100px; animation: ringSpinReverse 12s linear infinite; }
+    .logo-animated .shimmer-ring { stroke-dasharray: 34 486; animation: shimmerSweep 3s ease-in-out infinite; }
+    .logo-animated .medallion-bg { transform-origin: 110px 100px; animation: scaleIn .6s cubic-bezier(.34,1.56,.64,1) .05s both; }
+    .logo-animated .outer-circle { stroke-dasharray: 400; stroke-dashoffset: 400; animation: drawStroke 1.2s ease-out .22s both; }
+    .logo-animated .inner-circle { stroke-dasharray: 340; stroke-dashoffset: 340; animation: drawStroke 1.2s ease-out .34s both; }
+    .logo-animated .mono-e { animation: fadeIn .5s ease .8s both; }
+    .logo-animated .quill-group { animation: quillDrop .7s cubic-bezier(.34,1.4,.64,1) 1s both; }
+    .logo-animated .ink-drop { animation: ripple .6s ease-out 1.6s both; }
+    .logo-animated .star1 { animation: twinkle 2.3s ease-in-out 1.8s infinite; }
+    .logo-animated .star2 { animation: twinkle 3.1s ease-in-out 2.1s infinite; }
+    .logo-animated .star3 { animation: twinkle 2.7s ease-in-out 2.35s infinite; }
+    .logo-animated .star4 { animation: twinkle 3.4s ease-in-out 2s infinite; }
+    .logo-animated .wordmark { animation: textRise .6s ease 1.4s both; }
+    .logo-animated .divider { animation: fadeIn .5s ease 1.55s both; }
+    .logo-animated .submark { animation: textRise .6s ease 1.65s both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .logo-animated .ring-outer,
+      .logo-animated .ring-inner,
+      .logo-animated .shimmer-ring,
+      .logo-animated .medallion-bg,
+      .logo-animated .outer-circle,
+      .logo-animated .inner-circle,
+      .logo-animated .mono-e,
+      .logo-animated .quill-group,
+      .logo-animated .ink-drop,
+      .logo-animated .wordmark,
+      .logo-animated .divider,
+      .logo-animated .submark,
+      .logo-animated .stars > * { animation: none !important; }
+      .logo-animated .outer-circle,
+      .logo-animated .inner-circle { stroke-dashoffset: 0; opacity: 1; }
+      .logo-animated .mono-e,
+      .logo-animated .quill-group,
+      .logo-animated .wordmark,
+      .logo-animated .divider,
+      .logo-animated .submark { opacity: 1; transform: none; }
+      .logo-animated .ink-drop { opacity: 0; }
+    }
+  </style>
+
+  <g class="ring-outer">
+    <circle cx="110" cy="100" r="82" fill="none" stroke="#D4A030" stroke-width="0.9" stroke-dasharray="4 6" opacity="0.55"/>
+  </g>
+  <g class="ring-inner">
+    <circle cx="110" cy="100" r="70" fill="none" stroke="#E8890C" stroke-width="0.7" stroke-dasharray="2 9" opacity="0.45"/>
+  </g>
+  <circle class="shimmer-ring" cx="110" cy="100" r="82" fill="none" stroke="#FAD87A" stroke-width="2.4" opacity="0"/>
+
+  <circle class="medallion-bg" cx="110" cy="100" r="60" fill="#0F0E17"/>
+  <circle class="outer-circle" cx="110" cy="100" r="60" fill="none" stroke="#D4A030" stroke-width="2"/>
+  <circle class="inner-circle" cx="110" cy="100" r="52" fill="none" stroke="#D4A030" stroke-width="0.8"/>
+
+  <g class="mono-e">
+    <text x="110" y="120" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="700" fill="#D4A030" fill-opacity=".10" stroke="#D4A030" stroke-width="1.15">E</text>
+  </g>
+
+  <g class="quill-group">
+    <path d="M110 62 C122 72 128 84 124 98 C120 112 112 118 110 124" stroke="#D4A030" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="M110 62 C98 72 92 84 96 98 C100 112 108 118 110 124" stroke="#E8890C" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.78"/>
+    <path d="M110 62 C113 78 114 100 110 124" stroke="#FAD87A" stroke-width="0.9" fill="none" stroke-linecap="round" opacity="0.74"/>
+    <path d="M110 124 L107 138 L110 134 L113 138 Z" fill="#D4A030"/>
+  </g>
+
+  <circle class="ink-drop" cx="110" cy="142" r="0" fill="none" stroke="#D4A030" stroke-width="1.1"/>
+
+  <g class="stars">
+    <circle class="star1" cx="66" cy="70" r="2" fill="#FAD87A"/>
+    <circle class="star2" cx="154" cy="67" r="1.8" fill="#FAD87A"/>
+    <circle class="star3" cx="60" cy="130" r="1.7" fill="#E8890C"/>
+    <circle class="star4" cx="160" cy="127" r="1.6" fill="#FAD87A"/>
+  </g>
+
+  <g class="wordmark-group">
+    <g class="wordmark">
+      <text x="110" y="192" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="700" fill="#D4A030" letter-spacing="4">EMPORIUM</text>
+    </g>
+    <g class="divider">
+      <line x1="52" y1="200" x2="168" y2="200" stroke="#D4A030" stroke-width="0.8" opacity="0.56"/>
+      <circle cx="110" cy="200" r="2" fill="#D4A030" opacity="0.75"/>
+    </g>
+    <g class="submark">
+      <text x="110" y="216" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="10" font-weight="500" fill="#C4922A" letter-spacing="7">LIBRARY</text>
+    </g>
+  </g>
+</svg>
