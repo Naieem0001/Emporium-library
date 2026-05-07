@@ -1,0 +1,319 @@
+
+<style>
+  .logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    cursor: pointer;
+    user-select: none;
+    padding: 1.5rem 2rem;
+    background: #0f1f35;
+    border-radius: 12px;
+    width: fit-content;
+    margin: 0 auto 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .logo-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(232,168,62,0.2);
+    pointer-events: none;
+  }
+
+  /* BOOK SVG */
+  .book-svg { overflow: visible; }
+
+  /* Left page */
+  .page-left {
+    transform-origin: 50px 50%;
+    animation: pageFlutterLeft 3s ease-in-out 0.5s both;
+  }
+  /* Right page */
+  .page-right {
+    transform-origin: 50px 50%;
+    animation: pageFlutterRight 3s ease-in-out 0.7s both;
+  }
+
+  @keyframes pageFlutterLeft {
+    0%   { transform: scaleX(1); }
+    20%  { transform: scaleX(0.3) skewY(-4deg); }
+    40%  { transform: scaleX(0.7) skewY(2deg); }
+    60%  { transform: scaleX(0.9); }
+    100% { transform: scaleX(1); }
+  }
+  @keyframes pageFlutterRight {
+    0%   { transform: scaleX(1); }
+    20%  { transform: scaleX(0.4) skewY(4deg); }
+    40%  { transform: scaleX(0.8) skewY(-2deg); }
+    60%  { transform: scaleX(0.95); }
+    100% { transform: scaleX(1); }
+  }
+
+  /* Quill */
+  .quill {
+    opacity: 0;
+    animation: quillAppear 0.6s ease-out 0.2s forwards;
+    transform-origin: 50% 100%;
+  }
+  @keyframes quillAppear {
+    0%   { opacity: 0; transform: translateY(8px) rotate(-15deg); }
+    100% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  }
+
+  /* Ink lines on pages */
+  .ink-line {
+    stroke-dasharray: 20;
+    stroke-dashoffset: 20;
+  }
+  .ink-line:nth-child(1) { animation: inkWrite 0.4s ease-out 1.0s forwards; }
+  .ink-line:nth-child(2) { animation: inkWrite 0.4s ease-out 1.2s forwards; }
+  .ink-line:nth-child(3) { animation: inkWrite 0.4s ease-out 1.4s forwards; }
+  .ink-line:nth-child(4) { animation: inkWrite 0.4s ease-out 1.1s forwards; }
+  .ink-line:nth-child(5) { animation: inkWrite 0.4s ease-out 1.3s forwards; }
+  .ink-line:nth-child(6) { animation: inkWrite 0.4s ease-out 1.5s forwards; }
+  @keyframes inkWrite {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* Spine glow */
+  .spine {
+    animation: spineGlow 2s ease-in-out 0.3s both;
+  }
+  @keyframes spineGlow {
+    0%   { opacity: 0; stroke-width: 3; }
+    40%  { opacity: 1; stroke-width: 2.5; }
+    100% { opacity: 1; stroke-width: 2; }
+  }
+
+  /* Star particles */
+  .star { opacity: 0; }
+  .star:nth-child(1) { animation: starPop 0.5s ease-out 0.8s both; }
+  .star:nth-child(2) { animation: starPop 0.5s ease-out 1.0s both; }
+  .star:nth-child(3) { animation: starPop 0.5s ease-out 0.9s both; }
+  @keyframes starPop {
+    0%   { opacity: 0; transform: scale(0); }
+    60%  { opacity: 1; transform: scale(1.3); }
+    100% { opacity: 0.7; transform: scale(1); }
+  }
+
+  /* === WORDMARK === */
+  .wordmark { overflow: visible; }
+
+  /* EMPORIUM: each letter slides + fades */
+  .em-letter {
+    opacity: 0;
+    animation: letterReveal 0.05s ease-out both;
+  }
+  .em-letter:nth-child(1)  { animation-delay: 0.6s; }
+  .em-letter:nth-child(2)  { animation-delay: 0.68s; }
+  .em-letter:nth-child(3)  { animation-delay: 0.76s; }
+  .em-letter:nth-child(4)  { animation-delay: 0.84s; }
+  .em-letter:nth-child(5)  { animation-delay: 0.92s; }
+  .em-letter:nth-child(6)  { animation-delay: 1.0s; }
+  .em-letter:nth-child(7)  { animation-delay: 1.08s; }
+  .em-letter:nth-child(8)  { animation-delay: 1.16s; }
+  @keyframes letterReveal {
+    0%   { opacity: 0; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Gold underline draws in */
+  .gold-line {
+    stroke-dasharray: 110;
+    stroke-dashoffset: 110;
+    animation: lineDraw 0.6s ease-out 1.5s forwards;
+  }
+  @keyframes lineDraw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* LIBRARY text fades up */
+  .library-text {
+    opacity: 0;
+    animation: libraryRise 0.5s ease-out 1.7s forwards;
+  }
+  @keyframes libraryRise {
+    0%   { opacity: 0; transform: translateY(5px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Divider */
+  .divider {
+    opacity: 0;
+    animation: fadeIn 0.4s ease-out 1.6s forwards;
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  /* Hover effect on entire logo */
+  .logo-wrap:hover .book-svg {
+    filter: drop-shadow(0 0 6px rgba(232,168,62,0.5));
+    transition: filter 0.3s;
+  }
+  .logo-wrap:hover .em-letter {
+    fill: #f0c060;
+    transition: fill 0.3s;
+  }
+
+  /* === DEMO VARIANTS BELOW === */
+  .demo-section {
+    padding: 1rem 0;
+    text-align: center;
+  }
+  .demo-label {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    font-family: sans-serif;
+  }
+  .size-demos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    padding: 1rem;
+    background: #0f1f35;
+    border-radius: 10px;
+    margin-top: 1rem;
+  }
+
+  /* Navbar-size version */
+  .logo-sm { transform: scale(0.55); transform-origin: left center; }
+  .logo-md { transform: scale(0.75); transform-origin: center center; }
+</style>
+
+<div class="demo-section">
+  <p class="demo-label">Full size — on load animation</p>
+
+  <div class="logo-wrap" title="Hover me">
+    <!-- BOOK ICON -->
+    <svg class="book-svg" width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+      <!-- Particles / stars -->
+      <g class="star" transform="translate(10, 8)">
+        <polygon points="0,-4 1,-1 4,-1 2,1 3,4 0,2 -3,4 -2,1 -4,-1 -1,-1" fill="#E8A83E" opacity="0.9"/>
+      </g>
+      <g class="star" transform="translate(48, 6)">
+        <polygon points="0,-3 0.8,-0.8 3,-0.8 1.5,0.8 2,3 0,1.7 -2,3 -1.5,0.8 -3,-0.8 -0.8,-0.8" fill="#E8A83E" opacity="0.8"/>
+      </g>
+      <g class="star" transform="translate(53, 22)">
+        <polygon points="0,-3 0.8,-0.8 3,-0.8 1.5,0.8 2,3 0,1.7 -2,3 -1.5,0.8 -3,-0.8 -0.8,-0.8" fill="#E8A83E" opacity="0.7"/>
+      </g>
+
+      <!-- Quill on top right -->
+      <g class="quill" transform="translate(38, 4)">
+        <path d="M0 0 Q4 8 2 18 Q1 22 3 24 Q0 20 1 16 Q-2 8 0 0Z" fill="#E8A83E" opacity="0.85"/>
+        <path d="M0 0 Q-3 6 -1 14 Q1 8 0 0Z" fill="#c8861e" opacity="0.6"/>
+        <line x1="2" y1="18" x2="2" y2="28" stroke="#E8A83E" stroke-width="0.8" opacity="0.6"/>
+      </g>
+
+      <!-- Book base shadow -->
+      <ellipse cx="29" cy="52" rx="18" ry="3" fill="#000000" opacity="0.25"/>
+
+      <!-- Left page group -->
+      <g class="page-left">
+        <path d="M8 12 Q8 8 16 7 Q22 6.5 29 8 L29 48 Q22 46.5 16 47 Q8 48 8 44 Z"
+              fill="#1a3a5c" stroke="#E8A83E" stroke-width="1.2"/>
+        <!-- Ink lines left page -->
+        <g class="ink-lines">
+          <line class="ink-line" x1="13" y1="17" x2="25" y2="16.3" stroke="#E8A83E" stroke-width="0.9" opacity="0.6"/>
+          <line class="ink-line" x1="13" y1="22" x2="25" y2="21.3" stroke="#E8A83E" stroke-width="0.9" opacity="0.6"/>
+          <line class="ink-line" x1="13" y1="27" x2="25" y2="26.3" stroke="#E8A83E" stroke-width="0.9" opacity="0.6"/>
+        </g>
+      </g>
+
+      <!-- Right page group -->
+      <g class="page-right">
+        <path d="M50 12 Q50 8 42 7 Q36 6.5 29 8 L29 48 Q36 46.5 42 47 Q50 48 50 44 Z"
+              fill="#1a3a5c" stroke="#E8A83E" stroke-width="1.2"/>
+        <!-- Ink lines right page -->
+        <g class="ink-lines">
+          <line class="ink-line" x1="33" y1="16.3" x2="45" y2="17" stroke="#E8A83E" stroke-width="0.9" opacity="0.6"/>
+          <line class="ink-line" x1="33" y1="21.3" x2="45" y2="22" stroke="#E8A83E" stroke-width="0.9" opacity="0.6"/>
+          <line class="ink-line" x1="33" y1="26.3" x2="45" y2="27" stroke="#E8A83E" stroke-width="0.9" opacity="0.6"/>
+        </g>
+      </g>
+
+      <!-- Spine -->
+      <line class="spine" x1="29" y1="8" x2="29" y2="48" stroke="#E8A83E" stroke-width="2" opacity="0.9"/>
+      <!-- Spine top cap -->
+      <circle cx="29" cy="8" r="2" fill="#E8A83E" opacity="0.9"
+              style="opacity:0; animation: fadeIn 0.3s ease-out 0.4s forwards;"/>
+
+      <!-- Bottom arc / binding -->
+      <path d="M8 44 Q18 50 29 48 Q40 50 50 44"
+            fill="none" stroke="#E8A83E" stroke-width="1.2" opacity="0.7"
+            style="stroke-dasharray:50; stroke-dashoffset:50; animation: inkWrite 0.5s ease-out 1.6s forwards;"/>
+    </svg>
+
+    <!-- WORDMARK SVG -->
+    <svg class="wordmark" width="140" height="58" viewBox="0 0 140 58" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-left: 12px; overflow: visible;">
+
+      <!-- EMPORIUM letters -->
+      <text font-family="Georgia, 'Times New Roman', serif" font-size="18" font-weight="700" letter-spacing="3" fill="#ffffff">
+        <tspan class="em-letter" x="0"  y="28">E</tspan>
+        <tspan class="em-letter" x="16" y="28">M</tspan>
+        <tspan class="em-letter" x="32" y="28">P</tspan>
+        <tspan class="em-letter" x="46" y="28">O</tspan>
+        <tspan class="em-letter" x="61" y="28">R</tspan>
+        <tspan class="em-letter" x="75" y="28">I</tspan>
+        <tspan class="em-letter" x="83" y="28">U</tspan>
+        <tspan class="em-letter" x="98" y="28">M</tspan>
+      </text>
+
+      <!-- Gold underline -->
+      <line class="gold-line" x1="0" y1="33" x2="115" y2="33" stroke="#E8A83E" stroke-width="1.2" opacity="0.7"/>
+
+      <!-- Divider dot -->
+      <circle class="divider" cx="119" cy="33" r="2" fill="#E8A83E" opacity="0.5"/>
+
+      <!-- LIBRARY text -->
+      <text class="library-text" font-family="Georgia, serif" font-size="10" letter-spacing="5" fill="#E8A83E" x="0" y="48">LIBRARY</text>
+
+    </svg>
+  </div>
+
+  <!-- Size demos -->
+  <p class="demo-label" style="margin-top: 2rem;">How it looks at navbar size</p>
+  <div class="size-demos">
+
+    <!-- Navbar size -->
+    <div style="display:flex; align-items:center; gap:8px; transform: scale(0.6); transform-origin: center;">
+      <svg width="36" height="36" viewBox="0 0 58 58" fill="none">
+        <path d="M8 12 Q8 8 16 7 Q22 6.5 29 8 L29 48 Q22 46.5 16 47 Q8 48 8 44 Z" fill="#1a3a5c" stroke="#E8A83E" stroke-width="1.2"/>
+        <path d="M50 12 Q50 8 42 7 Q36 6.5 29 8 L29 48 Q36 46.5 42 47 Q50 48 50 44 Z" fill="#1a3a5c" stroke="#E8A83E" stroke-width="1.2"/>
+        <line x1="29" y1="8" x2="29" y2="48" stroke="#E8A83E" stroke-width="2"/>
+        <path d="M8 44 Q18 50 29 48 Q40 50 50 44" fill="none" stroke="#E8A83E" stroke-width="1.2" opacity="0.7"/>
+      </svg>
+      <div>
+        <div style="font-family: Georgia,serif; font-size:13px; font-weight:700; color:#fff; letter-spacing:2px;">EMPORIUM</div>
+        <div style="font-family: Georgia,serif; font-size:7px; color:#E8A83E; letter-spacing:3px; margin-top:2px;">LIBRARY</div>
+      </div>
+    </div>
+
+    <div style="width:1px; height:40px; background:rgba(255,255,255,0.1);"></div>
+
+    <!-- Mobile size icon only -->
+    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+      <svg width="28" height="28" viewBox="0 0 58 58" fill="none">
+        <path d="M8 12 Q8 8 16 7 Q22 6.5 29 8 L29 48 Q22 46.5 16 47 Q8 48 8 44 Z" fill="#1a3a5c" stroke="#E8A83E" stroke-width="2"/>
+        <path d="M50 12 Q50 8 42 7 Q36 6.5 29 8 L29 48 Q36 46.5 42 47 Q50 48 50 44 Z" fill="#1a3a5c" stroke="#E8A83E" stroke-width="2"/>
+        <line x1="29" y1="8" x2="29" y2="48" stroke="#E8A83E" stroke-width="2.5"/>
+        <path d="M8 44 Q18 50 29 48 Q40 50 50 44" fill="none" stroke="#E8A83E" stroke-width="1.5" opacity="0.7"/>
+      </svg>
+      <span style="font-size:9px; color:rgba(255,255,255,0.4); font-family:sans-serif;">mobile icon</span>
+    </div>
+
+  </div>
+
+  <p style="font-size: 12px; color: var(--color-text-secondary); margin-top: 1rem; font-family: sans-serif;">
+    Hover over the logo above to see the hover glow effect
+  </p>
+</div>

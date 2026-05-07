@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 52" width="224" height="52" role="img" aria-label="Emporium Library">
+  <title>Emporium Library</title>
+  <defs>
+    <style>
+      .el-pl {
+        transform-origin: 26px 50%;
+        animation: elPL 2.8s cubic-bezier(0.4,0,0.2,1) 0.3s both;
+      }
+      .el-pr {
+        transform-origin: 26px 50%;
+        animation: elPR 2.8s cubic-bezier(0.4,0,0.2,1) 0.5s both;
+      }
+      @keyframes elPL {
+        0%   { transform: scaleX(1); }
+        18%  { transform: scaleX(0.18) skewY(-6deg); }
+        42%  { transform: scaleX(0.72) skewY(2deg); }
+        65%  { transform: scaleX(0.96); }
+        100% { transform: scaleX(1); }
+      }
+      @keyframes elPR {
+        0%   { transform: scaleX(1); }
+        18%  { transform: scaleX(0.22) skewY(6deg); }
+        42%  { transform: scaleX(0.78) skewY(-2deg); }
+        65%  { transform: scaleX(0.97); }
+        100% { transform: scaleX(1); }
+      }
+      .el-spine {
+        stroke-dasharray: 38;
+        stroke-dashoffset: 38;
+        animation: elDraw 0.4s ease-out 0.2s forwards;
+      }
+      .el-spinebot {
+        stroke-dasharray: 52;
+        stroke-dashoffset: 52;
+        animation: elDraw 0.45s ease-out 1.5s forwards;
+      }
+      .el-ink { stroke-dasharray: 16; stroke-dashoffset: 16; }
+      .el-i1 { animation: elDraw 0.3s ease-out 0.85s forwards; }
+      .el-i2 { animation: elDraw 0.3s ease-out 0.98s forwards; }
+      .el-i3 { animation: elDraw 0.3s ease-out 1.11s forwards; }
+      .el-i4 { animation: elDraw 0.3s ease-out 0.92s forwards; }
+      .el-i5 { animation: elDraw 0.3s ease-out 1.05s forwards; }
+      .el-i6 { animation: elDraw 0.3s ease-out 1.18s forwards; }
+      @keyframes elDraw { to { stroke-dashoffset: 0; } }
+      .el-quill {
+        opacity: 0;
+        animation: elQuill 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.1s forwards;
+      }
+      @keyframes elQuill {
+        0%   { opacity:0; transform: translateY(-8px) rotate(-18deg); }
+        100% { opacity:1; transform: translateY(0) rotate(0deg); }
+      }
+      .el-cap {
+        opacity: 0;
+        animation: elFade 0.25s ease-out 0.22s forwards;
+      }
+      @keyframes elFade { to { opacity:1; } }
+      .el-L { opacity:0; animation: elLtr 0.07s ease-out both; }
+      .el-L1 { animation-delay:0.50s; }
+      .el-L2 { animation-delay:0.57s; }
+      .el-L3 { animation-delay:0.64s; }
+      .el-L4 { animation-delay:0.71s; }
+      .el-L5 { animation-delay:0.78s; }
+      .el-L6 { animation-delay:0.85s; }
+      .el-L7 { animation-delay:0.92s; }
+      .el-L8 { animation-delay:0.99s; }
+      @keyframes elLtr {
+        0%   { opacity:0; transform:translateY(4px); }
+        100% { opacity:1; transform:translateY(0); }
+      }
+      .el-ul {
+        stroke-dasharray: 118;
+        stroke-dashoffset: 118;
+        animation: elDraw 0.5s ease-out 1.35s forwards;
+      }
+      .el-lib {
+        opacity:0;
+        animation: elLib 0.45s ease-out 1.55s forwards;
+      }
+      @keyframes elLib {
+        0%   { opacity:0; transform:translateY(3px); }
+        100% { opacity:1; transform:translateY(0); }
+      }
+      .el-root:hover .el-mark path,
+      .el-root:hover .el-mark line,
+      .el-root:hover .el-mark circle {
+        stroke: #f0c060;
+        transition: stroke 0.25s ease;
+      }
+      .el-root:hover .el-cap {
+        fill: #f0c060;
+        transition: fill 0.25s ease;
+      }
+      .el-root:hover .el-L {
+        fill: #f0c060;
+        transition: fill 0.25s ease;
+      }
+      .el-root:hover .el-lib {
+        fill: #f0c060;
+        transition: fill 0.25s ease;
+      }
+    </style>
+  </defs>
+
+  <g class="el-root" cursor="pointer">
+    <g class="el-mark" transform="translate(0, 3)">
+      <g class="el-quill" transform="translate(34.5, 1)">
+        <path d="M0 0 Q3.5 6 1.8 15 Q1 18.5 2.5 20.5 Q0 17 0.8 13.5 Q-1.8 6 0 0Z"
+              fill="none" stroke="#E8A83E" stroke-width="1" stroke-linejoin="round"/>
+        <line x1="1.8" y1="15" x2="1.8" y2="23" stroke="#E8A83E" stroke-width="0.85" opacity="0.7"/>
+      </g>
+      <g class="el-pl">
+        <path d="M2 9 Q2 5.5 9 4.5 Q17 3.5 26 5 L26 43 Q17 41.5 9 42.5 Q2 43.5 2 40Z"
+              fill="none" stroke="#E8A83E" stroke-width="1.4" stroke-linejoin="round"/>
+        <line class="el-ink el-i1" x1="7"  y1="13" x2="22" y2="12.4" stroke="#E8A83E" stroke-width="0.8" opacity="0.55"/>
+        <line class="el-ink el-i2" x1="7"  y1="18" x2="22" y2="17.4" stroke="#E8A83E" stroke-width="0.8" opacity="0.55"/>
+        <line class="el-ink el-i3" x1="7"  y1="23" x2="22" y2="22.4" stroke="#E8A83E" stroke-width="0.8" opacity="0.55"/>
+      </g>
+      <g class="el-pr">
+        <path d="M50 9 Q50 5.5 43 4.5 Q35 3.5 26 5 L26 43 Q35 41.5 43 42.5 Q50 43.5 50 40Z"
+              fill="none" stroke="#E8A83E" stroke-width="1.4" stroke-linejoin="round"/>
+        <line class="el-ink el-i4" x1="30" y1="12.4" x2="45" y2="13"  stroke="#E8A83E" stroke-width="0.8" opacity="0.55"/>
+        <line class="el-ink el-i5" x1="30" y1="17.4" x2="45" y2="18"  stroke="#E8A83E" stroke-width="0.8" opacity="0.55"/>
+        <line class="el-ink el-i6" x1="30" y1="22.4" x2="45" y2="23"  stroke="#E8A83E" stroke-width="0.8" opacity="0.55"/>
+      </g>
+      <line class="el-spine" x1="26" y1="5" x2="26" y2="43" stroke="#E8A83E" stroke-width="1.8"/>
+      <circle class="el-cap" cx="26" cy="5" r="1.8" fill="#E8A83E"/>
+      <path class="el-spinebot" d="M2 40 Q14 47 26 45 Q38 47 50 40"
+            fill="none" stroke="#E8A83E" stroke-width="1.3" opacity="0.75"/>
+    </g>
+    <g transform="translate(62, 6)">
+      <text font-family="Georgia,'Times New Roman',serif" font-size="19" font-weight="700" letter-spacing="2">
+        <tspan class="el-L el-L1" x="0"  y="25" fill="#ffffff">E</tspan>
+        <tspan class="el-L el-L2" x="15" y="25" fill="#ffffff">M</tspan>
+        <tspan class="el-L el-L3" x="30" y="25" fill="#ffffff">P</tspan>
+        <tspan class="el-L el-L4" x="44" y="25" fill="#ffffff">O</tspan>
+        <tspan class="el-L el-L5" x="58" y="25" fill="#ffffff">R</tspan>
+        <tspan class="el-L el-L6" x="71" y="25" fill="#ffffff">I</tspan>
+        <tspan class="el-L el-L7" x="79" y="25" fill="#ffffff">U</tspan>
+        <tspan class="el-L el-L8" x="93" y="25" fill="#ffffff">M</tspan>
+      </text>
+      <line class="el-ul" x1="0" y1="30" x2="116" y2="30" stroke="#E8A83E" stroke-width="1" opacity="0.6"/>
+      <text class="el-lib" font-family="Georgia,'Times New Roman',serif"
+            font-size="9" letter-spacing="6" fill="#E8A83E" x="1" y="43">LIBRARY</text>
+    </g>
+  </g>
+</svg>

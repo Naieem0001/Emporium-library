@@ -13,7 +13,14 @@
   const LS_KEY_ORDERS = "emporium_orders";
   const LS_KEY_EMAIL  = "emporium_email";
 
-  let cachedConfig = null;
+
+  /* ── Pre-warm: silently ping the API on page load so Render's free
+     tier is already awake by the time the user clicks Buy ── */
+  (function prewarm() {
+    try {
+      fetch(API_BASE + "/api/payment-config", { method: "HEAD" }).catch(() => {});
+    } catch (_) {}
+  })();
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -43,12 +50,31 @@
     } catch (e) { /* non-critical */ }
   }
 
+  let _cachedConfig = null;
+
+  /* fetchWithTimeout — wraps fetch with an AbortController deadline */
+  function fetchWithTimeout(url, ms) {
+    const ctrl = new AbortController();
+    const id = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(id));
+  }
+
   async function fetchPaymentConfig() {
-    if (cachedConfig) return cachedConfig;
-    const r = await fetch(API_BASE + "/api/payment-config");
-    if (!r.ok) throw new Error("Could not load payment details");
-    cachedConfig = await r.json();
-    return cachedConfig;
+    if (_cachedConfig) return _cachedConfig;
+    /* Try once with a 55-second timeout (covers Render cold-start ~30-45s) */
+    try {
+      const r = await fetchWithTimeout(API_BASE + "/api/payment-config", 55000);
+      if (!r.ok) throw new Error("Could not load payment details");
+      _cachedConfig = await r.json();
+      return _cachedConfig;
+    } catch (err) {
+      /* One silent retry after 3 seconds */
+      await new Promise(res => setTimeout(res, 3000));
+      const r2 = await fetchWithTimeout(API_BASE + "/api/payment-config", 30000);
+      if (!r2.ok) throw new Error("Could not load payment details");
+      _cachedConfig = await r2.json();
+      return _cachedConfig;
+    }
   }
 
   function buildUpiUri(cfg, book) {
@@ -186,8 +212,14 @@
           </ul>
         </aside>
         <section class="pm-panel">
-          ${state.phase === "loading"
-            ? '<div class="pm-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading payment details&hellip;</div>'
+        ${state.phase === "loading"
+            ? `<div class="pm-loading">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                Connecting to payment server&hellip;
+                <div style="font-size:11px;color:#94A3B8;margin-top:6px;">
+                  This may take up to 30 seconds on first load.
+                </div>
+              </div>`
             : ""}
         </section>
       </div>`;

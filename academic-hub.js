@@ -137,23 +137,73 @@
   document.getElementById("navLogin")?.addEventListener("click", () => openAuth("login"));
   document.getElementById("navSignup")?.addEventListener("click", () => openAuth("signup"));
 
+  function initials(name) {
+    return String(name || "U")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(w => w[0].toUpperCase())
+      .join("");
+  }
+
+  function firstName(name) {
+    const parts = String(name || "").trim().split(/\s+/);
+    return parts[0] || "Account";
+  }
+
   function setAuthNav(user) {
     if (!authNav) return;
     if (user) {
       const name = user.displayName || user.email || "Account";
       const myNotesLabel = isMyNotesView ? "All Notes" : "My Notes";
+      const myNotesHref  = isMyNotesView ? "academic.html" : "my-notes.html";
+
       authNav.innerHTML = `
-        <span class="auth-name">${escapeHTML(name)}</span>
-        <button type="button" class="btn-nav-outline" id="navMyNotes">${myNotesLabel}</button>
-        <button type="button" class="btn-nav-outline" id="navLogout">Log out</button>`;
-      document.getElementById("navMyNotes")?.addEventListener("click", () => {
-        if (isMyNotesView) {
-          window.location.href = "academic.html";
-        } else {
-          window.location.href = "my-notes.html";
+        <div class="user-chip-wrap" id="userChipWrap">
+          <button type="button" class="user-chip" id="userChip" aria-haspopup="true" aria-expanded="false">
+            <span class="user-avatar">${initials(name)}</span>
+            <span class="user-chip-name">${escapeHTML(firstName(name))}</span>
+            <i class="fa-solid fa-chevron-down user-chip-caret" aria-hidden="true"></i>
+          </button>
+          <div class="user-dropdown" id="userDropdown" role="menu">
+            <div class="user-dd-head">
+              <div class="dd-name">${escapeHTML(name)}</div>
+              <div class="dd-label">Signed in</div>
+            </div>
+            <div class="user-dd-actions">
+              <button type="button" class="dd-btn" id="navMyNotes" role="menuitem">
+                <i class="fa-solid fa-folder-open" aria-hidden="true"></i> ${myNotesLabel}
+              </button>
+              <div class="dd-divider"></div>
+              <button type="button" class="dd-btn dd-logout" id="navLogout" role="menuitem">
+                <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Log out
+              </button>
+            </div>
+          </div>
+        </div>`;
+
+      // Toggle dropdown
+      const wrap  = document.getElementById("userChipWrap");
+      const chip  = document.getElementById("userChip");
+      const toggleDD = () => {
+        const open = wrap.classList.toggle("open");
+        chip.setAttribute("aria-expanded", open ? "true" : "false");
+      };
+      chip.addEventListener("click", e => { e.stopPropagation(); toggleDD(); });
+
+      // Close on outside click
+      document.addEventListener("click", function onOut(e) {
+        if (!wrap.contains(e.target)) {
+          wrap.classList.remove("open");
+          chip.setAttribute("aria-expanded", "false");
         }
       });
+
+      document.getElementById("navMyNotes")?.addEventListener("click", () => {
+        window.location.href = myNotesHref;
+      });
       document.getElementById("navLogout")?.addEventListener("click", () => auth.signOut());
+
     } else {
       authNav.innerHTML = `
         <button type="button" class="btn-nav-outline" id="navLogin">Log in</button>
