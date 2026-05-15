@@ -364,7 +364,7 @@
           }
         })
         .then(() => {
-          getDb().collection('reviews').where('bookId','==',bookId).orderBy('createdAt','desc').get()
+          return getDb().collection('reviews').where('bookId','==',bookId).get()
             .then(snap => {
               allReviews.splice(0, allReviews.length, ...snap.docs.map(d => ({ id:d.id, ...d.data() })));
               renderRatingSummary('rev-summary-container', allReviews);
