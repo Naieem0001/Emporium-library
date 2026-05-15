@@ -19,12 +19,36 @@ if (auth && auth.setPersistence) {
     console.warn('Firebase auth persistence failed:', err);
   });
 }
+function googleSignInWithFallback(authInstance) {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
+  return authInstance.signInWithPopup(provider).catch(err => {
+    const redirectCodes = new Set([
+      'auth/operation-not-supported-in-this-environment',
+      'auth/popup-blocked',
+      'auth/cancelled-popup-request',
+      'auth/invalid-action-code',
+      'auth/invalid-credential',
+      'auth/requests-from-referer-are-blocked'
+    ]);
+    if (err.code === 'auth/popup-closed-by-user') {
+      throw err; // user intentionally closed — don't redirect
+    }
+    if (redirectCodes.has(err.code) || /blocked|invalid action/i.test(err.message || '')) {
+      return authInstance.signInWithRedirect(provider);
+    }
+    throw err;
+  });
+}
 window.signInWithGoogle = async function () {
   try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    await auth.signInWithPopup(provider);
+    await googleSignInWithFallback(auth);
     if (typeof window.showToast === 'function') window.showToast('Signed in with Google.');
   } catch (err) {
+    if (err.code === 'auth/popup-closed-by-user') {
+      return; // user closed — no error toast
+    }
     console.error('Google sign-in failed:', err);
     if (typeof window.showToast === 'function') window.showToast(err.message || 'Google sign-in failed', true);
   }

@@ -137,7 +137,7 @@
       const PAGE = 8; let shown = PAGE;
 
       waitForFirebase(function (db) {
-        db.collection('reviews').where('bookId','==',bookId).orderBy('createdAt','desc').get()
+        db.collection('reviews').where('bookId','==',bookId).get()
           .then(snap => {
             allReviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderRatingSummary('rev-summary-container', allReviews);
@@ -157,10 +157,12 @@
       function renderList() {
         const auth = getAuth();
         const uid = auth && auth.currentUser ? auth.currentUser.uid : null;
-        const sorted = [...allReviews].sort((a,b) =>
-          currentSort === 'helpful'
-            ? (b.helpfulCount||0) - (a.helpfulCount||0)
-            : (b.createdAt&&b.createdAt.seconds||0) - (a.createdAt&&a.createdAt.seconds||0));
+        const sorted = [...allReviews].sort((a,b) => {
+          if (currentSort === 'helpful') return (b.helpfulCount||0) - (a.helpfulCount||0);
+          const aDate = a.createdAt && typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate().getTime() : Date.parse(a.createdAt || '') || 0;
+          const bDate = b.createdAt && typeof b.createdAt.toDate === 'function' ? b.createdAt.toDate().getTime() : Date.parse(b.createdAt || '') || 0;
+          return bDate - aDate;
+        });
         const lc = document.getElementById('rev-list-container');
         if (lc) lc.innerHTML = sorted.slice(0,shown).length
           ? sorted.slice(0,shown).map(r => reviewCardHTML(r,uid)).join('')
@@ -180,19 +182,96 @@
         const fc = document.getElementById('rev-form-container');
         if (!fc) return;
         if (!user) {
-          fc.innerHTML = `<p class="rev-auth-note"><i class="fa-solid fa-lock"></i> <a href="#" class="rev-signin-link">Sign in</a> to leave a review.</p>`;
-          fc.querySelector('.rev-signin-link').addEventListener('click', e => {
+          fc.innerHTML = `
+            <p class="rev-auth-note">
+              <i class="fa-solid fa-lock"></i>
+              <a href="#" class="rev-signin-link" id="rev-google-signin-btn">
+                <i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google
+              </a>
+              to leave a review.
+            </p>
+            <p class="rev-form-msg" id="rev-auth-msg" style="min-height:18px;"></p>`;
+
+          document.getElementById('rev-google-signin-btn').addEventListener('click', function(e) {
             e.preventDefault();
-            const auth = getAuth();
-            if (auth && typeof auth.signInWithPopup === 'function') {
-              auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err => {
-                console.error('[reviews.js] Google signin:', err);
-                if (typeof showMsg === 'function') showMsg(err.message || 'Google sign-in failed', 'error');
-                if (typeof openAuthModal === 'function' && document.getElementById('authModal')) openAuthModal();
+            const btn = this;
+
+            function showAuthMsg(text, isError) {
+              const el = document.getElementById('rev-auth-msg');
+              if (!el) return;
+              el.textContent = text;
+              el.style.color = isError ? '#dc2626' : '#16a34a';
+              el.className = 'rev-form-msg';
+              if (!isError) setTimeout(() => { el.textContent = ''; }, 4000);
+            }
+
+            // If window.signInWithGoogle is available (set by script.js), use it
+            if (typeof window.signInWithGoogle === 'function') {
+              btn.textContent = 'Signing in…';
+              btn.style.pointerEvents = 'none';
+              showAuthMsg('Opening Google sign-in…', false);
+              window.signInWithGoogle().then(() => {
+                showAuthMsg('Signed in!', false);
+              }).catch(err => {
+                btn.innerHTML = '<i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google';
+                btn.style.pointerEvents = '';
+                showAuthMsg(err.message || 'Google sign-in failed. Please try again.', true);
               });
               return;
             }
-            if (typeof openAuthModal === 'function') openAuthModal();
+
+            // Fallback: do it directly with full error handling
+            const authInst = getAuth();
+            if (!authInst) {
+              showAuthMsg('Auth not available. Please refresh the page.', true);
+              return;
+            }
+
+            const POPUP_FALLBACK_CODES = new Set([
+              'auth/operation-not-supported-in-this-environment',
+              'auth/popup-blocked',
+              'auth/cancelled-popup-request',
+              'auth/popup-closed-by-user',
+              'auth/invalid-action-code',
+              'auth/invalid-credential',
+              'auth/requests-from-referer-are-blocked'
+            ]);
+
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:5px;"></i>Signing in…';
+            btn.style.pointerEvents = 'none';
+            showAuthMsg('Opening Google sign-in…', false);
+
+            try {
+              const provider = new firebase.auth.GoogleAuthProvider();
+              provider.addScope('email');
+              provider.addScope('profile');
+              authInst.signInWithPopup(provider)
+                .then(() => {
+                  showAuthMsg('Signed in!', false);
+                })
+                .catch(err => {
+                  console.warn('[reviews.js] popup error:', err.code, err.message);
+                  if (POPUP_FALLBACK_CODES.has(err.code) || /blocked|invalid action/i.test(err.message || '')) {
+                    showAuthMsg('Popup blocked — redirecting to Google sign-in…', false);
+                    return authInst.signInWithRedirect(provider);
+                  }
+                  // User closed popup — reset gracefully
+                  if (err.code === 'auth/popup-closed-by-user') {
+                    btn.innerHTML = '<i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google';
+                    btn.style.pointerEvents = '';
+                    showAuthMsg('Sign-in cancelled. Click again to try.', true);
+                    return;
+                  }
+                  btn.innerHTML = '<i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google';
+                  btn.style.pointerEvents = '';
+                  showAuthMsg(err.message || 'Google sign-in failed. Please try again.', true);
+                });
+            } catch (syncErr) {
+              console.error('[reviews.js] sync error during sign-in:', syncErr);
+              btn.innerHTML = '<i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google';
+              btn.style.pointerEvents = '';
+              showAuthMsg('Unexpected error. Please refresh and try again.', true);
+            }
           });
           return;
         }

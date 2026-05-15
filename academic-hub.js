@@ -34,6 +34,29 @@
   }
   const db = firebase.firestore();
   const auth = firebase.auth();
+  function googleSignInWithFallback(authInstance) {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('email');
+    provider.addScope('profile');
+    return authInstance.signInWithPopup(provider).catch(err => {
+      const redirectCodes = new Set([
+        'auth/operation-not-supported-in-this-environment',
+        'auth/popup-blocked',
+        'auth/cancelled-popup-request',
+        'auth/invalid-action-code',
+        'auth/invalid-credential',
+        'auth/requests-from-referer-are-blocked'
+      ]);
+      // User intentionally closed the popup — do NOT redirect, just re-throw so UI can reset
+      if (err.code === 'auth/popup-closed-by-user') {
+        throw err;
+      }
+      if (redirectCodes.has(err.code) || /blocked|invalid action/i.test(err.message || '')) {
+        return authInstance.signInWithRedirect(provider);
+      }
+      throw err;
+    });
+  }
 
   const hamburger = document.getElementById("hamburger");
   const navMenu = document.getElementById("navMenu");
@@ -261,12 +284,16 @@
 
   window.signInWithGoogle = async function() {
     try {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      await auth.signInWithPopup(provider);
+      await googleSignInWithFallback(auth);
       if (typeof closeAuth === 'function') closeAuth();
       if (typeof showToast === 'function') showToast("Signed in with Google.");
       if (redirectTarget) window.location.href = redirectTarget;
     } catch (err) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        // User closed popup — don't show an error
+        console.log('[academic-hub] Google sign-in popup closed by user.');
+        return;
+      }
       if (typeof showToast === 'function') showToast(err.message || "Google sign-in failed", true);
       console.error(err);
     }
