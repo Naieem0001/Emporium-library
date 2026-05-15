@@ -183,98 +183,107 @@
         if (!fc) return;
         if (!user) {
           fc.innerHTML = `
-            <p class="rev-auth-note">
-              <i class="fa-solid fa-lock"></i>
-              <a href="#" class="rev-signin-link" id="rev-google-signin-btn">
-                <i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google
-              </a>
-              to leave a review.
-            </p>
-            <p class="rev-form-msg" id="rev-auth-msg" style="min-height:18px;"></p>`;
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1.5rem;">
+              <p style="font-family:'Poppins',sans-serif;font-size:13px;color:#6b7280;margin-bottom:12px;">
+                <i class="fa-solid fa-lock" style="color:#ff7a18;margin-right:6px;"></i>
+                Sign in to leave a review
+              </p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <input id="rev-signin-name" type="text" placeholder="Your name" autocomplete="name"
+                  style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;outline:none;box-sizing:border-box;">
+                <input id="rev-signin-email" type="email" placeholder="Email address" autocomplete="email"
+                  style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;outline:none;box-sizing:border-box;">
+                <input id="rev-signin-pw" type="password" placeholder="Password (min 6 chars)" autocomplete="current-password"
+                  style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;outline:none;box-sizing:border-box;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button id="rev-email-login-btn" type="button"
+                    style="flex:1;padding:9px 16px;background:linear-gradient(135deg,#1b2a41,#243b55);color:#fff;border:none;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
+                    Sign in
+                  </button>
+                  <button id="rev-email-signup-btn" type="button"
+                    style="flex:1;padding:9px 16px;background:linear-gradient(135deg,#ff7a18,#ff9f43);color:#fff;border:none;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
+                    Create account
+                  </button>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="flex:1;height:1px;background:#e2e8f0;"></div>
+                  <span style="font-size:11px;color:#9ca3af;font-family:'Poppins',sans-serif;">or</span>
+                  <div style="flex:1;height:1px;background:#e2e8f0;"></div>
+                </div>
+                <button id="rev-google-signin-btn" type="button"
+                  style="width:100%;padding:9px 16px;background:#fff;color:#374151;border:1px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                  <i class="fa-brands fa-google" style="color:#ea4335;"></i> Continue with Google
+                </button>
+              </div>
+              <p id="rev-auth-msg" style="min-height:18px;margin-top:8px;font-family:'Poppins',sans-serif;font-size:12px;"></p>
+            </div>`;
 
-          document.getElementById('rev-google-signin-btn').addEventListener('click', function(e) {
-            e.preventDefault();
-            const btn = this;
+          function showAuthMsg(text, isError) {
+            const el = document.getElementById('rev-auth-msg');
+            if (!el) return;
+            el.textContent = text;
+            el.style.color = isError ? '#dc2626' : '#16a34a';
+            if (!isError) setTimeout(() => { el.textContent = ''; }, 4000);
+          }
 
-            function showAuthMsg(text, isError) {
-              const el = document.getElementById('rev-auth-msg');
-              if (!el) return;
-              el.textContent = text;
-              el.style.color = isError ? '#dc2626' : '#16a34a';
-              el.className = 'rev-form-msg';
-              if (!isError) setTimeout(() => { el.textContent = ''; }, 4000);
+          // Sign in with email/password
+          document.getElementById('rev-email-login-btn')?.addEventListener('click', async function() {
+            const email = document.getElementById('rev-signin-email')?.value.trim();
+            const pw = document.getElementById('rev-signin-pw')?.value;
+            if (!email || !pw) { showAuthMsg('Please enter your email and password.', true); return; }
+            this.disabled = true; this.textContent = 'Signing in…';
+            try {
+              await getAuth().signInWithEmailAndPassword(email, pw);
+            } catch (err) {
+              this.disabled = false; this.textContent = 'Sign in';
+              showAuthMsg(err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found'
+                ? 'Incorrect email or password.' : (err.message || 'Sign in failed.'), true);
             }
+          });
 
-            // If window.signInWithGoogle is available (set by script.js), use it
+          // Create account with email/password
+          document.getElementById('rev-email-signup-btn')?.addEventListener('click', async function() {
+            const name = document.getElementById('rev-signin-name')?.value.trim();
+            const email = document.getElementById('rev-signin-email')?.value.trim();
+            const pw = document.getElementById('rev-signin-pw')?.value;
+            if (!name) { showAuthMsg('Please enter your name.', true); return; }
+            if (!email || !pw) { showAuthMsg('Please enter email and password.', true); return; }
+            if (pw.length < 6) { showAuthMsg('Password must be at least 6 characters.', true); return; }
+            this.disabled = true; this.textContent = 'Creating…';
+            try {
+              const cred = await getAuth().createUserWithEmailAndPassword(email, pw);
+              if (cred.user && name) await cred.user.updateProfile({ displayName: name });
+            } catch (err) {
+              this.disabled = false; this.textContent = 'Create account';
+              showAuthMsg(err.code === 'auth/email-already-in-use'
+                ? 'Email already in use — try signing in.' : (err.message || 'Sign up failed.'), true);
+            }
+          });
+
+          // Google sign-in (secondary)
+          document.getElementById('rev-google-signin-btn')?.addEventListener('click', function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Opening Google…';
             if (typeof window.signInWithGoogle === 'function') {
-              btn.textContent = 'Signing in…';
-              btn.style.pointerEvents = 'none';
-              showAuthMsg('Opening Google sign-in…', false);
-              window.signInWithGoogle().then(() => {
-                showAuthMsg('Signed in!', false);
-              }).catch(err => {
-                btn.innerHTML = '<i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google';
-                btn.style.pointerEvents = '';
-                showAuthMsg(err.message || 'Google sign-in failed. Please try again.', true);
+              window.signInWithGoogle().catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-brands fa-google" style="color:#ea4335;"></i> Continue with Google';
               });
               return;
             }
-
-            // Fallback: do it directly with full error handling
             const authInst = getAuth();
-            if (!authInst) {
-              showAuthMsg('Auth not available. Please refresh the page.', true);
-              return;
-            }
-
-            const POPUP_FALLBACK_CODES = new Set([
-              'auth/operation-not-supported-in-this-environment',
-              'auth/popup-blocked',
-              'auth/cancelled-popup-request',
-              'auth/popup-closed-by-user',
-              'auth/invalid-action-code',
-              'auth/invalid-credential',
-              'auth/requests-from-referer-are-blocked'
-            ]);
-
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:5px;"></i>Signing in…';
-            btn.style.pointerEvents = 'none';
-            showAuthMsg('Opening Google sign-in…', false);
-
-            try {
-              const provider = new firebase.auth.GoogleAuthProvider();
-              provider.addScope('email');
-              provider.addScope('profile');
-              authInst.signInWithPopup(provider)
-                .then(() => {
-                  showAuthMsg('Signed in!', false);
-                })
-                .catch(err => {
-                  console.warn('[reviews.js] popup error:', err.code, err.message);
-                  if (POPUP_FALLBACK_CODES.has(err.code) || /blocked|invalid action/i.test(err.message || '')) {
-                    showAuthMsg('Popup blocked — redirecting to Google sign-in…', false);
-                    return authInst.signInWithRedirect(provider);
-                  }
-                  // User closed popup — reset gracefully
-                  if (err.code === 'auth/popup-closed-by-user') {
-                    btn.innerHTML = '<i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google';
-                    btn.style.pointerEvents = '';
-                    showAuthMsg('Sign-in cancelled. Click again to try.', true);
-                    return;
-                  }
-                  btn.innerHTML = '<i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google';
-                  btn.style.pointerEvents = '';
-                  showAuthMsg(err.message || 'Google sign-in failed. Please try again.', true);
-                });
-            } catch (syncErr) {
-              console.error('[reviews.js] sync error during sign-in:', syncErr);
-              btn.innerHTML = '<i class="fa-brands fa-google" style="margin-right:5px;"></i>Sign in with Google';
-              btn.style.pointerEvents = '';
-              showAuthMsg('Unexpected error. Please refresh and try again.', true);
-            }
+            if (!authInst) { showAuthMsg('Auth not available. Please refresh.', true); return; }
+            const provider = new firebase.auth.GoogleAuthProvider();
+            authInst.signInWithPopup(provider).catch(err => {
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fa-brands fa-google" style="color:#ea4335;"></i> Continue with Google';
+              if (err.code !== 'auth/popup-closed-by-user') showAuthMsg(err.message || 'Google sign-in failed.', true);
+            });
           });
           return;
         }
+
         const existing = allReviews.find(r => r.userId === user.uid);
         let sel = existing ? existing.rating : 0;
         fc.innerHTML = `

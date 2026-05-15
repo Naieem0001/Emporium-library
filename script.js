@@ -54,22 +54,13 @@ window.signInWithGoogle = async function () {
   }
 };
 window.openAuthModal = function () {
-  if (document.getElementById('authModal')) {
-    const redirect = encodeURIComponent(window.location.href);
-    window.location.href = `${window.location.origin}/academic.html?redirect=${redirect}`;
-    return;
-  }
   const authLocal = window.auth || (firebase && firebase.auth ? firebase.auth() : null);
   if (authLocal && typeof authLocal.signInWithPopup === 'function') {
     const provider = new firebase.auth.GoogleAuthProvider();
     authLocal.signInWithPopup(provider).catch(err => {
-      console.error('openAuthModal popup failed:', err);
-      if (typeof window.showToast === 'function') window.showToast(err.message || 'Google sign-in failed', true);
+      console.warn('openAuthModal popup failed:', err.code);
     });
-    return;
   }
-  const redirect = encodeURIComponent(window.location.href);
-  window.location.href = `${window.location.origin}/academic.html?redirect=${redirect}`;
 };
 const LOCAL_API_BASE = "http://127.0.0.1:3000";
 const REMOTE_API_BASE = "https://emporium-academic-api.onrender.com";

@@ -167,9 +167,7 @@
   authModal?.addEventListener("click", e => {
     if (e.target === authModal) closeAuth();
   });
-  if (redirectTarget) {
-    openAuth("login");
-  }
+  // Never auto-open the auth modal on page load.
 
   document.getElementById("navLogin")?.addEventListener("click", () => openAuth("login"));
   document.getElementById("navSignup")?.addEventListener("click", () => openAuth("signup"));
