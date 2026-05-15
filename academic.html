@@ -95,14 +95,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: clamp(12px, 1.8vw, 28px);
+      gap: clamp(8px, 1.2vw, 22px);
       min-width: 0;
-      padding: 0 4px;
+      padding: 0;
     }
     .nav-menu a {
       color: #D1D5DB;
       text-decoration: none;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 500;
       position: relative;
       transition: color 0.25s;
@@ -192,13 +192,16 @@
       display: none;
       position: absolute;
       top: calc(100% + 8px);
+      /* Left-align: dropdown opens leftward so it stays in the viewport
+         even when the chip is near the right edge of the navbar         */
       right: 0;
-      min-width: 190px;
+      left: auto;
+      min-width: 200px;
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 12px 32px rgba(0,0,0,0.18);
       overflow: hidden;
-      z-index: 500;
+      z-index: 9999;
       animation: ddFadeIn 0.18s ease;
     }
     @keyframes ddFadeIn {
@@ -296,9 +299,9 @@
       display: flex; align-items: center;
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.15);
-      padding: 6px 12px; border-radius: 20px; gap: 8px;
-      flex: 0 1 220px;
-      min-width: 160px;
+      padding: 5px 10px; border-radius: 20px; gap: 6px;
+      flex: 0 1 180px;
+      min-width: 130px;
     }
     .search-box input {
       background: transparent; border: none; outline: none;
@@ -474,11 +477,11 @@
         padding: 3px;
         gap: 0;
       }
-      /* Dropdown: open left so it doesn't clip off-screen */
+      /* Dropdown: always right-align with chip, never clip viewport */
       .academic-page-nav .user-dropdown {
-        right: auto;
-        left: 0;
-        min-width: 176px;
+        right: 0;
+        left: auto;
+        min-width: 190px;
       }
       /* Nav-menu dropdown anchors to bottom of header */
       .academic-page-nav .nav-menu {
@@ -1409,24 +1412,32 @@
       <div id="authPanel-login" class="auth-panel active">
         <p class="auth-intro">Use your college email to access uploads.</p>
         <form id="formLogin" class="auth-form">
-          <label>Email</label>
-          <input type="email" id="loginEmail" autocomplete="username" required />
-          <label>Password</label>
-          <input type="password" id="loginPassword" autocomplete="current-password" required />
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" name="email" autocomplete="username" required />
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" name="password" autocomplete="current-password" required />
           <button type="submit" class="upload-btn" style="width:100%;margin-top:12px;">Log in</button>
         </form>
+        <div style="text-align:center; margin:16px 0; color:#9ca3af; font-size:12px; font-weight:600; text-transform:uppercase;">Or continue with</div>
+        <button type="button" class="btn-google-auth" onclick="signInWithGoogle()" style="width:100%; padding:10px; border-radius:8px; border:1px solid #E2E8F0; background:#fff; cursor:pointer; font-family:inherit; font-weight:600; color:#4b5563; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px; height:18px;" alt="Google"> Sign in with Google
+        </button>
       </div>
       <div id="authPanel-signup" class="auth-panel">
         <p class="auth-intro">Create an account to upload notes (5 points per file).</p>
         <form id="formSignup" class="auth-form">
-          <label>Display name</label>
-          <input type="text" id="signupName" maxlength="120" required />
-          <label>Email</label>
-          <input type="email" id="signupEmail" autocomplete="username" required />
-          <label>Password</label>
-          <input type="password" id="signupPassword" autocomplete="new-password" minlength="6" required />
+          <label for="signupName">Display name</label>
+          <input type="text" id="signupName" name="name" maxlength="120" required />
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" name="email" autocomplete="email" required />
+          <label for="signupPassword">Password</label>
+          <input type="password" id="signupPassword" name="password" autocomplete="new-password" minlength="6" required />
           <button type="submit" class="upload-btn" style="width:100%;margin-top:12px;">Create account</button>
         </form>
+        <div style="text-align:center; margin:16px 0; color:#9ca3af; font-size:12px; font-weight:600; text-transform:uppercase;">Or continue with</div>
+        <button type="button" class="btn-google-auth" onclick="signInWithGoogle()" style="width:100%; padding:10px; border-radius:8px; border:1px solid #E2E8F0; background:#fff; cursor:pointer; font-family:inherit; font-weight:600; color:#4b5563; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px; height:18px;" alt="Google"> Sign up with Google
+        </button>
       </div>
     </div>
   </div>

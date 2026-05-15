@@ -243,6 +243,18 @@
     }
   });
 
+  window.signInWithGoogle = async function() {
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithPopup(provider);
+      if (typeof closeAuth === 'function') closeAuth();
+      if (typeof showToast === 'function') showToast("Signed in with Google.");
+    } catch (err) {
+      if (typeof showToast === 'function') showToast(err.message || "Google sign-in failed", true);
+      console.error(err);
+    }
+  };
+
   let currentUser = null;
 
   function applyViewMode() {

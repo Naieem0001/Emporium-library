@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Book Test Page</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="reviews.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <main style="max-width:900px;margin:40px auto;padding:0 18px;">
+    <a href="index.html">← Home</a>
+    <h1 id="book-title">Test Book</h1>
+    <p id="book-author">by Test Author</p>
+
+    <section class="section">
+      <div id="book-detail">This is a minimal book detail page for testing reviews.</div>
+    </section>
+
+    <section class="section">
+      <div id="rev-section"></div>
+    </section>
+  </main>
+
+  <script>
+    // Initialize Firebase before loading reviews.js
+    const firebaseConfig = {
+      apiKey: "AIzaSyDCQag_jLEkTVp-DEE2iqk1Pj5ZmjTesXE",
+      authDomain: "emporium-library.firebaseapp.com",
+      projectId: "emporium-library",
+      storageBucket: "emporium-library.firebasestorage.app",
+      messagingSenderId: "243007325031",
+      appId: "1:243007325031:web:efc7981d8933e7ca3c65c2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    window.db = firebase.firestore();
+    window.auth = firebase.auth();
+  </script>
+  <script src="reviews.js"></script>
+  <script>
+    // Default test book id created by seed script
+    const BOOK_ID = new URLSearchParams(location.search).get('bookId') || 'test-book-1';
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.ReviewSystem && typeof window.ReviewSystem.initBookPage === 'function') {
+        window.ReviewSystem.initBookPage(BOOK_ID);
+      }
+    });
+  </script>
+</body>
+</html>

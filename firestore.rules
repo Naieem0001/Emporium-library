@@ -102,6 +102,7 @@ service cloud.firestore {
       // Restrict write operations to explicit admin email(s).
       allow create: if isAdmin() && isValidBookShape();
       allow update: if isAdmin() && (isValidBookShape() || isSafeFlagsUpdate());
+      allow update: if isSignedIn() && isSafeRatingUpdate();
       allow delete: if isAdmin();
     }
 
@@ -160,6 +161,54 @@ service cloud.firestore {
     // Private drive links for paid books. Backend-only access via Admin SDK.
     match /paid_book_assets/{bookId} {
       allow read, write: if false;
+    }
+
+    // ── Reviews ──────────────────────────────────────────────────────────────
+    function isValidReviewCreate() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'bookId','userId','displayName','avatarInitials',
+          'rating','reviewText','helpfulCount','createdAt','updatedAt'
+        ])
+        && d.bookId is string && d.bookId.size() > 0
+        && d.userId == request.auth.uid
+        && d.displayName is string && d.displayName.size() > 0 && d.displayName.size() <= 120
+        && d.avatarInitials is string && d.avatarInitials.size() <= 2
+        && d.rating is int && d.rating >= 1 && d.rating <= 5
+        && d.reviewText is string && d.reviewText.size() <= 600
+        && d.helpfulCount == 0;
+    }
+
+    function isValidReviewUpdate() {
+      let d = request.resource.data;
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
+      // Owner can update rating, reviewText, updatedAt only
+      return resource.data.userId == request.auth.uid
+        && affected.hasOnly(['rating','reviewText','updatedAt'])
+        && d.rating is int && d.rating >= 1 && d.rating <= 5
+        && d.reviewText is string && d.reviewText.size() <= 600;
+    }
+
+    function isHelpfulIncrement() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['helpfulCount'])
+        && request.resource.data.helpfulCount == resource.data.helpfulCount + 1;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidReviewCreate();
+      allow update: if isSignedIn() && (isValidReviewUpdate() || isHelpfulIncrement());
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid || isAdmin();
+    }
+
+    function isSafeRatingUpdate() {
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
+      return affected.hasOnly(['avgRating','reviewCount'])
+        && request.resource.data.avgRating is number
+        && request.resource.data.avgRating >= 0
+        && request.resource.data.avgRating <= 5
+        && request.resource.data.reviewCount is int
+        && request.resource.data.reviewCount >= 0;
     }
   }
 }

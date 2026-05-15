@@ -161,6 +161,7 @@ let externalBooks = [];
 let externalMeta = { loading: false, label: "" };
 let activeSearchRequest = 0;
 let allFirestoreBooks = [];
+window.allFirestoreBooks = allFirestoreBooks; // expose for book-detail.html
 let firestoreFilteredCount = 0;
 
 function updateGenreCountDisplay() {
@@ -208,6 +209,42 @@ function renderCard(book) {
   const externalClickAttrs = isExternal
     ? ` role="link" tabindex="0" onclick="openExternalBookCard(event, '${escapeHTML(book.externalUrl || book.driveLink)}')" onkeydown="openExternalBookCard(event, '${escapeHTML(book.externalUrl || book.driveLink)}')"`
     : "";
+
+  const detailUrl = (!isExternal && !isPaid && book.id)
+    ? `book-detail.html?id=${encodeURIComponent(book.id)}`
+    : null;
+  const reviewLink = detailUrl
+    ? `<a href="${detailUrl}" class="book-review-link" title="Read reviews" aria-label="Reviews for ${escapeHTML(book.title)}"><i class="fa-regular fa-star"></i> Reviews</a>`
+    : "";
+  const avgStars = book.avgRating && book.reviewCount
+    ? `<div class="book-card-rating" style="font-size: 0.8rem; color: #f59e0b; margin-bottom: 8px;">
+         <i class="fa-solid fa-star"></i> <span style="color:#4b5563; font-weight:600;">${book.avgRating}</span> <span style="color:#9ca3af;">(${book.reviewCount})</span>
+       </div>`
+    : "";
+
+  if (detailUrl) {
+    return `
+    <div class="${cardClass}" data-book-id="${escapeHTML(book.id)}">
+      ${badge}
+      <a href="${detailUrl}" class="book-cover-link" aria-label="View details for ${escapeHTML(book.title)}">
+        <div class="book-cover">
+          <img src="${escapeHTML(book.cover)}" alt="${escapeHTML(book.title)}"
+               onerror="this.src='https://via.placeholder.com/150x220?text=No+Cover'" />
+          <div class="book-cover-overlay"><i class="fa-solid fa-book-open"></i> View Details</div>
+        </div>
+      </a>
+      <div class="book-info">
+        <a href="${detailUrl}" class="book-title-link"><h3>${escapeHTML(book.title)}</h3></a>
+        ${avgStars}
+        <p class="author">${escapeHTML(book.author)}</p>
+        <div class="book-card-actions">
+          ${action}
+          ${reviewLink}
+        </div>
+      </div>
+    </div>`;
+  }
+
   return `
     <div class="${cardClass}"${externalClickAttrs}>
       ${badge}
@@ -517,6 +554,7 @@ function loadAllBooks() {
     const books = [];
     snapshot.forEach(doc => books.push({ id: doc.id, ...doc.data() }));
     allFirestoreBooks = books;
+    window.allFirestoreBooks = books; // keep window reference in sync
 
     /* homepage */
     displayTrendingBooks(books);

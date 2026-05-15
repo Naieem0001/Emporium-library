@@ -13,21 +13,66 @@
   <style>
     body { background: #f8fafc; color: #2e2e2e; }
     .navbar { background: #1b2a41; padding: 15px 40px; position: sticky; top: 0; z-index: 220; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
-    .nav-container { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: clamp(12px, 2vw, 24px); }
-    .logo { font-family: "Playfair Display", serif; font-size: 24px; font-weight: 700; color: #fff; text-decoration: none; white-space: nowrap; }
-    .nav-menu { display: flex; align-items: center; justify-content: center; gap: 18px; min-width: 0; }
-    .nav-menu a { color: #d1d5db; text-decoration: none; font-size: 14px; font-weight: 500; white-space: nowrap; }
+    .nav-container { display: flex; align-items: center; justify-content: space-between; gap: clamp(12px,2vw,26px); position: relative; }
+    .logo { font-family: "Playfair Display", serif; font-size: 24px; font-weight: 700; color: #fff; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+    .nav-menu { display: flex; align-items: center; justify-content: center; gap: clamp(12px,1.8vw,22px); min-width: 0; }
+    .nav-menu a { color: #d1d5db; text-decoration: none; font-size: 14px; font-weight: 500; white-space: nowrap; transition: color .25s; }
+    .nav-menu a:hover { color: #fff; }
     .nav-menu a.active-link { color: #ff9f43; }
-    .nav-right { display: flex; align-items: center; gap: 10px; min-width: max-content; }
-    .auth-nav { display: flex; align-items: center; gap: 8px; }
-    .auth-name { color: #e2e8f0; font-size: 13px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .search-box { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.08); min-width: 170px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; min-width: 0; }
+    .auth-nav { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: 0; }
+    .search-box { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.08); flex: 0 1 210px; min-width: 150px; }
     .search-box input { width: 100%; min-width: 0; border: none; outline: none; background: transparent; color: #fff; font-size: 13px; }
-    .search-box i { color: #9ca3af; font-size: 13px; }
-    .btn-nav-outline, .btn-nav-primary { border: none; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .search-box i { color: #9ca3af; font-size: 13px; flex-shrink: 0; }
+    .btn-nav-outline, .btn-nav-primary { border: none; border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
     .btn-nav-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.35); }
-    .btn-nav-primary { background: linear-gradient(135deg, #ff7a18, #ff9f43); color: #fff; }
-    .hamburger { display: none; background: transparent; color: #fff; border: none; cursor: pointer; font-size: 20px; }
+    .btn-nav-outline:hover { background: rgba(255,255,255,0.08); }
+    .btn-nav-primary { background: linear-gradient(135deg,#ff7a18,#ff9f43); color: #fff; }
+    /* Avatar chip */
+    .user-chip-wrap { position: relative; flex-shrink: 0; }
+    .user-chip { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22); border-radius: 999px; padding: 4px 10px 4px 4px; cursor: pointer; transition: background .2s; font-family: inherit; }
+    .user-chip:hover { background: rgba(255,255,255,0.18); }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#ff7a18,#ff9f43); color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .user-chip-name { font-size: 12.5px; font-weight: 600; color: #e2e8f0; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-chip-caret { font-size: 9px; color: #9ca3af; transition: transform .2s; }
+    .user-chip-wrap.open .user-chip-caret { transform: rotate(180deg); }
+    .user-dropdown { display: none; position: absolute; top: calc(100% + 8px); right: 0; min-width: 200px; background: #fff; border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.18); overflow: hidden; z-index: 9999; animation: ddFadeIn .18s ease; }
+    @keyframes ddFadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    .user-chip-wrap.open .user-dropdown { display: block; }
+    .user-dd-head { padding: 14px 16px 10px; border-bottom: 1px solid #f1f5f9; }
+    .user-dd-head .dd-name { font-size: 13px; font-weight: 700; color: #1b2a41; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-dd-head .dd-label { font-size: 11px; color: #6b7280; margin-top: 1px; }
+    .user-dd-actions { padding: 6px 0; }
+    .dd-btn { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 16px; background: none; border: none; font-family: inherit; font-size: 13px; font-weight: 500; color: #374151; cursor: pointer; text-align: left; transition: background .15s; }
+    .dd-btn:hover { background: #f8fafc; color: #1b2a41; }
+    .dd-btn i { width: 16px; text-align: center; color: #6b7280; }
+    .dd-btn:hover i { color: #ff7a18; }
+    .dd-btn.dd-logout { color: #dc2626; }
+    .dd-btn.dd-logout i { color: #dc2626; }
+    .dd-btn.dd-logout:hover { background: #fef2f2; color: #b91c1c; }
+    .dd-divider { height: 1px; background: #f1f5f9; margin: 2px 0; }
+    /* Hamburger */
+    .hamburger { display: none; font-size: 20px; color: #fff; cursor: pointer; padding: 0; margin: 0; border: none; background: transparent; line-height: 1; flex-shrink: 0; }
+    /* ── 900px: collapse nav links into hamburger dropdown ── */
+    @media (max-width: 900px) {
+      .nav-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; width: 100%; background: #1b2a41; flex-direction: column; align-items: center; padding: 18px 0 22px; gap: 16px; opacity: 0; pointer-events: none; transform: translateY(-8px); transition: opacity .25s, transform .25s; z-index: 199; box-shadow: 0 16px 32px rgba(0,0,0,0.25); border-bottom: 1px solid rgba(255,255,255,0.08); }
+      .nav-menu.active { display: flex; opacity: 1; pointer-events: auto; transform: translateY(0); }
+      .hamburger { display: inline-flex !important; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); flex-shrink: 0; }
+    }
+    /* ── 600px: 2-row mobile layout ── */
+    @media (max-width: 600px) {
+      .navbar { padding: 10px 14px; }
+      .nav-container { display: grid; grid-template-columns: auto 1fr; align-items: start; column-gap: 10px; }
+      .logo { align-self: center; }
+      .nav-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; width: 100%; }
+      .hamburger { order: -1; margin-left: auto; display: inline-flex !important; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); }
+      .search-box { order: 1; flex: 1 1 120px; min-width: 0; padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+      .auth-nav { order: 2; flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+      .btn-nav-outline, .btn-nav-primary { padding: 6px 10px; font-size: 11px; white-space: nowrap; }
+      .user-chip-name, .user-chip-caret { display: none; }
+      .user-chip { padding: 3px; gap: 0; }
+      .user-dropdown { right: 0; left: auto; min-width: 190px; }
+    }
     .my-notes-section { padding: 28px 40px 8px; }
     .my-notes-head { max-width: 1100px; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; text-align: center; flex-direction: column; }
     .my-notes-head h2 { font-family: "Playfair Display", serif; font-size: 34px; color: #1b2a41; }
@@ -106,16 +151,6 @@
     .auth-form label { display: block; font-size: 12px; font-weight: 600; color: #1b2a41; margin: 10px 0 4px; }
     .auth-form input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: inherit; }
     .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280; }
-    @media (max-width: 1180px) {
-      .nav-container { position: relative; grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "logo menu" "tools tools"; }
-      .logo { grid-area: logo; font-size: clamp(18px, 5.2vw, 24px); }
-      .nav-right { grid-area: tools; width: 100%; min-width: 0; flex-direction: column; align-items: stretch; }
-      .search-box { width: 100%; }
-      .auth-nav { justify-content: flex-end; flex-wrap: wrap; }
-      .hamburger { display: inline-flex !important; grid-area: menu; width: 44px; height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,.22); background: rgba(255,255,255,.08); align-items: center; justify-content: center; }
-      .nav-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #1b2a41; flex-direction: column; padding: 18px 0 22px; gap: 16px; z-index: 199; box-shadow: 0 16px 32px rgba(0,0,0,.25); border-bottom: 1px solid rgba(255,255,255,.08); }
-      .nav-menu.active { display: flex; }
-    }
     @media (max-width: 900px) {
       .my-notes-section, .upload-section { padding: 28px 20px 8px; }
       .upload-wrapper { padding: 28px 22px; }
@@ -143,10 +178,10 @@
           <input type="text" id="searchInput" placeholder="Search notes..." aria-label="Search notes" />
         </div>
         <div class="auth-nav" id="authNav"></div>
+        <button type="button" class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="navMenu">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
       </div>
-      <button type="button" class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="navMenu">
-        <i class="fa-solid fa-bars" aria-hidden="true"></i>
-      </button>
     </div>
   </header>
 

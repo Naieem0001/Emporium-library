@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Details - Emporium Library</title>
+    
+    <!-- ================= FONTS & STYLES ================= -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="reviews.css">
+
+    <!-- ================= FIREBASE ================= -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+    <style>
+        .book-detail-hero {
+            background: linear-gradient(135deg, var(--color-navy, #1b2a41), #2d4a6e);
+            color: #fff;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .book-detail-content {
+            display: flex;
+            gap: 3rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+        .book-detail-cover {
+            flex: 0 0 220px;
+        }
+        .book-detail-cover img {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .book-detail-info {
+            flex: 1;
+            min-width: 280px;
+        }
+        .book-detail-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .book-detail-author {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+        .book-detail-genre {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-bottom: 1rem;
+        }
+        .book-detail-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .book-detail-section {
+            max-width: 1000px;
+            margin: 3rem auto;
+            padding: 0 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<header class="navbar">
+    <div class="nav-container">
+        <a class="logo" href="index.html" aria-label="Emporium Library home">
+            <img src="assets/emporium-logo.svg" alt="Emporium Library" class="logo-img">
+        </a>
+
+        <nav class="nav-menu" id="navMenu">
+            <a href="index.html">Home</a>
+            <a href="genre.html?genre=all">All Books</a>
+            <a href="#reviews-section">Reviews</a>
+            <a href="academic.html">Academic Hub</a>
+            <a href="my-purchases.html">My Purchases</a>
+            <a href="about.html">About</a>
+            <a href="faq.html">FAQ</a>
+            <a href="index.html#feedbackForm">Feedback</a>
+        </nav>
+
+        <div class="nav-right">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Search books..." aria-label="Search books">
+            </div>
+            <div class="hamburger" id="hamburger" role="button" aria-label="Open menu" tabindex="0">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ================= BOOK DETAIL HERO ================= -->
+<section class="book-detail-hero">
+    <div class="book-detail-content">
+        <div class="book-detail-cover">
+            <img id="bookCover" src="" alt="Book cover" onerror="this.src='https://via.placeholder.com/220x320?text=No+Cover'">
+        </div>
+        <div class="book-detail-info">
+            <h1 class="book-detail-title" id="bookTitle">Loading...</h1>
+            <p class="book-detail-author" id="bookAuthor"></p>
+            <span class="book-detail-genre" id="bookGenre"></span>
+            <div class="book-detail-actions">
+                <a href="#" id="downloadBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-download"></i> Download
+                </a>
+                <button onclick="window.history.back()" class="btn btn-outline">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= REVIEWS SECTION ================= -->
+<section class="book-detail-section" id="reviews-section">
+    <div id="rev-section"></div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-col">
+            <h3><img src="assets/emporium-logo.svg" alt="Emporium Library" class="footer-logo-img"></h3>
+            <p>A digital space for readers and students to explore books across multiple genres and access academic resources freely.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Quick Links</h4>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="genre.html?genre=all">Genres</a></li>
+                <li><a href="index.html#trending1">Trending</a></li>
+                <li><a href="reviews.html">Reviews</a></li>
+                <li><a href="academic.html">Academic Hub</a></li>
+                <li><a href="my-purchases.html">My Purchases</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="faq.html">FAQ</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4>Genres</h4>
+            <ul>
+                <li><a href="genre.html?genre=literature">Literature</a></li>
+                <li><a href="genre.html?genre=fiction">Fiction</a></li>
+                <li><a href="genre.html?genre=science-fiction">Science Fiction</a></li>
+                <li><a href="genre.html?genre=non-fiction">Non-Fiction</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
+            <h4>Connect</h4>
+            <div class="social-icons">
+                <a href="https://www.linkedin.com/in/naieem-qureshi-b02524255"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="https://t.me/Ebook_Emporium"><i class="fa-brands fa-telegram"></i></a>
+                <a href="https://www.instagram.com/naieem_qurashi/"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>© 2026 Emporium Library. All rights reserved.</p>
+        <p>Developed by <a href="https://naieem0001.github.io/Portfolio/" target="_blank" rel="noopener author" class="dev-link">Naieem Qureshi</a></p>
+    </div>
+</footer>
+
+<!-- ================= SCRIPTS ================= -->
+<script>
+    // Initialize Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyDCQag_jLEkTVp-DEE2iqk1Pj5ZmjTesXE",
+        authDomain: "emporium-library.firebaseapp.com",
+        projectId: "emporium-library",
+        storageBucket: "emporium-library.firebasestorage.app",
+        messagingSenderId: "243007325031",
+        appId: "1:243007325031:web:efc7981d8933e7ca3c65c2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    window.db = firebase.firestore();
+    window.auth = firebase.auth();
+</script>
+
+<script src="script.js"></script>
+<script src="reviews.js"></script>
+
+<script>
+    // Get book ID from URL and load details + reviews
+    (async function() {
+        const bookId = new URLSearchParams(location.search).get('id');
+        if (!bookId) {
+            document.getElementById('bookTitle').textContent = 'Book not found';
+            return;
+        }
+
+        try {
+            // Try loading from Firestore by document ID
+            const bookSnap = await window.db.collection('books').doc(bookId).get();
+            if (bookSnap.exists) {
+                displayBook(bookSnap.data(), bookId);
+            } else {
+                // Fallback: search across all books in case id is a slug/index
+                await loadLocalBook(bookId);
+            }
+
+            // Initialize reviews
+            if (window.ReviewSystem && typeof window.ReviewSystem.initBookPage === 'function') {
+                window.ReviewSystem.initBookPage(bookId);
+            }
+        } catch (err) {
+            console.error('Error loading book:', err);
+            // Still try to show reviews even if book metadata fails
+            if (window.ReviewSystem && typeof window.ReviewSystem.initBookPage === 'function') {
+                window.ReviewSystem.initBookPage(bookId);
+            }
+            const title = document.getElementById('bookTitle');
+            if (title && title.textContent === 'Loading...') {
+                title.textContent = 'Book details unavailable';
+            }
+        }
+    })();
+
+    async function loadLocalBook(bookId) {
+        // Check window.allFirestoreBooks (set by script.js if on same session)
+        if (Array.isArray(window.allFirestoreBooks) && window.allFirestoreBooks.length) {
+            const book = window.allFirestoreBooks.find(b => b.id === bookId);
+            if (book) { displayBook(book, bookId); return; }
+        }
+        // Last resort: query all books and find by id
+        try {
+            const snap = await window.db.collection('books').get();
+            const book = snap.docs.map(d => ({ id: d.id, ...d.data() })).find(b => b.id === bookId);
+            if (book) { displayBook(book, bookId); return; }
+        } catch (e) { /* ignore */ }
+        document.getElementById('bookTitle').textContent = 'Book not found';
+    }
+
+    function displayBook(book, bookId) {
+        document.getElementById('bookTitle').textContent = book.title || 'Unknown Title';
+        document.getElementById('bookAuthor').textContent = `by ${book.author || 'Unknown Author'}`;
+        document.getElementById('bookGenre').textContent = (book.genre || 'general').toUpperCase();
+        document.getElementById('bookCover').src = book.cover || 'https://via.placeholder.com/220x320?text=No+Cover';
+
+        // Setup download button
+        const downloadBtn = document.getElementById('downloadBtn');
+        if (book.driveLink) {
+            const url = book.driveLink.includes('drive.google.com')
+                ? `https://drive.usercontent.google.com/download?id=${book.driveLink.match(/\/d\/([^/]+)/)?.[1]}&export=download&confirm=t`
+                : book.driveLink;
+            downloadBtn.href = url;
+            downloadBtn.target = '_blank';
+        } else {
+            downloadBtn.style.display = 'none';
+        }
+    }
+
+    // Hamburger menu
+    const hamburger = document.getElementById('hamburger');
+    const navMenu = document.getElementById('navMenu');
+    if (hamburger && navMenu) {
+        hamburger.addEventListener('click', () => navMenu.classList.toggle('active'));
+    }
+</script>
+
+</body>
+</html>
