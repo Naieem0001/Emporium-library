@@ -8,6 +8,17 @@
   const viewMode = new URLSearchParams(window.location.search).get("view") || "all";
   const pageName = String(window.location.pathname || "").split("/").pop().toLowerCase();
   const isMyNotesView = viewMode === "my-notes" || pageName === "my-notes.html";
+  const redirectParam = String(new URLSearchParams(window.location.search).get("redirect") || "").trim();
+  function safeRedirectUrl(url) {
+    try {
+      const target = new URL(url, window.location.href);
+      if (target.origin === window.location.origin) return target.href;
+    } catch (err) {
+      return null;
+    }
+    return null;
+  }
+  const redirectTarget = safeRedirectUrl(redirectParam);
 
   const firebaseConfig = {
     apiKey: "AIzaSyDCQag_jLEkTVp-DEE2iqk1Pj5ZmjTesXE",
@@ -133,6 +144,9 @@
   authModal?.addEventListener("click", e => {
     if (e.target === authModal) closeAuth();
   });
+  if (redirectTarget) {
+    openAuth("login");
+  }
 
   document.getElementById("navLogin")?.addEventListener("click", () => openAuth("login"));
   document.getElementById("navSignup")?.addEventListener("click", () => openAuth("signup"));
@@ -221,6 +235,7 @@
       await auth.signInWithEmailAndPassword(email, pw);
       closeAuth();
       showToast("Signed in successfully.");
+      if (redirectTarget) window.location.href = redirectTarget;
     } catch (err) {
       showToast(err.message || "Login failed", true);
     }
@@ -238,6 +253,7 @@
       }
       closeAuth();
       showToast("Account created. You are signed in.");
+      if (redirectTarget) window.location.href = redirectTarget;
     } catch (err) {
       showToast(err.message || "Sign up failed", true);
     }
@@ -249,6 +265,7 @@
       await auth.signInWithPopup(provider);
       if (typeof closeAuth === 'function') closeAuth();
       if (typeof showToast === 'function') showToast("Signed in with Google.");
+      if (redirectTarget) window.location.href = redirectTarget;
     } catch (err) {
       if (typeof showToast === 'function') showToast(err.message || "Google sign-in failed", true);
       console.error(err);

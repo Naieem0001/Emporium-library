@@ -7,8 +7,46 @@ const firebaseConfig = {
   messagingSenderId: "243007325031",
   appId: "1:243007325031:web:efc7981d8933e7ca3c65c2"
 };
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 const db = firebase.firestore();
+const auth = firebase.auth();
+window.db = db;
+window.auth = auth;
+if (auth && auth.setPersistence) {
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+    console.warn('Firebase auth persistence failed:', err);
+  });
+}
+window.signInWithGoogle = async function () {
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+    if (typeof window.showToast === 'function') window.showToast('Signed in with Google.');
+  } catch (err) {
+    console.error('Google sign-in failed:', err);
+    if (typeof window.showToast === 'function') window.showToast(err.message || 'Google sign-in failed', true);
+  }
+};
+window.openAuthModal = function () {
+  if (document.getElementById('authModal')) {
+    const redirect = encodeURIComponent(window.location.href);
+    window.location.href = `${window.location.origin}/academic.html?redirect=${redirect}`;
+    return;
+  }
+  const authLocal = window.auth || (firebase && firebase.auth ? firebase.auth() : null);
+  if (authLocal && typeof authLocal.signInWithPopup === 'function') {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    authLocal.signInWithPopup(provider).catch(err => {
+      console.error('openAuthModal popup failed:', err);
+      if (typeof window.showToast === 'function') window.showToast(err.message || 'Google sign-in failed', true);
+    });
+    return;
+  }
+  const redirect = encodeURIComponent(window.location.href);
+  window.location.href = `${window.location.origin}/academic.html?redirect=${redirect}`;
+};
 const LOCAL_API_BASE = "http://127.0.0.1:3000";
 const REMOTE_API_BASE = "https://emporium-academic-api.onrender.com";
 const isLocalHostRuntime =

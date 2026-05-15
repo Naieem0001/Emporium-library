@@ -183,9 +183,16 @@
           fc.innerHTML = `<p class="rev-auth-note"><i class="fa-solid fa-lock"></i> <a href="#" class="rev-signin-link">Sign in</a> to leave a review.</p>`;
           fc.querySelector('.rev-signin-link').addEventListener('click', e => {
             e.preventDefault();
-            if (typeof openAuthModal === 'function') { openAuthModal(); return; }
             const auth = getAuth();
-            if (auth) auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(console.error);
+            if (auth && typeof auth.signInWithPopup === 'function') {
+              auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err => {
+                console.error('[reviews.js] Google signin:', err);
+                if (typeof showMsg === 'function') showMsg(err.message || 'Google sign-in failed', 'error');
+                if (typeof openAuthModal === 'function' && document.getElementById('authModal')) openAuthModal();
+              });
+              return;
+            }
+            if (typeof openAuthModal === 'function') openAuthModal();
           });
           return;
         }
@@ -233,19 +240,40 @@
         const bookRef = db.collection('books').doc(bookId);
 
         db.runTransaction(async tx => {
-          const bd = (await tx.get(bookRef)).data() || {};
-          const oldCount = bd.reviewCount || 0, oldAvg = bd.avgRating || 0;
+          const bookSnap = await tx.get(bookRef);
+          const bd = bookSnap.exists ? bookSnap.data() : {};
+          const oldCount = typeof bd.reviewCount === 'number' ? bd.reviewCount : 0;
+          const oldAvg = typeof bd.avgRating === 'number' ? bd.avgRating : 0;
           let newCount, newAvg;
           if (existing) {
             newCount = oldCount;
-            newAvg = newCount > 0 ? (oldAvg*oldCount - existing.rating + rating)/newCount : rating;
+            newAvg = newCount > 0 ? (oldAvg * oldCount - existing.rating + rating) / newCount : rating;
             tx.update(reviewRef, { rating, reviewText: text, updatedAt: now });
+            if (bookSnap.exists) {
+              tx.update(bookRef, { avgRating: parseFloat(newAvg.toFixed(1)), reviewCount: newCount });
+            } else {
+              tx.set(bookRef, { avgRating: parseFloat(newAvg.toFixed(1)), reviewCount: newCount }, { merge: true });
+            }
           } else {
             newCount = oldCount + 1;
-            newAvg = (oldAvg*oldCount + rating)/newCount;
-            tx.set(reviewRef, { bookId, userId:user.uid, displayName, avatarInitials:avatarInitials(displayName), rating, reviewText:text, helpfulCount:0, createdAt:now, updatedAt:now });
+            newAvg = (oldAvg * oldCount + rating) / newCount;
+            tx.set(reviewRef, {
+              bookId,
+              userId: user.uid,
+              displayName,
+              avatarInitials: avatarInitials(displayName),
+              rating,
+              reviewText: text,
+              helpfulCount: 0,
+              createdAt: now,
+              updatedAt: now
+            });
+            if (bookSnap.exists) {
+              tx.update(bookRef, { avgRating: parseFloat(newAvg.toFixed(1)), reviewCount: newCount });
+            } else {
+              tx.set(bookRef, { avgRating: parseFloat(newAvg.toFixed(1)), reviewCount: newCount }, { merge: true });
+            }
           }
-          tx.update(bookRef, { avgRating: parseFloat(newAvg.toFixed(1)), reviewCount: newCount });
         })
         .then(() => {
           getDb().collection('reviews').where('bookId','==',bookId).orderBy('createdAt','desc').get()
