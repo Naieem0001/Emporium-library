@@ -102,7 +102,7 @@
 .rev-strip-row--rtl { animation: rev-scroll-rtl 15s linear infinite; }
 .rev-strip-wrap.rev-paused .rev-strip-row, .rev-strip-wrap.rev-paused .rev-strip-row--rtl { animation-play-state: paused; }
 @keyframes rev-scroll-ltr { from { transform: translateX(0); } to   { transform: translateX(-50%); } }
-@keyframes rev-scroll-rtl { from { transform: translateX(0); } to   { transform: translateX(50%); } }
+@keyframes rev-scroll-rtl { from { transform: translateX(-50%); } to   { transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .rev-strip-row, .rev-strip-row--rtl { animation: none; } }
 .rev-strip-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem 1.2rem; min-width: 240px; max-width: 280px; flex-shrink: 0; transition: box-shadow 0.2s ease, transform 0.2s ease; }
 .rev-strip-card:hover { box-shadow: 0 6px 20px rgba(15,23,42,0.08); transform: translateY(-2px); }

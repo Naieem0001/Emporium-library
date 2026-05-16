@@ -413,9 +413,13 @@
               return;
             }
             resolveBookTitles(reviews, db, function () {
-              const half = Math.ceil(reviews.length/2);
-              const row1 = reviews.slice(0,half);
-              const row2 = reviews.slice(half).length ? reviews.slice(half) : reviews.slice(0,half);
+              const row1 = [];
+              const row2 = [];
+              reviews.forEach((r, i) => {
+                if (i % 2 === 0) row1.push(r);
+                else row2.push(r);
+              });
+              if (!row2.length) row2.push(...row1);
               function card(r) {
                 return `<div class="rev-strip-card">
                   <div class="rev-strip-card-top">
@@ -429,7 +433,16 @@
                   <div class="rev-strip-book"><i class="fa-solid fa-book-open"></i> ${esc(bookTitle(r.bookId))}</div>
                 </div>`;
               }
-              function fillRow(id, items) { const el = document.getElementById(id); if (el) el.innerHTML = [...items,...items].map(card).join(''); }
+              function fillRow(id, items) { 
+                const el = document.getElementById(id); 
+                if (el) {
+                  let filledItems = [...items];
+                  while (filledItems.length < 12) {
+                    filledItems = filledItems.concat(items);
+                  }
+                  el.innerHTML = [...filledItems, ...filledItems].map(card).join(''); 
+                }
+              }
               fillRow('rev-row-1', row1);
               fillRow('rev-row-2', row2);
               const wrap = document.getElementById('rev-strip-wrap'); wrap.classList.remove('rev-paused'); wrap.addEventListener('mouseenter', () => wrap.classList.add('rev-paused')); wrap.addEventListener('mouseleave', () => wrap.classList.remove('rev-paused'));
