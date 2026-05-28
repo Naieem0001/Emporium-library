@@ -1,5 +1,5 @@
 /* =====================================================================
- * Emporium Library - checkout modal (UPI + Bank Transfer)
+ * Emporium Library — Razorpay Checkout (Auto-approval, Premium UI)
  * Usage: openCheckout({ id, title, author, cover, price })
  * Exposes: window.EmporiumCheckout.openCheckout(book)
  * ===================================================================== */
@@ -13,15 +13,7 @@
   const LS_KEY_ORDERS = "emporium_orders";
   const LS_KEY_EMAIL  = "emporium_email";
 
-
-  /* ── Pre-warm: silently ping the API on page load so Render's free
-     tier is already awake by the time the user clicks Buy ── */
-  (function prewarm() {
-    try {
-      fetch(API_BASE + "/api/payment-config", { method: "HEAD" }).catch(() => {});
-    } catch (_) {}
-  })();
-
+  /* ── Helpers ── */
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -36,111 +28,47 @@
   function saveLocalOrder(book, accessCode, email) {
     try {
       const list = JSON.parse(localStorage.getItem(LS_KEY_ORDERS) || "[]");
-      list.unshift({
-        bookId: book.id,
-        bookTitle: book.title,
-        bookCover: book.cover || "",
-        bookPrice: Number(book.price) || 0,
-        accessCode,
-        email,
-        createdAt: Date.now()
-      });
-      localStorage.setItem(LS_KEY_ORDERS, JSON.stringify(list.slice(0, 50)));
+      const exists = list.some(o =>
+        String(o.bookId) === String(book.id) &&
+        String(o.email || "").toLowerCase() === email
+      );
+      if (!exists) {
+        list.unshift({
+          bookId: book.id,
+          bookTitle: book.title,
+          bookCover: book.cover || "",
+          bookPrice: Number(book.price) || 0,
+          accessCode,
+          email,
+          createdAt: Date.now()
+        });
+        localStorage.setItem(LS_KEY_ORDERS, JSON.stringify(list.slice(0, 50)));
+      }
       if (email) localStorage.setItem(LS_KEY_EMAIL, email);
     } catch (e) { /* non-critical */ }
   }
 
-  let _cachedConfig = null;
-
-  /* fetchWithTimeout — wraps fetch with an AbortController deadline */
-  function fetchWithTimeout(url, ms) {
-    const ctrl = new AbortController();
-    const id = setTimeout(() => ctrl.abort(), ms);
-    return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(id));
+  /* ── Razorpay SDK Loader ── */
+  function loadRazorpayScript() {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
   }
 
-  async function fetchPaymentConfig() {
-    if (_cachedConfig) return _cachedConfig;
-    /* Try once with a 55-second timeout (covers Render cold-start ~30-45s) */
-    try {
-      const r = await fetchWithTimeout(API_BASE + "/api/payment-config", 55000);
-      if (!r.ok) throw new Error("Could not load payment details");
-      _cachedConfig = await r.json();
-      return _cachedConfig;
-    } catch (err) {
-      /* One silent retry after 3 seconds */
-      await new Promise(res => setTimeout(res, 3000));
-      const r2 = await fetchWithTimeout(API_BASE + "/api/payment-config", 30000);
-      if (!r2.ok) throw new Error("Could not load payment details");
-      _cachedConfig = await r2.json();
-      return _cachedConfig;
-    }
-  }
-
-  function buildUpiUri(cfg, book) {
-    const params = new URLSearchParams();
-    params.set("pa", cfg.upiId || "");
-    if (cfg.upiPayeeName) params.set("pn", cfg.upiPayeeName);
-    params.set("am", String(Number(book.price) || 0));
-    params.set("cu", "INR");
-    const tn = "Emporium " + String(book.title || "").slice(0, 50);
-    params.set("tn", tn);
-    return "upi://pay?" + params.toString();
-  }
-
-  function copyToClipboard(text, btn) {
-    if (!text) return;
-    navigator.clipboard
-      ? navigator.clipboard.writeText(String(text))
-          .then(() => flashCopied(btn))
-          .catch(() => legacyCopy(text, btn))
-      : legacyCopy(text, btn);
-  }
-
-  function legacyCopy(text, btn) {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); flashCopied(btn); } catch (e) {}
-    ta.remove();
-  }
-
-  function flashCopied(btn) {
-    if (!btn) return;
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
-    btn.classList.add("pm-copied");
-    setTimeout(() => {
-      btn.innerHTML = orig;
-      btn.classList.remove("pm-copied");
-    }, 1400);
-  }
-
-  async function downloadQrImage(url) {
-    if (!url) return;
-    try {
-      const res = await fetch(url, { mode: "cors" });
-      if (!res.ok) throw new Error("download failed");
-      const blob = await res.blob();
-      const extFromType = (blob.type || "").split("/")[1] || "png";
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `emporium-upi-qr.${extFromType.replace(/[^a-z0-9]/gi, "") || "png"}`;
-      document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(a.href);
-      a.remove();
-    } catch (_err) {
-      // Fallback when remote host blocks CORS: open the image in a new tab.
-      window.open(url, "_blank", "noopener");
-    }
-  }
-
+  /* ── Modal helpers ── */
   function closeModal() {
     const el = document.getElementById("pmOverlay");
-    if (el) el.remove();
-    document.body.style.overflow = "";
+    if (el) {
+      el.classList.add("pm-closing");
+      setTimeout(() => { el.remove(); document.body.style.overflow = ""; }, 300);
+    } else {
+      document.body.style.overflow = "";
+    }
   }
 
   function ensureFontAwesome() {
@@ -151,10 +79,344 @@
     document.head.appendChild(l);
   }
 
+  function injectStyles() {
+    if (document.getElementById("pm-styles")) return;
+    const style = document.createElement("style");
+    style.id = "pm-styles";
+    style.textContent = `
+      /* ===== OVERLAY ===== */
+      .pm-overlay {
+        position: fixed; inset: 0; z-index: 99999;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(10, 14, 26, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        padding: 16px;
+        animation: pmFadeIn 0.25s ease;
+      }
+      .pm-overlay.pm-closing { animation: pmFadeOut 0.3s ease forwards; }
+      @keyframes pmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes pmFadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+      /* ===== CARD ===== */
+      .pm-card {
+        background: #fff;
+        border-radius: 24px;
+        width: 100%; max-width: 520px;
+        box-shadow: 0 40px 80px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.1);
+        position: relative;
+        overflow: hidden;
+        animation: pmSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        font-family: 'Poppins', sans-serif;
+      }
+      @keyframes pmSlideUp {
+        from { opacity: 0; transform: translateY(32px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0)     scale(1); }
+      }
+
+      /* ===== TOP GRADIENT HEADER ===== */
+      .pm-header {
+        background: linear-gradient(135deg, #1B2A41 0%, #243B55 60%, #1a3a5c 100%);
+        padding: 28px 28px 24px;
+        position: relative;
+        overflow: hidden;
+      }
+      .pm-header::before {
+        content: '';
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 300px 160px at 110% 50%, rgba(255,122,24,0.28), transparent),
+          radial-gradient(ellipse 200px 200px at -10% 80%, rgba(255,179,71,0.18), transparent);
+        pointer-events: none;
+      }
+      .pm-header-inner { position: relative; z-index: 1; display: flex; gap: 16px; align-items: flex-start; }
+
+      .pm-close {
+        position: absolute; top: 16px; right: 16px; z-index: 10;
+        width: 36px; height: 36px;
+        background: rgba(255,255,255,0.12); border: none; border-radius: 50%;
+        color: rgba(255,255,255,0.8); font-size: 16px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.2s, color 0.2s, transform 0.2s;
+        backdrop-filter: blur(4px);
+      }
+      .pm-close:hover { background: rgba(255,255,255,0.22); color: #fff; transform: scale(1.1); }
+
+      .pm-cover {
+        width: 70px; height: 96px; object-fit: cover;
+        border-radius: 10px; flex-shrink: 0;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        border: 2px solid rgba(255,255,255,0.15);
+      }
+      .pm-cover-placeholder {
+        width: 70px; height: 96px; border-radius: 10px; flex-shrink: 0;
+        background: rgba(255,255,255,0.1);
+        display: flex; align-items: center; justify-content: center;
+        color: rgba(255,255,255,0.4); font-size: 24px;
+      }
+
+      .pm-book-info { flex: 1; min-width: 0; }
+      .pm-eyebrow {
+        font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+        text-transform: uppercase; color: #FF9F43;
+        margin-bottom: 4px; display: block;
+      }
+      .pm-book-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.15rem; font-weight: 700;
+        color: #fff; margin: 0 0 4px;
+        line-height: 1.3;
+        overflow: hidden; text-overflow: ellipsis;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      }
+      .pm-book-author { font-size: 12px; color: rgba(255,255,255,0.6); margin: 0 0 10px; }
+      .pm-price-tag {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: linear-gradient(135deg, #FF7A18, #FFB347);
+        color: #1B2A41; font-size: 15px; font-weight: 800;
+        padding: 5px 14px; border-radius: 999px;
+        box-shadow: 0 4px 12px rgba(255,122,24,0.4);
+        letter-spacing: 0.3px;
+      }
+
+      .pm-trust-row {
+        display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap;
+        position: relative; z-index: 1;
+      }
+      .pm-trust-item {
+        display: flex; align-items: center; gap: 5px;
+        font-size: 11px; color: rgba(255,255,255,0.65);
+      }
+      .pm-trust-item i { color: #FF9F43; font-size: 11px; }
+
+      /* ===== BODY PANEL ===== */
+      .pm-body { padding: 28px; }
+
+      /* ===== LOADING ===== */
+      .pm-loading {
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 12px;
+        padding: 40px 20px; text-align: center;
+        color: #64748B; font-size: 14px;
+      }
+      .pm-spinner {
+        width: 44px; height: 44px;
+        border: 3px solid #F1F5F9;
+        border-top-color: #FF7A18;
+        border-radius: 50%;
+        animation: pmSpin 0.8s linear infinite;
+      }
+      @keyframes pmSpin { to { transform: rotate(360deg); } }
+
+      /* ===== EMAIL FORM ===== */
+      .pm-section-label {
+        font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; color: #94A3B8; margin-bottom: 8px;
+      }
+      .pm-form-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.35rem; color: #1B2A41; margin: 0 0 6px;
+      }
+      .pm-form-subtitle { font-size: 13px; color: #64748B; margin: 0 0 22px; line-height: 1.5; }
+
+      .pm-input-wrap { position: relative; margin-bottom: 18px; }
+      .pm-input-wrap i {
+        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+        color: #94A3B8; font-size: 14px; pointer-events: none;
+      }
+      .pm-input {
+        width: 100%; padding: 13px 14px 13px 40px;
+        border: 1.5px solid #E2E8F0; border-radius: 12px;
+        font-family: 'Poppins', sans-serif; font-size: 14px; color: #1B2A41;
+        outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+        background: #F8FAFC;
+      }
+      .pm-input:focus {
+        border-color: #FF7A18;
+        box-shadow: 0 0 0 3px rgba(255,122,24,0.12);
+        background: #fff;
+      }
+      .pm-input::placeholder { color: #CBD5E1; }
+
+      /* ===== PAY BUTTON ===== */
+      .pm-pay-btn {
+        width: 100%; padding: 15px 24px;
+        background: linear-gradient(135deg, #1B2A41 0%, #243B55 100%);
+        color: #fff; border: none; border-radius: 14px;
+        font-family: 'Poppins', sans-serif;
+        font-size: 15px; font-weight: 700;
+        cursor: pointer; letter-spacing: 0.3px;
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+        box-shadow: 0 10px 28px rgba(27,42,65,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+        position: relative; overflow: hidden;
+      }
+      .pm-pay-btn::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg, rgba(255,122,24,0.15), transparent);
+        opacity: 0; transition: opacity 0.2s;
+      }
+      .pm-pay-btn:hover::before { opacity: 1; }
+      .pm-pay-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(27,42,65,0.35), inset 0 1px 0 rgba(255,255,255,0.1); }
+      .pm-pay-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+      .pm-razorpay-logo {
+        display: flex; align-items: center; gap: 5px;
+        font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 500;
+        margin-top: 12px; justify-content: center;
+      }
+      .pm-razorpay-logo span { color: rgba(255,255,255,0.7); }
+
+      /* ===== PAYMENT METHODS ROW ===== */
+      .pm-methods {
+        display: flex; gap: 8px; align-items: center; justify-content: center;
+        margin-top: 14px; flex-wrap: wrap;
+      }
+      .pm-method-chip {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #F8FAFC; border: 1px solid #E2E8F0;
+        border-radius: 999px; padding: 5px 12px;
+        font-size: 11px; font-weight: 600; color: #475569;
+      }
+      .pm-method-chip i { font-size: 11px; color: #FF7A18; }
+
+      /* ===== ERROR ===== */
+      .pm-error-msg {
+        background: #FEF2F2; border: 1px solid #FECACA;
+        color: #991B1B; border-radius: 10px;
+        padding: 10px 14px; font-size: 13px;
+        display: none; margin-bottom: 16px;
+        line-height: 1.45;
+        align-items: flex-start; gap: 8px;
+      }
+      .pm-error-msg.visible { display: flex; }
+      .pm-error-msg i { margin-top: 1px; flex-shrink: 0; }
+
+      /* ===== PROCESSING ===== */
+      .pm-processing {
+        text-align: center; padding: 32px 20px;
+      }
+      .pm-processing-ring {
+        width: 72px; height: 72px; margin: 0 auto 16px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #FF7A18, #FFB347);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 8px 24px rgba(255,122,24,0.35);
+        animation: pmPulse 1.5s ease infinite;
+      }
+      @keyframes pmPulse {
+        0%, 100% { box-shadow: 0 8px 24px rgba(255,122,24,0.35); }
+        50% { box-shadow: 0 8px 40px rgba(255,122,24,0.55); }
+      }
+      .pm-processing-ring i { font-size: 28px; color: #fff; }
+      .pm-processing h4 { font-size: 1.1rem; color: #1B2A41; margin: 0 0 6px; }
+      .pm-processing p { font-size: 13px; color: #64748B; margin: 0; }
+
+      /* ===== SUCCESS ===== */
+      .pm-success { padding: 8px 0; text-align: center; }
+      .pm-success-icon {
+        width: 80px; height: 80px; margin: 0 auto 16px;
+        background: linear-gradient(135deg, #10B981, #059669);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 12px 32px rgba(16,185,129,0.35);
+        animation: pmBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      @keyframes pmBounceIn {
+        from { opacity: 0; transform: scale(0.5); }
+        to   { opacity: 1; transform: scale(1); }
+      }
+      .pm-success-icon i { font-size: 36px; color: #fff; }
+
+      .pm-success h4 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.4rem; color: #1B2A41; margin: 0 0 6px;
+      }
+      .pm-success > p { font-size: 13px; color: #64748B; line-height: 1.55; margin: 0 0 22px; }
+
+      .pm-access-box {
+        background: linear-gradient(135deg, #FFF7ED, #FFFBF5);
+        border: 2px dashed #FDBA74; border-radius: 14px;
+        padding: 16px 18px; margin-bottom: 20px;
+        text-align: left;
+      }
+      .pm-access-label {
+        font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+        text-transform: uppercase; color: #9A3412; margin-bottom: 6px;
+        display: flex; align-items: center; gap: 5px;
+      }
+      .pm-access-code-row {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      }
+      .pm-access-code {
+        font-family: 'Courier New', monospace;
+        font-size: 1.6rem; font-weight: 800;
+        letter-spacing: 5px; color: #FF7A18;
+        flex: 1;
+      }
+      .pm-copy-btn {
+        border: none; cursor: pointer;
+        background: #1B2A41; color: #fff;
+        padding: 8px 14px; border-radius: 8px;
+        font-family: 'Poppins', sans-serif;
+        font-size: 12px; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 5px;
+        transition: background 0.2s, transform 0.15s;
+        flex-shrink: 0;
+      }
+      .pm-copy-btn:hover { background: #FF7A18; transform: scale(1.03); }
+      .pm-copy-btn.copied { background: #059669; }
+
+      .pm-success-note {
+        font-size: 12px; color: #92400E; margin-top: 8px; line-height: 1.4;
+      }
+
+      .pm-success-actions { display: flex; gap: 10px; flex-direction: column; }
+      .pm-btn-primary {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 13px 20px;
+        background: linear-gradient(135deg, #FF9F43, #FF7A18);
+        color: #1B2A41; border: none; border-radius: 12px;
+        font-family: 'Poppins', sans-serif;
+        font-size: 14px; font-weight: 700;
+        cursor: pointer; text-decoration: none;
+        box-shadow: 0 8px 22px rgba(255,122,24,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .pm-btn-primary:hover { transform: translateY(-2px); color: #1B2A41; box-shadow: 0 12px 30px rgba(255,122,24,0.4); }
+      .pm-btn-ghost {
+        display: flex; align-items: center; justify-content: center;
+        padding: 12px 20px;
+        background: #F1F5F9; color: #475569;
+        border: none; border-radius: 12px;
+        font-family: 'Poppins', sans-serif;
+        font-size: 14px; font-weight: 600;
+        cursor: pointer; transition: background 0.2s;
+      }
+      .pm-btn-ghost:hover { background: #E2E8F0; }
+
+      /* ===== RESPONSIVE ===== */
+      @media (max-width: 540px) {
+        .pm-card { border-radius: 20px; }
+        .pm-header { padding: 22px 20px 18px; }
+        .pm-body { padding: 22px 20px; }
+        .pm-access-code { font-size: 1.3rem; letter-spacing: 3px; }
+        .pm-book-title { font-size: 1rem; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  /* ── Main openCheckout ── */
   function openCheckout(book) {
     if (!book || !book.id || !(Number(book.price) > 0)) return;
     ensureFontAwesome();
-    closeModal();
+    injectStyles();
+
+    // Close any existing modal
+    const existing = document.getElementById("pmOverlay");
+    if (existing) existing.remove();
     document.body.style.overflow = "hidden";
 
     const overlay = document.createElement("div");
@@ -162,30 +424,20 @@
     overlay.id = "pmOverlay";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
-    overlay.innerHTML = renderShell(book, { phase: "loading" });
+    overlay.innerHTML = buildShell(book);
     document.body.appendChild(overlay);
 
-    overlay.addEventListener("click", e => {
-      if (e.target === overlay) closeModal();
-    });
-    const closeBtn = overlay.querySelector(".pm-close");
-    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    overlay.addEventListener("click", e => { if (e.target === overlay) closeModal(); });
+    overlay.querySelector(".pm-close").addEventListener("click", closeModal);
 
-    fetchPaymentConfig()
-      .then(cfg => renderPay(book, cfg))
-      .catch(err => {
-        const panel = overlay.querySelector(".pm-panel");
-        if (panel) panel.innerHTML = `
-          <div class="pm-error">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <p>${esc(err.message || "Could not load payment details")}</p>
-          </div>`;
-      });
+    // Show email form
+    renderEmailForm(book);
   }
 
-  function renderShell(book, state) {
+  /* ── Shell (header + body wrapper) ── */
+  function buildShell(book) {
     const cover = esc(book.cover || "");
-    const title = esc(book.title || "");
+    const title  = esc(book.title || "");
     const author = esc(book.author || "");
     const price  = fmtPrice(book.price);
     return `
@@ -193,313 +445,251 @@
         <button type="button" class="pm-close" aria-label="Close">
           <i class="fa-solid fa-xmark"></i>
         </button>
-        <aside class="pm-summary">
-          <div class="pm-cover-wrap">
-            <img class="pm-cover" src="${cover}" alt="${title}"
-                 onerror="this.style.display='none'" />
+
+        <div class="pm-header">
+          <div class="pm-header-inner">
+            ${cover
+              ? `<img class="pm-cover" src="${cover}" alt="${title}" onerror="this.style.display='none'" />`
+              : `<div class="pm-cover-placeholder"><i class="fa-solid fa-book"></i></div>`}
+            <div class="pm-book-info">
+              <span class="pm-eyebrow"><i class="fa-solid fa-shopping-bag"></i> Secure Checkout</span>
+              <h2 class="pm-book-title">${title}</h2>
+              <p class="pm-book-author">by ${author}</p>
+              <div class="pm-price-tag">
+                <i class="fa-solid fa-indian-rupee-sign" style="font-size:13px;"></i>${price.slice(1)}
+              </div>
+            </div>
           </div>
-          <span class="pm-eyebrow">New Release</span>
-          <h3 class="pm-title">${title}</h3>
-          <p class="pm-author">by ${author}</p>
-          <div class="pm-price-badge">
-            <span>Price</span>
-            <strong>${price}</strong>
+          <div class="pm-trust-row">
+            <span class="pm-trust-item"><i class="fa-solid fa-lock"></i> Encrypted payment</span>
+            <span class="pm-trust-item"><i class="fa-solid fa-bolt"></i> Instant access</span>
+            <span class="pm-trust-item"><i class="fa-solid fa-shield-halved"></i> 100% secure</span>
           </div>
-          <ul class="pm-trust">
-            <li><i class="fa-solid fa-lock"></i> Secure direct payment</li>
-            <li><i class="fa-solid fa-bolt"></i> Usually verified within 4 hrs</li>
-            <li><i class="fa-solid fa-rotate"></i> Access from any device</li>
-          </ul>
-        </aside>
-        <section class="pm-panel">
-        ${state.phase === "loading"
-            ? `<div class="pm-loading">
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                Connecting to payment server&hellip;
-                <div style="font-size:11px;color:#94A3B8;margin-top:6px;">
-                  This may take up to 30 seconds on first load.
-                </div>
-              </div>`
-            : ""}
-        </section>
-      </div>`;
-  }
-
-  function renderPay(book, cfg) {
-    const panel = document.querySelector("#pmOverlay .pm-panel");
-    if (!panel) return;
-    panel.innerHTML = `
-      <header class="pm-head">
-        <h4>Pay <span>${fmtPrice(book.price)}</span></h4>
-        <p>Pay using either option below, then submit your payment screenshot to unlock.</p>
-        <p class="pm-ref-shortcut">
-          Already paid?
-          <button type="button" class="pm-link-btn pm-paid-btn-inline">Submit reference</button>
-        </p>
-      </header>
-
-      <div class="pm-tabs" role="tablist">
-        <button type="button" class="pm-tab pm-tab-upi active" data-tab="upi" role="tab">
-          <i class="fa-solid fa-mobile-screen-button"></i> UPI
-        </button>
-        <button type="button" class="pm-tab pm-tab-bank" data-tab="bank" role="tab">
-          <i class="fa-solid fa-building-columns"></i> Bank Transfer
-        </button>
-      </div>
-
-      <div class="pm-pane pm-pane-upi active">
-        ${renderUpiPane(cfg, book)}
-      </div>
-      <div class="pm-pane pm-pane-bank">
-        ${renderBankPane(cfg)}
-      </div>
-
-      <footer class="pm-foot">
-        <button type="button" class="pm-primary pm-paid-btn">
-          <i class="fa-solid fa-circle-check"></i> I've paid &mdash; submit reference
-        </button>
-      </footer>`;
-
-    // Tabs
-    panel.querySelectorAll(".pm-tab").forEach(btn => {
-      btn.addEventListener("click", () => {
-        panel.querySelectorAll(".pm-tab").forEach(b => b.classList.remove("active"));
-        panel.querySelectorAll(".pm-pane").forEach(p => p.classList.remove("active"));
-        btn.classList.add("active");
-        const name = btn.dataset.tab;
-        panel.querySelector(".pm-pane-" + name).classList.add("active");
-      });
-    });
-
-    // Copy buttons
-    panel.querySelectorAll(".pm-copy").forEach(btn => {
-      btn.addEventListener("click", () => copyToClipboard(btn.dataset.copy || "", btn));
-    });
-
-    panel.querySelectorAll(".pm-qr-download").forEach(btn => {
-      btn.addEventListener("click", () => downloadQrImage(btn.dataset.url || ""));
-    });
-
-    // Deep-link UPI buttons (fall back to copy on desktop)
-    panel.querySelectorAll(".pm-upi-app").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const uri = buildUpiUri(cfg, book);
-        if (!cfg.upiId) return;
-        // On mobile this opens the UPI app chooser / named app.
-        // On desktop it no-ops, so we also copy the id as a convenience.
-        copyToClipboard(cfg.upiId, null);
-        window.location.href = uri;
-      });
-    });
-
-    // "I've paid" -> form
-    panel.querySelectorAll(".pm-paid-btn, .pm-paid-btn-inline").forEach(btn => {
-      btn.addEventListener("click", () => renderForm(book, cfg));
-    });
-  }
-
-  function renderUpiPane(cfg, book) {
-    const hasUpi = !!cfg.upiId;
-    const hasQr  = !!cfg.upiQrUrl;
-    if (!hasUpi && !hasQr) {
-      return `<div class="pm-empty">
-        <i class="fa-solid fa-circle-info"></i>
-        UPI details not set up yet. Please use the Bank tab.
-      </div>`;
-    }
-    return `
-      <div class="pm-upi-grid">
-        <div class="pm-qr-wrap">
-          ${hasQr
-            ? `<img class="pm-qr" src="${esc(cfg.upiQrUrl)}" alt="UPI QR code" />
-               <button type="button" class="pm-copy pm-qr-download" data-url="${esc(cfg.upiQrUrl)}">
-                 <i class="fa-solid fa-download"></i> Download QR
-               </button>`
-            : `<div class="pm-qr-placeholder"><i class="fa-solid fa-qrcode"></i><span>Scan with any UPI app</span></div>`}
         </div>
-        <div class="pm-upi-right">
-          ${hasUpi ? `
-            <label class="pm-field-label">UPI ID</label>
-            <div class="pm-copy-row">
-              <span class="pm-copy-value">${esc(cfg.upiId)}</span>
-              <button type="button" class="pm-copy" data-copy="${esc(cfg.upiId)}">
-                <i class="fa-regular fa-copy"></i> Copy
-              </button>
-            </div>
-            ${cfg.upiPayeeName ? `
-              <label class="pm-field-label">Payee</label>
-              <div class="pm-plain">${esc(cfg.upiPayeeName)}</div>` : ""}
-            <label class="pm-field-label">Amount</label>
-            <div class="pm-plain pm-amount">${fmtPrice(book.price)}</div>
-            <div class="pm-upi-apps">
-              <button type="button" class="pm-upi-app"><i class="fa-brands fa-google-pay"></i> GPay</button>
-              <button type="button" class="pm-upi-app"><i class="fa-solid fa-mobile-screen"></i> PhonePe</button>
-              <button type="button" class="pm-upi-app"><i class="fa-solid fa-wallet"></i> Paytm</button>
-            </div>
-            <p class="pm-hint">On mobile, tap an app to open it pre-filled. On desktop, copy the UPI id and pay from your phone.</p>
-          ` : `<div class="pm-empty-inline">UPI id not set yet. Use the QR or switch to Bank tab.</div>`}
-        </div>
+
+        <div class="pm-body" id="pmBody"></div>
       </div>`;
   }
 
-  function renderBankPane(cfg) {
-    const rows = [
-      { label: "Account Holder", value: cfg.accountName },
-      { label: "Bank",           value: cfg.bankName },
-      { label: "Account Number", value: cfg.accountNumber },
-      { label: "IFSC",           value: cfg.ifsc },
-      { label: "Branch",         value: cfg.branch }
-    ].filter(r => r.value);
-    if (rows.length === 0) {
-      return `<div class="pm-empty">
-        <i class="fa-solid fa-circle-info"></i>
-        Bank details not set up yet. Please use the UPI tab.
-      </div>`;
-    }
-    return `
-      <div class="pm-bank-list">
-        ${rows.map(r => `
-          <div class="pm-copy-row">
-            <div class="pm-bank-field">
-              <span class="pm-field-label">${esc(r.label)}</span>
-              <span class="pm-copy-value">${esc(r.value)}</span>
-            </div>
-            <button type="button" class="pm-copy" data-copy="${esc(r.value)}">
-              <i class="fa-regular fa-copy"></i> Copy
-            </button>
-          </div>`).join("")}
-      </div>
-      <p class="pm-hint">
-        Transfer exactly the book price via IMPS / NEFT. Save the UTR number shown by your bank.
-      </p>`;
-  }
-
-  function renderForm(book, _cfg) {
-    const panel = document.querySelector("#pmOverlay .pm-panel");
-    if (!panel) return;
-    const rememberedEmail = (() => {
+  /* ── Step 1: Email form ── */
+  function renderEmailForm(book) {
+    const body = document.getElementById("pmBody");
+    if (!body) return;
+    const remembered = (() => {
       try { return localStorage.getItem(LS_KEY_EMAIL) || ""; } catch { return ""; }
     })();
-    panel.innerHTML = `
-      <header class="pm-head">
-        <button type="button" class="pm-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
-        <h4>Submit your reference</h4>
-        <p>After you've paid, add your payment screenshot link. You'll get an access code immediately, and the download unlocks once verified.</p>
-      </header>
-      <form class="pm-form" id="pmForm" autocomplete="on">
-        <label class="pm-field">
-          <span>Email <i>*</i></span>
-          <input type="email" name="email" required inputmode="email" autocomplete="email"
-                 placeholder="you@example.com" value="${esc(rememberedEmail)}" />
-        </label>
-        <label class="pm-field">
-          <span>Phone (optional)</span>
-          <input type="tel" name="phone" inputmode="tel" autocomplete="tel"
-                 placeholder="e.g. +91 98765 43210" maxlength="20" />
-        </label>
-        <label class="pm-field">
-          <span>Paid via <i>*</i></span>
-          <select name="method" required>
-            <option value="upi">UPI</option>
-            <option value="bank">Bank transfer (IMPS / NEFT)</option>
-          </select>
-        </label>
-        <label class="pm-field">
-          <span>Payment Screenshot <i>*</i> <small style="text-transform:none;letter-spacing:normal;color:#94A3B8;">(image, max 5MB)</small></span>
-          <input type="file" name="proofFile" required
-                 accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
-        </label>
-        <div class="pm-form-error" id="pmFormError"></div>
-        <button type="submit" class="pm-primary">
-          <i class="fa-solid fa-paper-plane"></i> Confirm &amp; get access code
+
+    body.innerHTML = `
+      <p class="pm-form-title">Complete your purchase</p>
+      <p class="pm-form-subtitle">Enter your email to get instant access after payment. Your access code will be linked to this email.</p>
+
+      <div class="pm-error-msg" id="pmError">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="pmErrorText"></span>
+      </div>
+
+      <form id="pmEmailForm" autocomplete="on">
+        <div class="pm-input-wrap">
+          <i class="fa-regular fa-envelope"></i>
+          <input
+            type="email" name="email" id="pmEmailInput"
+            class="pm-input" required inputmode="email"
+            autocomplete="email"
+            placeholder="your@email.com"
+            value="${esc(remembered)}" />
+        </div>
+        <button type="submit" class="pm-pay-btn" id="pmPayBtn">
+          <i class="fa-solid fa-lock"></i>
+          Pay ${fmtPrice(book.price)} Securely
         </button>
-      </form>`;
+      </form>
 
-    panel.querySelector(".pm-back").addEventListener("click", () => {
-      fetchPaymentConfig().then(cfg => renderPay(book, cfg));
-    });
+      <div class="pm-razorpay-logo">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Powered by Razorpay</span>
+      </div>
 
-    panel.querySelector("#pmForm").addEventListener("submit", async ev => {
+      <div class="pm-methods">
+        <span class="pm-method-chip"><i class="fa-solid fa-mobile-screen-button"></i> UPI</span>
+        <span class="pm-method-chip"><i class="fa-regular fa-credit-card"></i> Cards</span>
+        <span class="pm-method-chip"><i class="fa-solid fa-building-columns"></i> Net Banking</span>
+        <span class="pm-method-chip"><i class="fa-solid fa-wallet"></i> Wallets</span>
+      </div>`;
+
+    body.querySelector("#pmEmailForm").addEventListener("submit", async ev => {
       ev.preventDefault();
-      const form = ev.currentTarget;
-      const err = panel.querySelector("#pmFormError");
-      err.textContent = "";
-      const proofFile = form.proofFile.files && form.proofFile.files[0];
-      if (!proofFile) {
-        err.textContent = "Please upload your payment screenshot.";
+      const email = body.querySelector("#pmEmailInput").value.trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError("Please enter a valid email address.");
         return;
       }
-      if (proofFile.size > 5 * 1024 * 1024) {
-        err.textContent = "Screenshot is too large (max 5MB).";
-        return;
-      }
-      const data = new FormData();
-      data.append("bookId", book.id);
-      data.append("email", form.email.value.trim().toLowerCase());
-      data.append("phone", form.phone.value.trim());
-      data.append("method", form.method.value);
-      data.append("proof", proofFile);
-      const submitBtn = form.querySelector("button[type='submit']");
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting&hellip;';
+      hideError();
+      const btn = body.querySelector("#pmPayBtn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="pm-spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:pmSpin 0.7s linear infinite;"></span> Opening payment…';
       try {
-        const r = await fetch(API_BASE + "/api/orders", {
-          method: "POST",
-          body: data
-        });
-        const body = await r.json().catch(() => ({}));
-        if (!r.ok) {
-          if (r.status === 409 && body.accessCode) {
-            const buyerEmail = String(form.email.value || "").trim().toLowerCase();
-            saveLocalOrder(book, body.accessCode, buyerEmail);
-            renderSuccess(book, body.accessCode, buyerEmail, true);
-            return;
-          }
-          throw new Error(body.error || "Could not create order");
-        }
-        const buyerEmail = String(form.email.value || "").trim().toLowerCase();
-        saveLocalOrder(book, body.accessCode, buyerEmail);
-        renderSuccess(book, body.accessCode, buyerEmail, false);
-      } catch (e) {
-        err.textContent = e.message || "Something went wrong";
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Confirm & get access code';
+        await startRazorpayFlow(book, email);
+      } catch (err) {
+        const msg = String(err?.message || "Payment failed. Please try again.");
+        if (msg.toLowerCase() !== "payment cancelled") showError(msg);
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-lock"></i> Pay ${fmtPrice(book.price)} Securely`;
       }
     });
   }
 
-  function renderSuccess(book, accessCode, email, duplicate) {
-    const panel = document.querySelector("#pmOverlay .pm-panel");
-    if (!panel) return;
-    panel.innerHTML = `
+  function showError(msg) {
+    const box = document.getElementById("pmError");
+    const txt = document.getElementById("pmErrorText");
+    if (box && txt) { txt.textContent = msg; box.classList.add("visible"); }
+  }
+  function hideError() {
+    const box = document.getElementById("pmError");
+    if (box) box.classList.remove("visible");
+  }
+
+  /* ── Step 2: Razorpay flow ── */
+  async function startRazorpayFlow(book, email) {
+    // Create order on our server
+    const orderRes = await fetch(API_BASE + "/api/razorpay/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId: book.id, email })
+    });
+    const orderData = await orderRes.json().catch(() => ({}));
+    if (!orderRes.ok) throw new Error(orderData.error || "Could not initiate payment");
+
+    // Load Razorpay SDK
+    const loaded = await loadRazorpayScript();
+    if (!loaded) throw new Error("Could not load payment SDK. Please refresh the page.");
+
+    // Open Razorpay popup
+    await new Promise((resolve, reject) => {
+      const rzp = new window.Razorpay({
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency || "INR",
+        order_id: orderData.orderId,
+        name: "Emporium Library",
+        description: book.title || "Book Purchase",
+        image: "https://emporiumlibrary.in/assets/emporium-logo.svg",
+        prefill: { email },
+        theme: { color: "#FF7A18", hide_topbar: false },
+        config: { display: { blocks: { banks: { name: "Pay via UPI & More", instruments: [{ method: "upi" }, { method: "card" }, { method: "netbanking" }, { method: "wallet" }] } }, sequence: ["block.banks"], preferences: { show_default_blocks: true } } },
+        handler: async (response) => {
+          // Show processing screen while verifying
+          renderProcessing();
+          try {
+            const verifyRes = await fetch(API_BASE + "/api/razorpay/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                bookId: book.id,
+                email
+              })
+            });
+            const verifyData = await verifyRes.json().catch(() => ({}));
+            if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed");
+            saveLocalOrder(book, verifyData.accessCode, email);
+            renderSuccess(book, verifyData.accessCode, email);
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        },
+        modal: { ondismiss: () => reject(new Error("Payment cancelled")) }
+      });
+      rzp.open();
+    });
+  }
+
+  /* ── Processing screen ── */
+  function renderProcessing() {
+    const body = document.getElementById("pmBody");
+    if (!body) return;
+    body.innerHTML = `
+      <div class="pm-processing">
+        <div class="pm-processing-ring">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h4>Verifying payment…</h4>
+        <p>Please wait while we confirm your payment and generate your access code.</p>
+      </div>`;
+  }
+
+  /* ── Success screen ── */
+  function renderSuccess(book, accessCode, email) {
+    const body = document.getElementById("pmBody");
+    if (!body) return;
+    body.innerHTML = `
       <div class="pm-success">
-        <div class="pm-success-icon"><i class="fa-solid fa-circle-check"></i></div>
-        <h4>${duplicate ? "Already on file!" : "Order received"}</h4>
-        <p>${duplicate
-          ? "This UTR was already submitted for this book. Here's the access code again."
-          : "We've saved your reference. You'll be able to download the book once the payment is verified &mdash; usually within a few hours."}</p>
-        <label class="pm-field-label">Your access code</label>
-        <div class="pm-access-row">
-          <span class="pm-access-code" id="pmAccessCode">${esc(accessCode)}</span>
-          <button type="button" class="pm-copy" data-copy="${esc(accessCode)}">
-            <i class="fa-regular fa-copy"></i> Copy
+        <div class="pm-success-icon">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h4>Payment Successful!</h4>
+        <p>Your purchase is confirmed. Use the access code below to download <strong>${esc(book.title)}</strong> anytime from <em>My Purchases</em>.</p>
+
+        <div class="pm-access-box">
+          <div class="pm-access-label">
+            <i class="fa-solid fa-key"></i> Your Access Code
+          </div>
+          <div class="pm-access-code-row">
+            <span class="pm-access-code" id="pmAccessCode">${esc(accessCode)}</span>
+            <button type="button" class="pm-copy-btn" id="pmCopyBtn">
+              <i class="fa-regular fa-copy"></i> Copy
+            </button>
+          </div>
+          <p class="pm-success-note">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Save this code! Pair it with <strong>${esc(email)}</strong> on My Purchases to download.
+          </p>
+        </div>
+
+        <div class="pm-success-actions">
+          <a href="my-purchases.html" class="pm-btn-primary">
+            <i class="fa-solid fa-arrow-right"></i> Go to My Purchases & Download
+          </a>
+          <button type="button" class="pm-btn-ghost pm-close-btn">
+            <i class="fa-solid fa-xmark"></i> Close
           </button>
         </div>
-        <p class="pm-hint"><strong>Save this code.</strong> Pair it with <em>${esc(email)}</em> on the My Purchases page to download the book once approved.</p>
-        <div class="pm-success-cta">
-          <a class="pm-primary" href="my-purchases.html">
-            <i class="fa-solid fa-arrow-right"></i> Open My Purchases
-          </a>
-          <button type="button" class="pm-ghost pm-close-inline">Close</button>
-        </div>
       </div>`;
-    panel.querySelectorAll(".pm-copy").forEach(btn => {
-      btn.addEventListener("click", () => copyToClipboard(btn.dataset.copy || "", btn));
+
+    // Copy button
+    body.querySelector("#pmCopyBtn").addEventListener("click", function () {
+      const code = document.getElementById("pmAccessCode")?.textContent || "";
+      if (!code) return;
+      const btn = this;
+      const copy = () => {
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+          btn.classList.remove("copied");
+        }, 1800);
+      };
+      navigator.clipboard
+        ? navigator.clipboard.writeText(code).then(copy).catch(() => legacyCopy(code, copy))
+        : legacyCopy(code, copy);
     });
-    const closeInline = panel.querySelector(".pm-close-inline");
-    if (closeInline) closeInline.addEventListener("click", closeModal);
+
+    body.querySelector(".pm-close-btn").addEventListener("click", closeModal);
   }
 
+  function legacyCopy(text, cb) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;opacity:0;";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); cb(); } catch (e) {}
+    ta.remove();
+  }
+
+  /* ── Public API ── */
   window.EmporiumCheckout = {
     openCheckout,
     closeCheckout: closeModal
