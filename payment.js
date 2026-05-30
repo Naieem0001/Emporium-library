@@ -544,7 +544,12 @@
   function showError(msg) {
     const box = document.getElementById("pmError");
     const txt = document.getElementById("pmErrorText");
-    if (box && txt) { txt.textContent = msg; box.classList.add("visible"); }
+    if (box && txt) { 
+      txt.textContent = msg; 
+      box.classList.add("visible"); 
+    } else {
+      alert("Error: " + msg); // Fallback if DOM was overwritten by processing screen
+    }
   }
   function hideError() {
     const box = document.getElementById("pmError");
