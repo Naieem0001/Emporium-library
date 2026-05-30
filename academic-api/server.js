@@ -225,8 +225,22 @@ function getCashfreeBaseUrl() {
 }
 
 function getCashfreeHeaders() {
-  const keyId = String(process.env.CASHFREE_APP_ID || process.env.App_KEY_ID || process.env["App-KEY_ID"] || "").trim();
-  const keySecret = String(process.env.CASHFREE_SECRET_KEY || process.env.App_KEY_SECRET || process.env["App-KEY_SECRET"] || "").trim();
+  const envKeys = Object.keys(process.env);
+  let rawKeyId = process.env.CASHFREE_APP_ID || process.env.App_KEY_ID || process.env["App-KEY_ID"] || process.env.APP_KEY_ID || process.env["APP-KEY_ID"] || "";
+  let rawKeySecret = process.env.CASHFREE_SECRET_KEY || process.env.App_KEY_SECRET || process.env["App-KEY_SECRET"] || process.env.APP_KEY_SECRET || process.env["APP-KEY_SECRET"] || "";
+  
+  if (!rawKeyId) {
+    const found = envKeys.find(k => k.toUpperCase().replace(/[^A-Z]/g, "") === "APPKEYID");
+    if (found) rawKeyId = process.env[found];
+  }
+  if (!rawKeySecret) {
+    const found = envKeys.find(k => k.toUpperCase().replace(/[^A-Z]/g, "") === "APPKEYSECRET");
+    if (found) rawKeySecret = process.env[found];
+  }
+
+  const keyId = String(rawKeyId).trim();
+  const keySecret = String(rawKeySecret).trim();
+
   if (!keyId || !keySecret) throw new Error("Cashfree keys not configured");
   return {
     "x-client-id": keyId,
@@ -1579,7 +1593,13 @@ app.post("/api/cashfree/webhook",
       const timestamp = req.headers["x-webhook-timestamp"];
       const bodyStr = req.rawBody ? req.rawBody.toString() : req.body.toString();
       
-      const keySecret = String(process.env.CASHFREE_SECRET_KEY || process.env.App_KEY_SECRET || process.env["App-KEY_SECRET"] || "").trim();
+      const envKeys = Object.keys(process.env);
+      let rawKeySecret = process.env.CASHFREE_SECRET_KEY || process.env.App_KEY_SECRET || process.env["App-KEY_SECRET"] || process.env.APP_KEY_SECRET || process.env["APP-KEY_SECRET"] || "";
+      if (!rawKeySecret) {
+        const found = envKeys.find(k => k.toUpperCase().replace(/[^A-Z]/g, "") === "APPKEYSECRET");
+        if (found) rawKeySecret = process.env[found];
+      }
+      const keySecret = String(rawKeySecret).trim();
       
       if (keySecret && signature && timestamp) {
         const expectedSig = crypto
