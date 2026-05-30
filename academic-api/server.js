@@ -226,22 +226,32 @@ function getCashfreeBaseUrl() {
 
 function getCashfreeHeaders() {
   const envKeys = Object.keys(process.env);
-  let rawKeyId = process.env.CASHFREE_APP_ID || process.env.App_KEY_ID || process.env["App-KEY_ID"] || process.env.APP_KEY_ID || process.env["APP-KEY_ID"] || "";
-  let rawKeySecret = process.env.CASHFREE_SECRET_KEY || process.env.App_KEY_SECRET || process.env["App-KEY_SECRET"] || process.env.APP_KEY_SECRET || process.env["APP-KEY_SECRET"] || "";
+  let rawKeyId = process.env.CASHFREE_APP_ID || process.env.App_KEY_ID || process.env["App-KEY_ID"] || process.env.APP_KEY_ID || process.env["APP-KEY_ID"] || process.env.APP_ID || process.env.CLIENT_ID || "";
+  let rawKeySecret = process.env.CASHFREE_SECRET_KEY || process.env.App_KEY_SECRET || process.env["App-KEY_SECRET"] || process.env.APP_KEY_SECRET || process.env["APP-KEY_SECRET"] || process.env.SECRET_KEY || process.env.APP_SECRET || "";
   
   if (!rawKeyId) {
-    const found = envKeys.find(k => k.toUpperCase().replace(/[^A-Z]/g, "") === "APPKEYID");
+    const found = envKeys.find(k => {
+      const n = k.toUpperCase().replace(/[^A-Z]/g, "");
+      return n === "APPKEYID" || n === "APPID" || n === "CASHFREEAPPID" || n === "CLIENTID" || n === "CASHFREECLIENTID" || n === "KEYID";
+    });
     if (found) rawKeyId = process.env[found];
   }
   if (!rawKeySecret) {
-    const found = envKeys.find(k => k.toUpperCase().replace(/[^A-Z]/g, "") === "APPKEYSECRET");
+    const found = envKeys.find(k => {
+      const n = k.toUpperCase().replace(/[^A-Z]/g, "");
+      return n === "APPKEYSECRET" || n === "APPSECRET" || n === "SECRETKEY" || n === "CASHFREESECRETKEY" || n === "CASHFREESECRET" || n === "KEYSECRET";
+    });
     if (found) rawKeySecret = process.env[found];
   }
 
   const keyId = String(rawKeyId).trim();
   const keySecret = String(rawKeySecret).trim();
 
-  if (!keyId || !keySecret) throw new Error("Cashfree keys not configured");
+  if (!keyId || !keySecret) {
+    const related = envKeys.filter(k => k.toLowerCase().includes("key") || k.toLowerCase().includes("app") || k.toLowerCase().includes("cash") || k.toLowerCase().includes("secret") || k.toLowerCase().includes("id")).join(", ");
+    throw new Error(`Cashfree keys not configured. Available related keys in Render: [${related || "none"}]. Please check your Environment Variables tab.`);
+  }
+
   return {
     "x-client-id": keyId,
     "x-client-secret": keySecret,
