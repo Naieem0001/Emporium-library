@@ -48,15 +48,18 @@
     } catch (e) { /* non-critical */ }
   }
 
-  /* ── Razorpay SDK Loader ── */
-  function loadRazorpayScript() {
+  /* ── Cashfree SDK Loader ── */
+  function loadCashfreeScript() {
     return new Promise((resolve) => {
-      if (window.Razorpay) return resolve(true);
+      if (window.Cashfree) return resolve(window.Cashfree);
       const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
+      script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+      script.onload = () => resolve(window.Cashfree);
+      script.onerror = (e) => {
+        console.error("Cashfree script load error:", e);
+        resolve(null);
+      };
+      document.head.appendChild(script);
     });
   }
 
@@ -506,7 +509,7 @@
 
       <div class="pm-razorpay-logo">
         <i class="fa-solid fa-shield-halved"></i>
-        <span>Powered by Razorpay</span>
+        <span>Secured by Cashfree Payments</span>
       </div>
 
       <div class="pm-methods">
@@ -528,7 +531,7 @@
       btn.disabled = true;
       btn.innerHTML = '<span class="pm-spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:pmSpin 0.7s linear infinite;"></span> Opening payment…';
       try {
-        await startRazorpayFlow(book, email);
+        await startCashfreeFlow(book, email);
       } catch (err) {
         const msg = String(err?.message || "Payment failed. Please try again.");
         if (msg.toLowerCase() !== "payment cancelled") showError(msg);
@@ -548,10 +551,10 @@
     if (box) box.classList.remove("visible");
   }
 
-  /* ── Step 2: Razorpay flow ── */
-  async function startRazorpayFlow(book, email) {
+  /* ── Step 2: Cashfree flow ── */
+  async function startCashfreeFlow(book, email) {
     // Create order on our server
-    const orderRes = await fetch(API_BASE + "/api/razorpay/create-order", {
+    const orderRes = await fetch(API_BASE + "/api/cashfree/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ bookId: book.id, email })
@@ -559,50 +562,50 @@
     const orderData = await orderRes.json().catch(() => ({}));
     if (!orderRes.ok) throw new Error(orderData.error || "Could not initiate payment");
 
-    // Load Razorpay SDK
-    const loaded = await loadRazorpayScript();
-    if (!loaded) throw new Error("Could not load payment SDK. Please refresh the page.");
+    // Load Cashfree SDK
+    const CF = await loadCashfreeScript();
+    if (!CF) throw new Error("Could not load payment SDK. Please refresh the page.");
 
-    // Open Razorpay popup
+    const cashfree = CF({ mode: orderData.environment || "production" });
+
+    // Open Cashfree popup
     await new Promise((resolve, reject) => {
-      const rzp = new window.Razorpay({
-        key: orderData.keyId,
-        amount: orderData.amount,
-        currency: orderData.currency || "INR",
-        order_id: orderData.orderId,
-        name: "Emporium Library",
-        description: book.title || "Book Purchase",
-        image: "https://emporiumlibrary.in/assets/emporium-logo.svg",
-        prefill: { email },
-        theme: { color: "#FF7A18", hide_topbar: false },
-        config: { display: { blocks: { banks: { name: "Pay via UPI & More", instruments: [{ method: "upi" }, { method: "card" }, { method: "netbanking" }, { method: "wallet" }] } }, sequence: ["block.banks"], preferences: { show_default_blocks: true } } },
-        handler: async (response) => {
-          // Show processing screen while verifying
+      let checkoutOptions = {
+        paymentSessionId: orderData.paymentSessionId,
+        redirectTarget: "_modal",
+      };
+      
+      cashfree.checkout(checkoutOptions).then(async (result) => {
+        if (result.error) {
+          reject(new Error(result.error.message || "Payment cancelled"));
+        }
+        if (result.redirect) {
+          console.log("Payment will be redirected");
+          resolve();
+        }
+        if (result.paymentDetails) {
           renderProcessing();
           try {
-            const verifyRes = await fetch(API_BASE + "/api/razorpay/verify", {
+            const verifyRes = await fetch(API_BASE + "/api/cashfree/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
+                order_id: orderData.orderId,
                 bookId: book.id,
                 email
               })
             });
             const verifyData = await verifyRes.json().catch(() => ({}));
-            if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed");
-            saveLocalOrder(book, verifyData.accessCode, email);
-            renderSuccess(book, verifyData.accessCode, email);
+            if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed or payment not successful");
+            
+            // No access code anymore, just success
+            renderSuccess(book, email);
             resolve();
           } catch (err) {
             reject(err);
           }
-        },
-        modal: { ondismiss: () => reject(new Error("Payment cancelled")) }
+        }
       });
-      rzp.open();
     });
   }
 
@@ -621,7 +624,7 @@
   }
 
   /* ── Success screen ── */
-  function renderSuccess(book, accessCode, email) {
+  function renderSuccess(book, email) {
     const body = document.getElementById("pmBody");
     if (!body) return;
     body.innerHTML = `
@@ -630,63 +633,16 @@
           <i class="fa-solid fa-check"></i>
         </div>
         <h4>Payment Successful!</h4>
-        <p>Your purchase is confirmed. Use the access code below to download <strong>${esc(book.title)}</strong> anytime from <em>My Purchases</em>.</p>
-
-        <div class="pm-access-box">
-          <div class="pm-access-label">
-            <i class="fa-solid fa-key"></i> Your Access Code
-          </div>
-          <div class="pm-access-code-row">
-            <span class="pm-access-code" id="pmAccessCode">${esc(accessCode)}</span>
-            <button type="button" class="pm-copy-btn" id="pmCopyBtn">
-              <i class="fa-regular fa-copy"></i> Copy
-            </button>
-          </div>
-          <p class="pm-success-note">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            Save this code! Pair it with <strong>${esc(email)}</strong> on My Purchases to download.
-          </p>
-        </div>
-
+        <p>Your purchase is confirmed. The download link for <strong>${esc(book.title)}</strong> has been emailed directly to <strong>${esc(email)}</strong>.</p>
+        <p style="font-size:12px; color:#64748B; margin-bottom: 24px;">Please check your inbox (and spam folder) for the email.</p>
         <div class="pm-success-actions">
-          <a href="my-purchases.html" class="pm-btn-primary">
-            <i class="fa-solid fa-arrow-right"></i> Go to My Purchases & Download
-          </a>
           <button type="button" class="pm-btn-ghost pm-close-btn">
             <i class="fa-solid fa-xmark"></i> Close
           </button>
         </div>
       </div>`;
 
-    // Copy button
-    body.querySelector("#pmCopyBtn").addEventListener("click", function () {
-      const code = document.getElementById("pmAccessCode")?.textContent || "";
-      if (!code) return;
-      const btn = this;
-      const copy = () => {
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
-        btn.classList.add("copied");
-        setTimeout(() => {
-          btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
-          btn.classList.remove("copied");
-        }, 1800);
-      };
-      navigator.clipboard
-        ? navigator.clipboard.writeText(code).then(copy).catch(() => legacyCopy(code, copy))
-        : legacyCopy(code, copy);
-    });
-
     body.querySelector(".pm-close-btn").addEventListener("click", closeModal);
-  }
-
-  function legacyCopy(text, cb) {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.cssText = "position:fixed;opacity:0;";
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); cb(); } catch (e) {}
-    ta.remove();
   }
 
   /* ── Public API ── */

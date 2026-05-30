@@ -19,7 +19,7 @@
     "firebase-admin": "^13.8.0",
     "googleapis": "^144.0.0",
     "multer": "^2.0.2",
-    "razorpay": "^2.9.6"
+    "nodemailer": "^8.0.10"
   },
   "overrides": {
     "@tootallnate/once": "^3.0.1"

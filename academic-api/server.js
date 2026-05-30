@@ -8,7 +8,7 @@ import os from "os";
 import crypto from "crypto";
 import { google } from "googleapis";
 import admin from "firebase-admin";
-import Razorpay from "razorpay";
+import nodemailer from "nodemailer";
 
 const PORT = Number(process.env.PORT) || 3000;
 const NOTES_MAX_BYTES = 50 * 1024 * 1024;
@@ -214,13 +214,60 @@ async function uploadPublicFileToDrive(drive, parentId, file, fallbackName) {
 }
 
 const app = express();
-app.use(express.json({ limit: "512kb" }));
+app.use(express.json({
+  limit: "512kb",
+  verify: (req, res, buf) => { req.rawBody = buf; }
+}));
 
-function getRazorpayClient() {
-  const keyId = String(process.env.RAZORPAY_KEY_ID || "").trim();
-  const keySecret = String(process.env.RAZORPAY_KEY_SECRET || "").trim();
-  if (!keyId || !keySecret) throw new Error("Razorpay keys not configured");
-  return new Razorpay({ key_id: keyId, key_secret: keySecret });
+function getCashfreeBaseUrl() {
+  const env = String(process.env.CASHFREE_ENV || "sandbox").trim().toLowerCase();
+  return env === "production" ? "https://api.cashfree.com/pg" : "https://sandbox.cashfree.com/pg";
+}
+
+function getCashfreeHeaders() {
+  const keyId = String(process.env.CASHFREE_APP_ID || process.env.App_KEY_ID || process.env["App-KEY_ID"] || "").trim();
+  const keySecret = String(process.env.CASHFREE_SECRET_KEY || process.env.App_KEY_SECRET || process.env["App-KEY_SECRET"] || "").trim();
+  if (!keyId || !keySecret) throw new Error("Cashfree keys not configured");
+  return {
+    "x-client-id": keyId,
+    "x-client-secret": keySecret,
+    "x-api-version": "2023-08-01",
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  };
+}
+
+const mailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+async function sendBookEmail(email, title, link) {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn("Email credentials not set. Could not send email to", email);
+    return;
+  }
+  const mailOptions = {
+    from: `"Emporium Library" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: `Your book: ${title}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1B2A41;">
+        <h2 style="color: #FF7A18;">Thank you for your purchase!</h2>
+        <p>Here is the download link for your book <strong>${title}</strong>:</p>
+        <p><a href="${link}" style="display:inline-block; padding: 12px 24px; background-color: #FF7A18; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Download Book</a></p>
+        <p>If the button doesn't work, copy and paste this link into your browser:</p>
+        <p><a href="${link}">${link}</a></p>
+        <br/>
+        <p>Happy reading!</p>
+        <p><em>- Emporium Library</em></p>
+      </div>
+    `
+  };
+  await mailTransporter.sendMail(mailOptions);
 }
 
 app.use(
@@ -1372,14 +1419,16 @@ app.post("/admin/orders/:id/reject", async (req, res) => {
 });
 
 // =====================================================================
-// RAZORPAY PAYMENT GATEWAY — create order, verify, webhook
+// CASHFREE PAYMENT GATEWAY — create order, verify, webhook
 // =====================================================================
 
-// Public: create a Razorpay order when buyer clicks "Pay Now"
-app.post("/api/razorpay/create-order", async (req, res) => {
+// Public: create a Cashfree order when buyer clicks "Pay Now"
+app.post("/api/cashfree/create-order", async (req, res) => {
   try {
     const bookId = String(req.body.bookId || "").trim();
     const emailRaw = String(req.body.email || "").trim().toLowerCase();
+    const phone = String(req.body.phone || "9999999999").trim(); // Default phone since CF requires it sometimes
+    
     if (!bookId || bookId.length > 200) return res.status(400).json({ error: "Invalid bookId" });
     if (!isValidEmail(emailRaw)) return res.status(400).json({ error: "Invalid email" });
 
@@ -1398,78 +1447,97 @@ app.post("/api/razorpay/create-order", async (req, res) => {
       });
     }
 
-    const rzp = getRazorpayClient();
-    const order = await rzp.orders.create({
-      amount: price * 100,
-      currency: "INR",
-      receipt: `book_${bookId}_${Date.now()}`,
-      notes: {
+    const orderId = `book_${bookId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const payload = {
+      order_id: orderId,
+      order_amount: price,
+      order_currency: "INR",
+      customer_details: {
+        customer_id: emailRaw.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50) || "guest",
+        customer_email: emailRaw,
+        customer_phone: phone
+      },
+      order_meta: {
+        return_url: `${req.headers.origin || "https://emporiumlibrary.in"}/my-purchases.html?order_id={order_id}`,
+        payment_methods: ""
+      },
+      order_tags: {
         bookId,
         buyerEmail: emailRaw,
         bookTitle: String(bookData.title || "").slice(0, 100)
       }
+    };
+
+    const cfUrl = getCashfreeBaseUrl() + "/orders";
+    const cfRes = await fetch(cfUrl, {
+      method: "POST",
+      headers: getCashfreeHeaders(),
+      body: JSON.stringify(payload)
     });
+    const data = await cfRes.json();
+    if (!cfRes.ok) {
+      console.error("[cashfree] create-order response error:", data);
+      throw new Error(data.message || "Failed to create Cashfree order");
+    }
 
     return res.json({
       ok: true,
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID,
+      orderId: data.order_id,
+      paymentSessionId: data.payment_session_id,
+      amount: data.order_amount,
+      currency: data.order_currency,
+      environment: getCashfreeBaseUrl().includes("sandbox") ? "sandbox" : "production",
       bookTitle: bookData.title || "",
       bookCover: bookData.cover || ""
     });
   } catch (err) {
-    console.error("[razorpay] create-order error:", err);
+    console.error("[cashfree] create-order error:", err);
     return res.status(500).json({ error: err?.message || "Could not create payment order" });
   }
 });
 
-// Public: verify Razorpay payment signature + auto-approve order instantly
-app.post("/api/razorpay/verify", async (req, res) => {
+// Public: verify Cashfree payment & email the book
+app.post("/api/cashfree/verify", async (req, res) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      bookId,
-      email
-    } = req.body;
+    const { order_id, bookId, email } = req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({ error: "Missing payment response fields" });
+    if (!order_id) {
+      return res.status(400).json({ error: "Missing order_id" });
     }
     if (!bookId || !isValidEmail(String(email || "").trim().toLowerCase())) {
       return res.status(400).json({ error: "Invalid bookId or email" });
-    }
-
-    // Verify HMAC-SHA256 signature
-    const keySecret = String(process.env.RAZORPAY_KEY_SECRET || "").trim();
-    if (!keySecret) return res.status(500).json({ error: "Razorpay not configured" });
-    const expectedSig = crypto
-      .createHmac("sha256", keySecret)
-      .update(razorpay_order_id + "|" + razorpay_payment_id)
-      .digest("hex");
-    if (expectedSig !== razorpay_signature) {
-      return res.status(400).json({ error: "Payment verification failed — signature mismatch" });
     }
 
     const emailRaw = String(email || "").trim().toLowerCase();
     initFirebaseAdmin();
     const db = admin.firestore();
 
-    // Check for duplicate payment (same Razorpay order)
+    // Check for duplicate payment (same order_id)
     const dupSnap = await db.collection("orders")
-      .where("razorpayOrderId", "==", razorpay_order_id)
+      .where("cashfreeOrderId", "==", order_id)
       .limit(1).get();
     if (!dupSnap.empty) {
-      const existing = dupSnap.docs[0].data() || {};
       return res.json({
         ok: true,
         orderId: dupSnap.docs[0].id,
-        accessCode: existing.accessCode || "",
         duplicate: true
       });
+    }
+
+    // Verify order from Cashfree
+    const cfUrl = getCashfreeBaseUrl() + `/orders/${order_id}/payments`;
+    const cfRes = await fetch(cfUrl, {
+      headers: getCashfreeHeaders()
+    });
+    const payments = await cfRes.json();
+    
+    if (!cfRes.ok) {
+      throw new Error(payments.message || "Failed to fetch payments");
+    }
+    
+    const successfulPayment = Array.isArray(payments) && payments.find(p => p.payment_status === "SUCCESS");
+    if (!successfulPayment) {
+      return res.status(400).json({ error: "Payment not successful or pending verification" });
     }
 
     const bookSnap = await db.collection("books").doc(bookId).get();
@@ -1477,15 +1545,8 @@ app.post("/api/razorpay/verify", async (req, res) => {
     const price = Number(bookData.price) || 0;
     const snapshotDriveLink = await resolvePaidBookDriveLink(db, bookId);
 
-    // Generate unique access code
-    let accessCode = "";
-    for (let i = 0; i < 8; i++) {
-      const candidate = generateAccessCode(8);
-      const dup = await db.collection("orders")
-        .where("accessCode", "==", candidate).limit(1).get();
-      if (dup.empty) { accessCode = candidate; break; }
-    }
-    if (!accessCode) return res.status(500).json({ error: "Could not generate access code. Please retry." });
+    // Send the email with the book link directly
+    await sendBookEmail(emailRaw, bookData.title, snapshotDriveLink);
 
     const orderRef = await db.collection("orders").add({
       bookId,
@@ -1493,85 +1554,81 @@ app.post("/api/razorpay/verify", async (req, res) => {
       bookCover: String(bookData.cover || ""),
       bookPrice: price,
       buyerEmail: emailRaw,
-      method: "razorpay",
-      razorpayOrderId: razorpay_order_id,
-      razorpayPaymentId: razorpay_payment_id,
+      method: "cashfree",
+      cashfreeOrderId: order_id,
+      cashfreePaymentId: String(successfulPayment.cf_payment_id || ""),
       status: "approved",
-      accessCode,
       bookDriveLinkSnapshot: snapshotDriveLink,
       approvedAt: admin.firestore.FieldValue.serverTimestamp(),
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    return res.json({ ok: true, orderId: orderRef.id, accessCode });
+    return res.json({ ok: true, orderId: orderRef.id });
   } catch (err) {
-    console.error("[razorpay] verify error:", err);
+    console.error("[cashfree] verify error:", err);
     return res.status(500).json({ error: err?.message || "Verification failed" });
   }
 });
 
-// Server-to-server webhook from Razorpay (backup confirmation)
-app.post("/api/razorpay/webhook",
+// Webhook from Cashfree
+app.post("/api/cashfree/webhook",
   express.raw({ type: "application/json" }),
   async (req, res) => {
     try {
-      const signature = req.headers["x-razorpay-signature"] || "";
-      const webhookSecret = String(process.env.RAZORPAY_WEBHOOK_SECRET || "").trim();
-      if (webhookSecret) {
-        const bodyStr = req.body.toString();
+      const signature = req.headers["x-webhook-signature"];
+      const timestamp = req.headers["x-webhook-timestamp"];
+      const bodyStr = req.rawBody ? req.rawBody.toString() : req.body.toString();
+      
+      const keySecret = String(process.env.CASHFREE_SECRET_KEY || process.env.App_KEY_SECRET || process.env["App-KEY_SECRET"] || "").trim();
+      
+      if (keySecret && signature && timestamp) {
         const expectedSig = crypto
-          .createHmac("sha256", webhookSecret)
-          .update(bodyStr)
-          .digest("hex");
+          .createHmac("sha256", keySecret)
+          .update(timestamp + bodyStr)
+          .digest("base64");
+        
         if (signature !== expectedSig) {
           return res.status(400).json({ error: "Invalid webhook signature" });
         }
       }
-      const event = JSON.parse(req.body.toString());
-      if (event.event === "payment.captured") {
-        const entity = event.payload?.payment?.entity || {};
-        const notes = entity.notes || {};
-        const rzpOrderId = String(entity.order_id || "").trim();
-        console.log(`[webhook] payment.captured orderId=${rzpOrderId} bookId=${notes.bookId} email=${notes.buyerEmail}`);
+      
+      const event = JSON.parse(bodyStr);
+      if (event.type === "PAYMENT_SUCCESS_WEBHOOK") {
+        const data = event.data || {};
+        const order_id = data.order?.order_id;
+        const tags = data.order?.order_tags || {};
+        const bookId = tags.bookId;
+        const buyerEmail = tags.buyerEmail;
 
-        // Fallback: if /verify somehow failed, create the order here
-        if (rzpOrderId && notes.bookId && notes.buyerEmail) {
+        if (order_id && bookId && buyerEmail) {
           try {
             initFirebaseAdmin();
             const db = admin.firestore();
             const dupSnap = await db.collection("orders")
-              .where("razorpayOrderId", "==", rzpOrderId).limit(1).get();
+              .where("cashfreeOrderId", "==", order_id).limit(1).get();
             if (dupSnap.empty) {
-              const bookId = String(notes.bookId || "").trim();
-              const emailRaw = String(notes.buyerEmail || "").trim().toLowerCase();
               const bookSnap = await db.collection("books").doc(bookId).get();
               const bookData = bookSnap.exists ? bookSnap.data() : {};
               const snapshotDriveLink = await resolvePaidBookDriveLink(db, bookId);
-              let accessCode = "";
-              for (let i = 0; i < 8; i++) {
-                const candidate = generateAccessCode(8);
-                const dup2 = await db.collection("orders")
-                  .where("accessCode", "==", candidate).limit(1).get();
-                if (dup2.empty) { accessCode = candidate; break; }
-              }
-              if (accessCode) {
-                await db.collection("orders").add({
-                  bookId,
-                  bookTitle: String(bookData.title || ""),
-                  bookCover: String(bookData.cover || ""),
-                  bookPrice: Number(bookData.price) || 0,
-                  buyerEmail: emailRaw,
-                  method: "razorpay",
-                  razorpayOrderId: rzpOrderId,
-                  razorpayPaymentId: String(entity.id || ""),
-                  status: "approved",
-                  accessCode,
-                  bookDriveLinkSnapshot: snapshotDriveLink,
-                  approvedAt: admin.firestore.FieldValue.serverTimestamp(),
-                  createdAt: admin.firestore.FieldValue.serverTimestamp()
-                });
-                console.log(`[webhook] fallback order created accessCode=${accessCode}`);
-              }
+              
+              // Email the user
+              await sendBookEmail(buyerEmail, bookData.title, snapshotDriveLink);
+
+              await db.collection("orders").add({
+                bookId,
+                bookTitle: String(bookData.title || ""),
+                bookCover: String(bookData.cover || ""),
+                bookPrice: Number(bookData.price) || 0,
+                buyerEmail,
+                method: "cashfree",
+                cashfreeOrderId: order_id,
+                cashfreePaymentId: String(data.payment?.cf_payment_id || ""),
+                status: "approved",
+                bookDriveLinkSnapshot: snapshotDriveLink,
+                approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+              });
+              console.log(`[webhook] fallback order created for ${order_id}`);
             }
           } catch (fbErr) {
             console.error("[webhook] fallback order error:", fbErr);
