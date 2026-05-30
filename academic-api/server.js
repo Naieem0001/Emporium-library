@@ -1490,7 +1490,6 @@ app.post("/api/cashfree/create-order", async (req, res) => {
         customer_phone: phone
       },
       order_meta: {
-        return_url: `${req.headers.origin || "https://emporiumlibrary.in"}/my-purchases.html?order_id={order_id}`,
         payment_methods: ""
       },
       order_tags: {
@@ -1705,6 +1704,16 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`emporium-academic-api listening on :${PORT}`);
+  
+  // =====================================================================
+  // SELF-PING (Render Anti-Sleep Hack)
+  // =====================================================================
+  // Pings its own live URL every 14 minutes so Render thinks there is active traffic
+  setInterval(() => {
+    const url = "https://emporium-academic-api.onrender.com/api/debug/env";
+    fetch(url).catch(err => console.log("Self-ping failed:", err.message));
+  }, 14 * 60 * 1000);
+
   (async () => {
     const fid = normalizeDriveFolderId(process.env.DRIVE_PARENT_FOLDER_ID);
     if (!fid) return;
