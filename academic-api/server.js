@@ -1442,6 +1442,11 @@ app.post("/admin/orders/:id/reject", async (req, res) => {
   }
 });
 
+// Temporary debug endpoint to verify Render environment variables
+app.get("/api/debug/env", (req, res) => {
+  return res.json({ keys: Object.keys(process.env) });
+});
+
 // =====================================================================
 // CASHFREE PAYMENT GATEWAY — create order, verify, webhook
 // =====================================================================

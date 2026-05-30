@@ -7,7 +7,7 @@
   "use strict";
 
   const API_BASE = String(
-    window.EMPORIUM_ACADEMIC_API || "https://emporium-academic-api.onrender.com"
+    window.EMPORIUM_ACADEMIC_API || "http://localhost:3000" // "https://emporium-academic-api.onrender.com"
   ).replace(/\/$/, "");
 
   const LS_KEY_ORDERS = "emporium_orders";
