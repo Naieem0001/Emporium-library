@@ -220,8 +220,11 @@ app.use(express.json({
 }));
 
 function getCashfreeBaseUrl() {
-  const env = String(process.env.CASHFREE_ENV || "sandbox").trim().toLowerCase();
-  return env === "production" ? "https://api.cashfree.com/pg" : "https://sandbox.cashfree.com/pg";
+  const { "x-client-secret": secret } = getCashfreeHeaders();
+  if (secret && secret.includes("_prod_")) {
+    return "https://api.cashfree.com/pg";
+  }
+  return "https://sandbox.cashfree.com/pg";
 }
 
 function getCashfreeHeaders() {
