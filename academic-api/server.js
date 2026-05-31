@@ -1548,9 +1548,29 @@ app.post("/api/cashfree/verify", async (req, res) => {
       .where("cashfreeOrderId", "==", order_id)
       .limit(1).get();
     if (!dupSnap.empty) {
+      const existingDoc = dupSnap.docs[0];
+      const existingOrder = existingDoc.data();
+
+      if (existingOrder.emailSent === false) {
+        try {
+          const bookSnap = await db.collection("books").doc(bookId).get();
+          const bookData = bookSnap.exists ? bookSnap.data() : {};
+          const snapshotDriveLink = existingOrder.bookDriveLinkSnapshot || await resolvePaidBookDriveLink(db, bookId);
+          
+          await sendBookEmail(
+            existingOrder.buyerEmail || emailRaw, 
+            existingOrder.bookTitle || bookData.title, 
+            snapshotDriveLink
+          );
+          await existingDoc.ref.update({ emailSent: true });
+        } catch (emailErr) {
+          console.error("[cashfree] duplicate retry email failed:", emailErr);
+        }
+      }
+
       return res.json({
         ok: true,
-        orderId: dupSnap.docs[0].id,
+        orderId: existingDoc.id,
         duplicate: true
       });
     }
@@ -1577,7 +1597,13 @@ app.post("/api/cashfree/verify", async (req, res) => {
     const snapshotDriveLink = await resolvePaidBookDriveLink(db, bookId);
 
     // Send the email with the book link directly
-    await sendBookEmail(emailRaw, bookData.title, snapshotDriveLink);
+    let emailSent = true;
+    try {
+      await sendBookEmail(emailRaw, bookData.title, snapshotDriveLink);
+    } catch (emailErr) {
+      console.error("[cashfree] verify email failed:", emailErr);
+      emailSent = false;
+    }
 
     const orderRef = await db.collection("orders").add({
       bookId,
@@ -1590,14 +1616,58 @@ app.post("/api/cashfree/verify", async (req, res) => {
       cashfreePaymentId: String(successfulPayment.cf_payment_id || ""),
       status: "approved",
       bookDriveLinkSnapshot: snapshotDriveLink,
+      emailSent,
+      resendCount: 0,
       approvedAt: admin.firestore.FieldValue.serverTimestamp(),
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    return res.json({ ok: true, orderId: orderRef.id });
+    return res.json({ ok: true, orderId: orderRef.id, emailSent });
   } catch (err) {
     console.error("[cashfree] verify error:", err);
     return res.status(500).json({ error: err?.message || "Verification failed" });
+  }
+});
+
+// Public: resend book email
+app.post("/api/resend-book-email", async (req, res) => {
+  try {
+    const { order_id, email } = req.body;
+    if (!order_id || !email) {
+      return res.status(400).json({ error: "Missing order_id or email" });
+    }
+
+    initFirebaseAdmin();
+    const db = admin.firestore();
+    const orderSnap = await db.collection("orders").where("cashfreeOrderId", "==", order_id).limit(1).get();
+    
+    if (orderSnap.empty) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    
+    const orderDoc = orderSnap.docs[0];
+    const orderData = orderDoc.data();
+
+    if (String(orderData.buyerEmail).toLowerCase() !== String(email).toLowerCase()) {
+      return res.status(400).json({ error: "Email mismatch" });
+    }
+
+    const resendCount = orderData.resendCount || 0;
+    if (resendCount >= 3) {
+      return res.status(400).json({ error: "Maximum resend limit reached" });
+    }
+
+    await sendBookEmail(orderData.buyerEmail, orderData.bookTitle, orderData.bookDriveLinkSnapshot);
+
+    await orderDoc.ref.update({
+      emailSent: true,
+      resendCount: admin.firestore.FieldValue.increment(1)
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("[resend-email] error:", err);
+    return res.status(500).json({ error: err?.message || "Failed to resend email" });
   }
 });
 

@@ -534,9 +534,14 @@
         await startCashfreeFlow(book, email);
       } catch (err) {
         const msg = String(err?.message || "Payment failed. Please try again.");
-        if (msg.toLowerCase() !== "payment cancelled") showError(msg);
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-lock"></i> Pay ${fmtPrice(book.price)} Securely`;
+        if (!document.getElementById("pmEmailForm")) {
+          renderEmailForm(book);
+          setTimeout(() => showError(msg), 10);
+        } else {
+          if (msg.toLowerCase() !== "payment cancelled") showError(msg);
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-lock"></i> Pay ${fmtPrice(book.price)} Securely`;
+        }
       }
     });
   }
@@ -583,32 +588,44 @@
       cashfree.checkout(checkoutOptions).then(async (result) => {
         if (result.error) {
           reject(new Error(result.error.message || "Payment cancelled"));
+          return;
         }
-        if (result.redirect) {
-          console.log("Payment will be redirected");
-          resolve();
-        }
-        if (result.paymentDetails) {
+        if (result.redirect || result.paymentDetails) {
           renderProcessing();
-          try {
-            const verifyRes = await fetch(API_BASE + "/api/cashfree/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                order_id: orderData.orderId,
-                bookId: book.id,
-                email
-              })
-            });
-            const verifyData = await verifyRes.json().catch(() => ({}));
-            if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed or payment not successful");
-            
-            // No access code anymore, just success
-            renderSuccess(book, email);
-            resolve();
-          } catch (err) {
-            reject(err);
-          }
+          setTimeout(async () => {
+            try {
+              let lastErr;
+              let success = false;
+              for (let i = 0; i < 3; i++) {
+                try {
+                  const verifyRes = await fetch(API_BASE + "/api/cashfree/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      order_id: orderData.orderId,
+                      bookId: book.id,
+                      email
+                    })
+                  });
+                  const verifyData = await verifyRes.json().catch(() => ({}));
+                  if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed or payment not successful");
+                  
+                  success = true;
+                  break;
+                } catch (err) {
+                  lastErr = err;
+                  if (i < 2) await new Promise(r => setTimeout(r, 3000));
+                }
+              }
+              if (!success) throw lastErr;
+              
+              // No access code anymore, just success
+              renderSuccess(book, email, orderData.orderId);
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          }, 2000);
         }
       });
     });
@@ -624,12 +641,12 @@
           <i class="fa-solid fa-shield-halved"></i>
         </div>
         <h4>Verifying payment…</h4>
-        <p>Please wait while we confirm your payment and generate your access code.</p>
+        <p>Please wait while we confirm your payment and email your book.</p>
       </div>`;
   }
 
   /* ── Success screen ── */
-  function renderSuccess(book, email) {
+  function renderSuccess(book, email, orderId) {
     const body = document.getElementById("pmBody");
     if (!body) return;
     body.innerHTML = `
@@ -641,6 +658,9 @@
         <p>Your purchase is confirmed. The download link for <strong>${esc(book.title)}</strong> has been emailed directly to <strong>${esc(email)}</strong>.</p>
         <p style="font-size:12px; color:#64748B; margin-bottom: 24px;">Please check your inbox (and spam folder) for the email.</p>
         <div class="pm-success-actions">
+          ${orderId ? `<button type="button" class="pm-btn-primary pm-resend-btn" data-order="${esc(orderId)}">
+            <i class="fa-regular fa-paper-plane"></i> Resend Email
+          </button>` : ''}
           <button type="button" class="pm-btn-ghost pm-close-btn">
             <i class="fa-solid fa-xmark"></i> Close
           </button>
@@ -648,6 +668,29 @@
       </div>`;
 
     body.querySelector(".pm-close-btn").addEventListener("click", closeModal);
+    
+    const resendBtn = body.querySelector(".pm-resend-btn");
+    if (resendBtn) {
+      resendBtn.addEventListener("click", async () => {
+        const originalHtml = resendBtn.innerHTML;
+        resendBtn.disabled = true;
+        resendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 5px;"></i> Sending...';
+        try {
+          const res = await fetch(API_BASE + "/api/resend-book-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ order_id: orderId, email })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "Failed to resend");
+          resendBtn.innerHTML = '<i class="fa-solid fa-check" style="margin-right: 5px;"></i> Sent!';
+        } catch (err) {
+          alert("Error: " + err.message);
+          resendBtn.innerHTML = originalHtml;
+          resendBtn.disabled = false;
+        }
+      });
+    }
   }
 
   /* ── Public API ── */
