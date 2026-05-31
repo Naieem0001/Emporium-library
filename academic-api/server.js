@@ -264,37 +264,44 @@ function getCashfreeHeaders() {
   };
 }
 
-const mailTransporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
 async function sendBookEmail(email, title, link) {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn("Email credentials not set. Could not send email to", email);
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("RESEND_API_KEY not set. Could not send email to", email);
     return;
   }
-  const mailOptions = {
-    from: `"Emporium Library" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `Your book: ${title}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1B2A41;">
-        <h2 style="color: #FF7A18;">Thank you for your purchase!</h2>
-        <p>Here is the download link for your book <strong>${title}</strong>:</p>
-        <p><a href="${link}" style="display:inline-block; padding: 12px 24px; background-color: #FF7A18; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Download Book</a></p>
-        <p>If the button doesn't work, copy and paste this link into your browser:</p>
-        <p><a href="${link}">${link}</a></p>
-        <br/>
-        <p>Happy reading!</p>
-        <p><em>- Emporium Library</em></p>
-      </div>
-    `
-  };
-  await mailTransporter.sendMail(mailOptions);
+
+  // Use EMAIL_FROM or fallback to EMAIL_USER or Resend's default onboarding email
+  const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "onboarding@resend.dev";
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from: `"Emporium Library" <${fromEmail}>`,
+      to: [email],
+      subject: `Your book: ${title}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1B2A41;">
+          <h2 style="color: #FF7A18;">Thank you for your purchase!</h2>
+          <p>Here is the download link for your book <strong>${title}</strong>:</p>
+          <p><a href="${link}" style="display:inline-block; padding: 12px 24px; background-color: #FF7A18; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Download Book</a></p>
+          <p>If the button doesn't work, copy and paste this link into your browser:</p>
+          <p><a href="${link}">${link}</a></p>
+          <br/>
+          <p>Happy reading!</p>
+          <p><em>- Emporium Library</em></p>
+        </div>
+      `
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || data.error?.message || "Failed to send email via Resend");
+  }
 }
 
 app.use(
@@ -562,29 +569,7 @@ const uploadBook = multer({
   }
 });
 
-const uploadQR = multer({
-  dest: os.tmpdir(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter(_req, file, cb) {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    if (!IMAGE_ALLOWED_EXT.has(ext)) return cb(new Error("Invalid QR image type"));
-    if (!file.mimetype || file.mimetype === "application/octet-stream") return cb(null, true);
-    if (IMAGE_ALLOWED_MIME.has(file.mimetype)) return cb(null, true);
-    return cb(new Error("Invalid QR image type"));
-  }
-});
 
-const uploadProof = multer({
-  dest: os.tmpdir(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter(_req, file, cb) {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    if (!IMAGE_ALLOWED_EXT.has(ext)) return cb(new Error("Invalid screenshot image type"));
-    if (!file.mimetype || file.mimetype === "application/octet-stream") return cb(null, true);
-    if (IMAGE_ALLOWED_MIME.has(file.mimetype)) return cb(null, true);
-    return cb(new Error("Invalid screenshot image type"));
-  }
-});
 
 function generateAccessCode(len = 8) {
   const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -984,112 +969,7 @@ async function resolvePaidBookDriveLink(db, bookId) {
   return String(bookSnap.data()?.driveLink || "").trim();
 }
 
-// Public: fetch current UPI + bank details for the checkout modal.
-app.get("/api/payment-config", async (_req, res) => {
-  try {
-    initFirebaseAdmin();
-    const db = admin.firestore();
-    const snap = await db.collection("payment_config").doc("default").get();
-    const fallback = {
-      upiId: "",
-      upiPayeeName: "",
-      upiQrUrl: "",
-      bankName: "",
-      accountName: "",
-      accountNumber: "",
-      ifsc: "",
-      branch: ""
-    };
-    if (!snap.exists) return res.json(fallback);
-    const d = snap.data() || {};
-    return res.json({
-      upiId: d.upiId || "",
-      upiPayeeName: d.upiPayeeName || "",
-      upiQrUrl: d.upiQrUrl || "",
-      bankName: d.bankName || "",
-      accountName: d.accountName || "",
-      accountNumber: d.accountNumber || "",
-      ifsc: d.ifsc || "",
-      branch: d.branch || ""
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Failed to load payment config" });
-  }
-});
 
-// Admin: update UPI + bank details, optionally upload a QR image.
-app.post("/admin/payment-config", uploadQR.single("qr"), async (req, res) => {
-  const tmpPath = req.file?.path;
-  const cleanup = () => { if (tmpPath) fs.unlink(tmpPath, () => {}); };
-  try {
-    await requireAdminFromReq(req);
-
-    const upiId = String(req.body.upiId || "").trim();
-    const upiPayeeName = String(req.body.upiPayeeName || "").trim();
-    const bankName = String(req.body.bankName || "").trim();
-    const accountName = String(req.body.accountName || "").trim();
-    const accountNumber = String(req.body.accountNumber || "").trim();
-    const ifsc = String(req.body.ifsc || "").trim().toUpperCase();
-    const branch = String(req.body.branch || "").trim();
-    const clearQr = String(req.body.clearQr || "").toLowerCase() === "true";
-    const existingQr = String(req.body.existingQrUrl || "").trim();
-    const pastedQrUrl = String(req.body.qrUrl || "").trim();
-
-    if (upiId.length > 120) return res.status(400).json({ error: "UPI id too long" });
-    if (upiId && !/^[\w.\-]+@[\w.\-]+$/.test(upiId)) {
-      return res.status(400).json({ error: "UPI id looks invalid (expected like name@bank)" });
-    }
-    if (accountNumber && !/^[0-9]{6,30}$/.test(accountNumber)) {
-      return res.status(400).json({ error: "Invalid account number" });
-    }
-    if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
-      return res.status(400).json({ error: "Invalid IFSC" });
-    }
-    if (pastedQrUrl && !/^https:\/\/[^\s<>"']{4,500}$/i.test(pastedQrUrl)) {
-      return res.status(400).json({ error: "QR URL must be a valid https link" });
-    }
-
-    let upiQrUrl = clearQr ? "" : existingQr;
-    if (pastedQrUrl) upiQrUrl = pastedQrUrl;
-    if (req.file) {
-      const folderId = normalizeDriveFolderId(process.env.DRIVE_PARENT_FOLDER_ID);
-      if (!folderId) return res.status(500).json({ error: "Server missing DRIVE_PARENT_FOLDER_ID" });
-      const bundle = getDriveClient();
-      const drive = bundle.drive;
-      let parentId = folderId;
-      try { parentId = await resolveDriveParentFolderId(drive, folderId); } catch (e) {
-        const detail = driveApiDetail(e) || e.message || "Cannot read folder";
-        return res.status(400).json({ error: `Drive parent folder: ${detail}` });
-      }
-      const qrId = await uploadPublicFileToDrive(drive, parentId, req.file, "upi-qr");
-      upiQrUrl = `https://drive.google.com/thumbnail?id=${qrId}&sz=w800`;
-    }
-
-    initFirebaseAdmin();
-    const db = admin.firestore();
-    await db.collection("payment_config").doc("default").set({
-      upiId,
-      upiPayeeName,
-      upiQrUrl,
-      bankName,
-      accountName,
-      accountNumber,
-      ifsc,
-      branch,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-
-    cleanup();
-    return res.json({ ok: true, upiQrUrl });
-  } catch (err) {
-    console.error(err);
-    cleanup();
-    const msg = err?.message || "Save failed";
-    const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
-    return res.status(code).json({ error: msg });
-  }
-});
 
 // Admin: move a book between free/paid — handles driveLink relocation.
 app.post("/admin/books/:id/set-pricing", async (req, res) => {
@@ -1140,119 +1020,7 @@ app.post("/admin/books/:id/set-pricing", async (req, res) => {
   }
 });
 
-// Public: create a pending order after buyer submits payment screenshot.
-app.post("/api/orders", uploadProof.single("proof"), async (req, res) => {
-  const proofTmpPath = req.file?.path;
-  const cleanup = () => { if (proofTmpPath) fs.unlink(proofTmpPath, () => {}); };
-  try {
-    const bookId = String(req.body.bookId || "").trim();
-    const emailRaw = String(req.body.email || "").trim().toLowerCase();
-    const phone = String(req.body.phone || "").trim();
-    const method = String(req.body.method || "").toLowerCase().trim();
-    const utr = String(req.body.utr || "").trim();
-    const proofFile = req.file;
 
-    if (!bookId || bookId.length > 200) return res.status(400).json({ error: "Invalid bookId" });
-    if (!isValidEmail(emailRaw)) return res.status(400).json({ error: "Invalid email" });
-    if (phone && (phone.length > 20 || !/^[0-9+\-\s()]{6,20}$/.test(phone))) {
-      return res.status(400).json({ error: "Invalid phone" });
-    }
-    if (!["upi", "bank"].includes(method)) return res.status(400).json({ error: "Invalid payment method" });
-    if (utr && (utr.length < 4 || utr.length > 40 || !/^[A-Za-z0-9\-_]+$/.test(utr))) {
-      return res.status(400).json({ error: "Invalid UTR / transaction id" });
-    }
-    if (!proofFile) {
-      return res.status(400).json({ error: "Payment screenshot is required" });
-    }
-
-    initFirebaseAdmin();
-    const db = admin.firestore();
-    const bookSnap = await db.collection("books").doc(bookId).get();
-    if (!bookSnap.exists) return res.status(404).json({ error: "Book not found" });
-    const bookData = bookSnap.data() || {};
-    const price = Number(bookData.price) || 0;
-    if (price <= 0) return res.status(400).json({ error: "This book is free — no purchase needed" });
-    const snapshotDriveLink = await resolvePaidBookDriveLink(db, bookId);
-    if (!snapshotDriveLink) {
-      cleanup();
-      return res.status(400).json({
-        error: "This paid book is not configured for download yet. Ask admin to set/repair the file link first."
-      });
-    }
-
-    if (utr) {
-      const dupUtr = await db.collection("orders")
-        .where("utr", "==", utr)
-        .where("bookId", "==", bookId)
-        .limit(1)
-        .get();
-      if (!dupUtr.empty) {
-        const existing = dupUtr.docs[0].data() || {};
-        cleanup();
-        return res.status(409).json({
-          error: "This UTR is already on file for this book",
-          accessCode: existing.accessCode || "",
-          orderId: dupUtr.docs[0].id
-        });
-      }
-    }
-
-    const proofFolderRaw =
-      process.env.PAYMENT_PROOF_DRIVE_FOLDER_ID ||
-      process.env.DRIVE_PARENT_FOLDER_ID;
-    const folderId = normalizeDriveFolderId(proofFolderRaw);
-    if (!folderId) {
-      cleanup();
-      return res.status(500).json({
-        error: "Server missing PAYMENT_PROOF_DRIVE_FOLDER_ID (or DRIVE_PARENT_FOLDER_ID fallback)"
-      });
-    }
-    const bundle = getDriveClient();
-    const drive = bundle.drive;
-    let parentId = folderId;
-    try {
-      parentId = await resolveDriveParentFolderId(drive, folderId);
-    } catch (e) {
-      const detail = driveApiDetail(e) || e.message || "Cannot read folder";
-      cleanup();
-      return res.status(400).json({ error: `Drive parent folder: ${detail}` });
-    }
-    const proofId = await uploadPublicFileToDrive(drive, parentId, proofFile, "payment-proof");
-    const screenshotUrl = `https://drive.google.com/thumbnail?id=${proofId}&sz=w1200`;
-
-    let accessCode = "";
-    for (let i = 0; i < 6; i++) {
-      const candidate = generateAccessCode(8);
-      const dup = await db.collection("orders")
-        .where("accessCode", "==", candidate).limit(1).get();
-      if (dup.empty) { accessCode = candidate; break; }
-    }
-    if (!accessCode) return res.status(500).json({ error: "Could not generate access code, please retry" });
-
-    const orderRef = await db.collection("orders").add({
-      bookId,
-      bookTitle: String(bookData.title || ""),
-      bookCover: String(bookData.cover || ""),
-      bookPrice: price,
-      buyerEmail: emailRaw,
-      buyerPhone: phone,
-      method,
-      utr,
-      screenshotUrl,
-      bookDriveLinkSnapshot: snapshotDriveLink,
-      status: "pending",
-      accessCode,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    cleanup();
-    return res.json({ ok: true, orderId: orderRef.id, accessCode });
-  } catch (err) {
-    console.error(err);
-    cleanup();
-    return res.status(500).json({ error: err?.message || "Order creation failed" });
-  }
-});
 
 // Public: unlock a paid drive link with email + access code.
 app.post("/api/unlock", async (req, res) => {
@@ -1385,65 +1153,7 @@ app.get("/admin/orders", async (req, res) => {
   }
 });
 
-// Admin: approve an order.
-app.post("/admin/orders/:id/approve", async (req, res) => {
-  try {
-    await requireAdminFromReq(req);
-    const id = String(req.params.id || "").trim();
-    if (!id) return res.status(400).json({ error: "Missing order id" });
-    initFirebaseAdmin();
-    const db = admin.firestore();
-    const ref = db.collection("orders").doc(id);
-    const snap = await ref.get();
-    if (!snap.exists) return res.status(404).json({ error: "Order not found" });
-    const order = snap.data() || {};
-    const bookId = String(order.bookId || "");
-    const driveLink = await resolvePaidBookDriveLink(db, bookId) || String(order.bookDriveLinkSnapshot || "");
-    if (!driveLink) {
-      return res.status(400).json({
-        error: "Cannot approve: this book has no configured file link. Set/repair link first."
-      });
-    }
-    await ref.update({
-      status: "approved",
-      approvedAt: admin.firestore.FieldValue.serverTimestamp(),
-      bookDriveLinkSnapshot: driveLink,
-      rejectedReason: admin.firestore.FieldValue.delete()
-    });
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    const msg = err?.message || "Approve failed";
-    const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
-    return res.status(code).json({ error: msg });
-  }
-});
 
-// Admin: reject an order with a reason.
-app.post("/admin/orders/:id/reject", async (req, res) => {
-  try {
-    await requireAdminFromReq(req);
-    const id = String(req.params.id || "").trim();
-    const reason = String(req.body.reason || "").trim().slice(0, 300);
-    if (!id) return res.status(400).json({ error: "Missing order id" });
-    initFirebaseAdmin();
-    const db = admin.firestore();
-    const ref = db.collection("orders").doc(id);
-    const snap = await ref.get();
-    if (!snap.exists) return res.status(404).json({ error: "Order not found" });
-    await ref.update({
-      status: "rejected",
-      rejectedReason: reason || "Payment could not be verified",
-      rejectedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    const msg = err?.message || "Reject failed";
-    const code = /Missing token|Invalid token|auth|Admin access denied/i.test(msg) ? 401 : 400;
-    return res.status(code).json({ error: msg });
-  }
-});
 
 // Temporary debug endpoint to verify Render environment variables
 app.get("/api/debug/env", (req, res) => {
