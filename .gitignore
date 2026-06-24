@@ -1,2 +1,28 @@
+# ===== Dependencies =====
+node_modules/
 academic-api/node_modules/
+
+# ===== Secrets & credentials =====
 academic-api/.env
+academic-api/serviceAccountKey.json
+serviceAccountKey.json
+*.pem
+*.key
+
+# ===== Large binary files (use Git LFS or external storage) =====
+*.pdf
+*.epub
+*.mobi
+
+# ===== OS & IDE =====
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== Build output =====
+dist/
+build/

@@ -1155,9 +1155,9 @@ app.get("/admin/orders", async (req, res) => {
 
 
 
-// Temporary debug endpoint to verify Render environment variables
-app.get("/api/debug/env", (req, res) => {
-  return res.json({ keys: Object.keys(process.env) });
+// Health check endpoint (safe — no sensitive data exposed)
+app.get("/api/health", (_req, res) => {
+  return res.json({ ok: true, uptime: process.uptime() | 0 });
 });
 
 // =====================================================================
@@ -1490,7 +1490,7 @@ app.listen(PORT, () => {
   // =====================================================================
   // Pings its own live URL every 14 minutes so Render thinks there is active traffic
   setInterval(() => {
-    const url = "https://emporium-academic-api.onrender.com/api/debug/env";
+    const url = "https://emporium-academic-api.onrender.com/api/health";
     fetch(url).catch(err => console.log("Self-ping failed:", err.message));
   }, 14 * 60 * 1000);
 

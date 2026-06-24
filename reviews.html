@@ -181,25 +181,28 @@
             );
             
             Promise.all(promises).then(() => {
+                function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
                 grid.innerHTML = reviews.map(r => {
-                    const initials = r.avatarInitials || r.displayName?.slice(0,2)?.toUpperCase() || '??';
-                    const title = cache[r.bookId] || r.bookId || 'Unknown Book';
+                    const initials = esc(r.avatarInitials || r.displayName?.slice(0,2)?.toUpperCase() || '??');
+                    const title = esc(cache[r.bookId] || r.bookId || 'Unknown Book');
+                    const displayName = esc(r.displayName || 'Anonymous');
+                    const reviewText = esc(r.reviewText || '');
                     const date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : '';
                     let stars = '';
                     for (let i = 1; i <= 5; i++) stars += `<i class="${i <= r.rating ? 'fa-solid' : 'fa-regular'} fa-star" style="color:#f59e0b;font-size:12px;"></i>`;
                     
                     return `
-                    <a href="book-detail.html?id=${r.bookId}" style="text-decoration:none; color:inherit;">
+                    <a href="book-detail.html?id=${encodeURIComponent(r.bookId)}" style="text-decoration:none; color:inherit;">
                         <div class="rev-card" style="height:100%; display:flex; flex-direction:column; cursor:pointer;">
                             <div class="rev-card-header" style="margin-bottom:10px;">
                                 <div class="rev-avatar">${initials}</div>
                                 <div class="rev-card-meta">
-                                    <span class="rev-card-name">${r.displayName || 'Anonymous'}</span>
+                                    <span class="rev-card-name">${displayName}</span>
                                     <span class="rev-card-time">${date}</span>
                                 </div>
                                 <div class="rev-card-stars">${stars}</div>
                             </div>
-                            <p class="rev-card-text" style="flex:1;">${r.reviewText || ''}</p>
+                            <p class="rev-card-text" style="flex:1;">${reviewText}</p>
                             <div class="rev-strip-book" style="margin-top:10px;"><i class="fa-solid fa-book-open" style="color:#ff7a18; margin-right:5px;"></i> ${title}</div>
                         </div>
                     </a>`;
