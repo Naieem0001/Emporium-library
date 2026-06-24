@@ -236,8 +236,11 @@
               await getAuth().signInWithEmailAndPassword(email, pw);
             } catch (err) {
               this.disabled = false; this.textContent = 'Sign in';
-              showAuthMsg(err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found'
-                ? 'Incorrect email or password.' : (err.message || 'Sign in failed.'), true);
+              showAuthMsg(err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found'
+                ? 'Invalid email or password. Please check and try again.'
+                : err.code === 'auth/too-many-requests'
+                ? 'Too many failed attempts. Please wait a few minutes.'
+                : (err.message || 'Sign in failed.'), true);
             }
           });
 

@@ -41,6 +41,20 @@ function googleSignInWithFallback(authInstance) {
     throw err;
   });
 }
+function friendlyAuthError(err) {
+  const code = err.code || "";
+  if (code === "auth/invalid-credential" || code === "auth/invalid-login-credentials" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+    return "Invalid email or password. Please check and try again.";
+  }
+  if (code === "auth/invalid-email") return "Please enter a valid email address.";
+  if (code === "auth/user-disabled") return "This account has been disabled.";
+  if (code === "auth/too-many-requests") return "Too many failed attempts. Please wait a few minutes.";
+  if (code === "auth/network-request-failed") return "Network error. Check your connection.";
+  if (code === "auth/email-already-in-use") return "An account with this email already exists.";
+  if (code === "auth/weak-password") return "Password too weak. Use at least 6 characters.";
+  if (code === "auth/requests-from-referer-are-blocked") return "Sign-in blocked. Your domain may not be authorized in Firebase.";
+  return err.message || "Authentication failed. Please try again.";
+}
 window.signInWithGoogle = async function () {
   try {
     await googleSignInWithFallback(auth);
@@ -50,7 +64,7 @@ window.signInWithGoogle = async function () {
       return; // user closed — no error toast
     }
     console.error('Google sign-in failed:', err);
-    if (typeof window.showToast === 'function') window.showToast(err.message || 'Google sign-in failed', true);
+    if (typeof window.showToast === 'function') window.showToast(friendlyAuthError(err), true);
   }
 };
 window.openAuthModal = function () {

@@ -401,7 +401,7 @@
     <button class="login-btn" onclick="adminLogin()">
       <i class="fa-solid fa-unlock"></i> Access Panel
     </button>
-    <p class="login-error" id="loginError">Faaa! Faaa! Sign in failed. Check your credentials.</p>
+    <p class="login-error" id="loginError">Sign in failed. Please check your credentials.</p>
   </div>
 </div>
 
@@ -689,12 +689,14 @@ function adminLogin() {
   const email = document.getElementById("adminEmail").value.trim();
   const password = document.getElementById("passwordInput").value;
   const loginError = document.getElementById("loginError");
+  const loginBtn = document.querySelector(".login-btn");
   if (!email || !password) {
     loginError.textContent = "Email and password are required.";
     loginError.style.display = "block";
     return;
   }
   loginError.style.display = "none";
+  if (loginBtn) { loginBtn.disabled = true; loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...'; }
   auth.signInWithEmailAndPassword(email, password)
     .then(async cred => {
       if (!isAllowedAdminEmail(cred?.user?.email)) {
@@ -706,10 +708,26 @@ function adminLogin() {
       }
       document.getElementById("passwordInput").value = "";
     })
-    .catch(() => {
-      loginError.textContent = "Sign in failed. Check your credentials.";
+    .catch(err => {
+      const code = err.code || "";
+      let msg = "Sign in failed. Please try again.";
+      if (code === "auth/invalid-credential" || code === "auth/invalid-login-credentials" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+        msg = "Invalid email or password. Please check and try again.";
+      } else if (code === "auth/invalid-email") {
+        msg = "Please enter a valid email address.";
+      } else if (code === "auth/user-disabled") {
+        msg = "This account has been disabled. Contact support.";
+      } else if (code === "auth/too-many-requests") {
+        msg = "Too many failed attempts. Please wait a few minutes and try again.";
+      } else if (code === "auth/network-request-failed") {
+        msg = "Network error. Please check your internet connection.";
+      }
+      loginError.textContent = msg;
       loginError.style.display = "block";
       document.getElementById("passwordInput").value = "";
+    })
+    .finally(() => {
+      if (loginBtn) { loginBtn.disabled = false; loginBtn.innerHTML = '<i class="fa-solid fa-unlock"></i> Access Panel'; }
     });
 }
 
@@ -717,11 +735,13 @@ function logout() {
   auth.signOut();
 }
 
+let adminLoginInProgress = false;
 auth.onAuthStateChanged(async user => {
-  // Always require fresh credentials when opening admin page.
+  // On first load, sign out any existing session to require fresh admin credentials.
+  // But skip if we are in the middle of a login attempt.
   if (enforceFreshAdminLogin) {
     enforceFreshAdminLogin = false;
-    if (user) {
+    if (user && !adminLoginInProgress) {
       try { await auth.signOut(); } catch (err) {}
       setAdminUi(false);
       document.getElementById("passwordInput").value = "";

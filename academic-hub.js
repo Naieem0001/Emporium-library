@@ -248,17 +248,36 @@
     }
   }
 
+  function friendlyAuthError(err) {
+    const code = err.code || "";
+    if (code === "auth/invalid-credential" || code === "auth/invalid-login-credentials" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+      return "Invalid email or password. Please check and try again.";
+    }
+    if (code === "auth/invalid-email") return "Please enter a valid email address.";
+    if (code === "auth/user-disabled") return "This account has been disabled. Contact support.";
+    if (code === "auth/too-many-requests") return "Too many failed attempts. Please wait a few minutes and try again.";
+    if (code === "auth/network-request-failed") return "Network error. Please check your internet connection.";
+    if (code === "auth/email-already-in-use") return "An account with this email already exists. Try logging in instead.";
+    if (code === "auth/weak-password") return "Password is too weak. Please use at least 6 characters.";
+    if (code === "auth/operation-not-allowed") return "This sign-in method is not enabled. Contact support.";
+    return err.message || "Authentication failed. Please try again.";
+  }
+
   document.getElementById("formLogin")?.addEventListener("submit", async e => {
     e.preventDefault();
     const email = document.getElementById("loginEmail").value.trim();
     const pw = document.getElementById("loginPassword").value;
+    const btn = e.target.querySelector("button[type=submit]");
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...'; }
     try {
       await auth.signInWithEmailAndPassword(email, pw);
       closeAuth();
       showToast("Signed in successfully.");
       if (redirectTarget) window.location.href = redirectTarget;
     } catch (err) {
-      showToast(err.message || "Login failed", true);
+      showToast(friendlyAuthError(err), true);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Log in"; }
     }
   });
 
@@ -267,6 +286,8 @@
     const name = document.getElementById("signupName").value.trim();
     const email = document.getElementById("signupEmail").value.trim();
     const pw = document.getElementById("signupPassword").value;
+    const btn = e.target.querySelector("button[type=submit]");
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating account...'; }
     try {
       const cred = await auth.createUserWithEmailAndPassword(email, pw);
       if (name && cred.user) {
@@ -276,7 +297,9 @@
       showToast("Account created. You are signed in.");
       if (redirectTarget) window.location.href = redirectTarget;
     } catch (err) {
-      showToast(err.message || "Sign up failed", true);
+      showToast(friendlyAuthError(err), true);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Create account"; }
     }
   });
 
