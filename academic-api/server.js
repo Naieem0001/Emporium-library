@@ -17,7 +17,7 @@ const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"];
 
 const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGINS || "")
   .split(",")
-  .map(s => s.trim())
+  .map(s => s.trim().replace(/\/+$/, ""))  // trim and strip trailing slashes
   .filter(Boolean);
 
 const ALLOWED_MIME = new Set([
@@ -307,12 +307,22 @@ async function sendBookEmail(email, title, link) {
 app.use(
   cors({
     origin(origin, cb) {
+      // Allow requests with no origin (server-to-server, curl, Render health checks)
       if (!origin) return cb(null, true);
+      // Allow file:// protocol for local development
+      if (origin.startsWith("file://")) return cb(null, true);
+      // If no allowed origins configured, allow everything (open API)
       if (ALLOWED_ORIGINS.length === 0) return cb(null, true);
-      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-      return cb(null, false);
+      // Normalize origin for comparison (strip trailing slash)
+      const normalizedOrigin = origin.replace(/\/+$/, "");
+      if (ALLOWED_ORIGINS.includes(normalizedOrigin)) return cb(null, true);
+      // Log rejected origins to help diagnose CORS issues
+      console.warn(`[CORS] Blocked origin: "${origin}". Allowed: [${ALLOWED_ORIGINS.join(", ")}]`);
+      return cb(new Error(`CORS: origin '${origin}' is not allowed`));
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-client-id", "x-client-secret"]
   })
 );
 
@@ -321,7 +331,7 @@ app.get("/health", (_req, res) => {
 });
 
 const GOOGLE_BOOKS_API_KEY = String(process.env.GOOGLE_BOOKS_API_KEY || "").trim();
-const EXTERNAL_TIMEOUT_MS = 12000;
+const EXTERNAL_TIMEOUT_MS = 20000; // Increased from 12s to handle Render cold starts
 
 const EXTERNAL_GENRE_QUERY_MAP = {
   fiction: "fiction",
@@ -1475,6 +1485,10 @@ app.use((err, _req, res, _next) => {
       return res.status(400).json({ error: "File too large (max 400MB for admin book uploads)" });
     }
     return res.status(400).json({ error: err.message });
+  }
+  // CORS errors
+  if (err && err.message && err.message.startsWith("CORS:")) {
+    return res.status(403).json({ error: err.message });
   }
   if (err) {
     return res.status(400).json({ error: err.message || "Bad request" });

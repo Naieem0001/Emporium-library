@@ -563,12 +563,25 @@
 
   /* ── Step 2: Cashfree flow ── */
   async function startCashfreeFlow(book, email) {
-    // Create order on our server
-    const orderRes = await fetch(API_BASE + "/api/cashfree/create-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookId: book.id, email })
-    });
+    // Create order on our server — with a timeout to handle Render cold starts
+    let orderRes;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      orderRes = await fetch(API_BASE + "/api/cashfree/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId: book.id, email }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (err) {
+      if (err.name === "AbortError") {
+        throw new Error("Request timed out. The server may be starting up — please try again in 30 seconds.");
+      }
+      // TypeError: Failed to fetch = CORS block or no internet
+      throw new Error("Cannot reach payment server. Please check your internet connection and try again. If the problem persists, the server may be temporarily down.");
+    }
     const orderData = await orderRes.json().catch(() => ({}));
     if (!orderRes.ok) throw new Error(orderData.error || "Could not initiate payment");
 

@@ -513,7 +513,14 @@ const scheduleExternalFetch = debounce(async (mode, value, requestId) => {
     const endpoint = mode === "search"
       ? `${API_BASE}/api/external/search?q=${encodeURIComponent(value)}`
       : `${API_BASE}/api/external/genre?genre=${encodeURIComponent(value)}`;
-    const res = await fetch(endpoint);
+
+    // AbortController for a 25-second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    const res = await fetch(endpoint, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
     if (requestId !== activeSearchRequest) return;
     if (!res.ok) throw new Error(`External fetch failed: ${res.status}`);
     const data = await res.json();
@@ -522,8 +529,12 @@ const scheduleExternalFetch = debounce(async (mode, value, requestId) => {
       .map(normalizeExternalBook)
       .filter(x => x.title && x.externalUrl);
   } catch (err) {
-    console.warn("External books fetch error:", err);
     if (requestId !== activeSearchRequest) return;
+    if (err.name === "AbortError") {
+      console.warn("External books fetch timed out after 25s");
+    } else {
+      console.warn("External books fetch error:", err.message || err);
+    }
     externalBooks = [];
   } finally {
     if (requestId !== activeSearchRequest) return;
