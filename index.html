@@ -45,6 +45,20 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="reviews.css">
 
+    <script>
+      window.EmporiumBookSkeletons = (() => {
+        const timer = setTimeout(() => {
+          document.documentElement.classList.add("book-skeletons-visible");
+        }, 450);
+        return {
+          clear() {
+            clearTimeout(timer);
+            document.documentElement.classList.remove("book-skeletons-visible");
+          }
+        };
+      })();
+    </script>
+
     <!-- ================= FIREBASE ================= -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -323,7 +337,14 @@
 <p>Discover what readers are downloading the most</p>
 </div>
 
-<div class="books-grid" id="trendingBooks"></div>
+<div class="books-grid" id="trendingBooks">
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+</div>
 
 </section>
 
@@ -373,7 +394,12 @@
     </div>
     <p>Freshly added books you should not miss</p>
   </div>
-  <div class="books-grid" id="newReleasesBooks"></div>
+  <div class="books-grid" id="newReleasesBooks">
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+  </div>
 </section>
 
 <!-- ================= ACADEMIC HUB ================= -->

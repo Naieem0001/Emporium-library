@@ -37,6 +37,20 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="genre.css">
 
+<script>
+window.EmporiumBookSkeletons = (() => {
+  const timer = setTimeout(() => {
+    document.documentElement.classList.add("book-skeletons-visible");
+  }, 450);
+  return {
+    clear() {
+      clearTimeout(timer);
+      document.documentElement.classList.remove("book-skeletons-visible");
+    }
+  };
+})();
+</script>
+
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -97,7 +111,16 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 
 <section class="genre-books">
   <div class="container">
-  <div id="libraryGrid" class="books-grid"></div>
+  <div id="libraryGrid" class="books-grid">
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+    <div class="book-card-skeleton" aria-hidden="true"><div class="book-skeleton-cover book-skeleton-shimmer"></div><div class="book-skeleton-line title book-skeleton-shimmer"></div><div class="book-skeleton-line author book-skeleton-shimmer"></div><div class="book-skeleton-actions"><div class="book-skeleton-pill book-skeleton-shimmer"></div><div class="book-skeleton-pill small book-skeleton-shimmer"></div></div></div>
+  </div>
 
   <div id="pagination" class="pagination"></div>
   </div>

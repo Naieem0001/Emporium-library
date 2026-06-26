@@ -357,7 +357,9 @@
   /* ---------- Notes grid ---------- */
   let allNotes = [];
   let currentPage = 1;
-  const perPage = window.innerWidth <= 600 ? 4 : 8;
+  const MOBILE_NOTES_BREAKPOINT = 768;
+  const mobileNotesPerPage = 4;
+  const desktopNotesPerPage = 8;
   let myNotesPage = 1;
   const myNotesPerPage = 4;
 
@@ -507,10 +509,11 @@
     const list = filteredNotes();
     if (countEl) countEl.textContent = list.length + " note" + (list.length !== 1 ? "s" : "");
 
+    const isMobile = window.innerWidth <= MOBILE_NOTES_BREAKPOINT;
+    const perPage = isMobile ? mobileNotesPerPage : desktopNotesPerPage;
     const total = list.length;
     const pages = Math.max(1, Math.ceil(total / perPage));
     if (currentPage > pages) currentPage = pages;
-    const isMobile = window.innerWidth <= 600;
     const start = (currentPage - 1) * perPage;
     const slice = isMobile ? list.slice(0, currentPage * perPage) : list.slice(start, start + perPage);
 
@@ -643,6 +646,11 @@
     const section = document.getElementById("myNotesSection");
     const loadMoreWrap = document.getElementById("myNotesLoadMoreWrap");
     if (!grid || !section) return;
+    if (!isMyNotesView) {
+      section.style.display = "none";
+      if (loadMoreWrap) loadMoreWrap.style.display = "none";
+      return;
+    }
     if (!currentUser) {
       section.style.display = "none";
       if (loadMoreWrap) loadMoreWrap.style.display = "none";

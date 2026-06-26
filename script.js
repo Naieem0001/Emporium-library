@@ -327,6 +327,41 @@ function renderCard(book) {
     </div>`;
 }
 
+function bookSkeletonCard() {
+  return `
+    <div class="book-card-skeleton" aria-hidden="true">
+      <div class="book-skeleton-cover book-skeleton-shimmer"></div>
+      <div class="book-skeleton-line title book-skeleton-shimmer"></div>
+      <div class="book-skeleton-line author book-skeleton-shimmer"></div>
+      <div class="book-skeleton-actions">
+        <div class="book-skeleton-pill book-skeleton-shimmer"></div>
+        <div class="book-skeleton-pill small book-skeleton-shimmer"></div>
+      </div>
+    </div>`;
+}
+
+function bookSkeletonCards(count) {
+  return Array.from({ length: count }).map(bookSkeletonCard).join("");
+}
+
+function clearInitialBookSkeletons() {
+  if (window.EmporiumBookSkeletons && typeof window.EmporiumBookSkeletons.clear === "function") {
+    window.EmporiumBookSkeletons.clear();
+  } else {
+    document.documentElement.classList.remove("book-skeletons-visible");
+  }
+}
+
+function showBookGridSkeleton(grid, count) {
+  if (!grid) return;
+  grid.classList.add("is-loading");
+  grid.innerHTML = bookSkeletonCards(count);
+}
+
+function clearBookGridLoading(grid) {
+  if (grid) grid.classList.remove("is-loading");
+}
+
 function openExternalBookCard(event, url) {
   if (!url) return;
   const triggerKey = event && (event.key === "Enter" || event.key === " ");
@@ -361,6 +396,7 @@ function openEmporiumCheckout(btn) {
 function displayTrendingBooks(books) {
   const container = document.getElementById("trendingBooks");
   if (!container) return;
+  clearBookGridLoading(container);
   const trending = books.filter(b => isTruthy(b.trending)).slice(0, 6);
   container.innerHTML = trending.length
     ? trending.map(renderCard).join("")
@@ -371,6 +407,7 @@ function displayTrendingBooks(books) {
 function displayNewReleases(books) {
   const container = document.getElementById("newReleasesBooks");
   if (!container) return;
+  clearBookGridLoading(container);
   const newReleases = books.filter(b => isTruthy(b.newRelease)).slice(0, 4);
   container.innerHTML = newReleases.length
     ? newReleases.map(renderCard).join("")
@@ -391,6 +428,7 @@ function displayBooks(bookList) {
 function renderCurrentPage() {
   const grid = document.getElementById("libraryGrid");
   if (!grid) return;
+  clearBookGridLoading(grid);
   const start = (currentPage - 1) * booksPerPage;
   const end   = start + booksPerPage;
   const page  = currentBooks.slice(start, end);
@@ -481,8 +519,8 @@ function renderExternalSection() {
     grid.insertAdjacentHTML("beforeend", `
       <div class="external-books-block">
         <div class="external-divider">${escapeHTML(externalDividerLabel())}</div>
-        <div class="external-books-grid">
-          ${Array.from({ length: 6 }).map(() => `<div class="external-skeleton"></div>`).join("")}
+        <div class="external-books-grid is-loading">
+          ${bookSkeletonCards(6)}
         </div>
       </div>
     `);
@@ -557,6 +595,16 @@ function loadExternalBooks(params) {
   scheduleExternalFetch(mode, value, reqId);
 }
 
+function showGenreTransitionSkeleton(label) {
+  const grid = document.getElementById("libraryGrid");
+  if (!grid) return;
+  showBookGridSkeleton(grid, window.innerWidth <= 600 ? 6 : 10);
+  const pagination = document.getElementById("pagination");
+  if (pagination) pagination.innerHTML = "";
+  const count = document.getElementById("genreCount");
+  if (count) count.textContent = label || "Loading books...";
+}
+
 /* ========== GENRE / SEARCH PAGE ========== */
 function getGenreFromURL() {
   return getQueryParam("genre") ?? getStoredParam("genre");
@@ -629,6 +677,7 @@ function loadGenrePage(books) {
 /* ========== LOAD ALL BOOKS FROM FIREBASE ========== */
 function loadAllBooks() {
   db.collection("books").orderBy("createdAt", "desc").get().then(snapshot => {
+    clearInitialBookSkeletons();
     const books = [];
     snapshot.forEach(doc => books.push({ id: doc.id, ...doc.data() }));
     allFirestoreBooks = books;
@@ -644,9 +693,23 @@ function loadAllBooks() {
     }
 
   }).catch(err => {
+    clearInitialBookSkeletons();
     console.error("Failed to load books:", err);
     const grid = document.getElementById("libraryGrid");
-    if (grid) grid.innerHTML = `<p class="state-message">Failed to load books. Please refresh.</p>`;
+    if (grid) {
+      clearBookGridLoading(grid);
+      grid.innerHTML = `<p class="state-message">Failed to load books. Please refresh.</p>`;
+    }
+    const trending = document.getElementById("trendingBooks");
+    if (trending) {
+      clearBookGridLoading(trending);
+      trending.innerHTML = `<p class="state-message">Failed to load trending books. Please refresh.</p>`;
+    }
+    const releases = document.getElementById("newReleasesBooks");
+    if (releases) {
+      clearBookGridLoading(releases);
+      releases.innerHTML = `<p class="state-message">Failed to load new releases. Please refresh.</p>`;
+    }
   });
 }
 
@@ -670,6 +733,12 @@ persistNavigationFilter();
 if (searchInput && isGenrePage) {
   const currentSearch = getSearchFromURL();
   if (currentSearch) searchInput.value = currentSearch;
-  searchInput.addEventListener("input", e => onGenreSearchInput(e.target.value));
+  searchInput.addEventListener("input", e => {
+    if (allFirestoreBooks.length) {
+      const v = String(e.target.value || "").trim();
+      showGenreTransitionSkeleton(v ? "Searching books..." : "Loading books...");
+    }
+    onGenreSearchInput(e.target.value);
+  });
 }
 loadAllBooks();

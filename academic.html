@@ -104,7 +104,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: clamp(12px, 2vw, 26px);
+      gap: clamp(14px, 2vw, 28px);
       min-height: 66px;
     }
     .logo {
@@ -123,7 +123,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: clamp(6px, 1.2vw, 20px);
+      gap: clamp(10px, 1.4vw, 18px);
       min-width: 0;
     }
     .nav-menu a {
@@ -149,6 +149,18 @@
     .nav-menu a:hover::after { width: 100%; }
     .nav-menu a.active-link { color: var(--orange2); }
     .nav-menu a.active-link::after { width: 100%; background: var(--orange2); }
+    .nav-menu a.nav-action-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 12px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.07);
+    }
+    .nav-menu a.nav-action-link::after { display: none; }
+    .nav-menu a.nav-action-link.nav-upload-link {
+      color: #fff;
+      border-color: rgba(255,159,67,0.34);
+      background: linear-gradient(135deg, rgba(255,122,24,0.28), rgba(255,159,67,0.18));
+    }
 
     .nav-right {
       display: flex;
@@ -252,7 +264,7 @@
       display: flex; align-items: center;
       background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
       padding: 7px 12px; border-radius: 10px; gap: 8px;
-      flex: 0 1 190px; min-width: 130px; transition: background var(--transition), border-color var(--transition);
+      flex: 0 0 clamp(300px, 26vw, 380px); min-width: 280px; transition: background var(--transition), border-color var(--transition);
     }
     .search-box:focus-within { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); }
     .search-box input {
@@ -273,20 +285,32 @@
       .navbar { padding: 0 24px; }
       .logo-img { height: 40px; }
       .nav-menu { gap: 8px; }
-      .search-box { flex-basis: 160px; }
+      .search-box { flex-basis: 240px; }
     }
-    @media (max-width: 900px) {
+    @media (max-width: 1180px) {
       .academic-page-nav .nav-container { position: relative; }
       .academic-page-nav .nav-menu {
         display: none; position: absolute; top: 100%; left: 0; right: 0; width: 100%;
         background: var(--navy2); flex-direction: column; align-items: flex-start;
-        padding: 12px 20px 20px; gap: 4px; opacity: 0; pointer-events: none;
+        padding: 14px; gap: 6px; opacity: 0; pointer-events: none;
         transform: translateY(-6px); transition: opacity 0.22s ease, transform 0.22s ease;
         z-index: 199; box-shadow: 0 16px 32px rgba(0,0,0,0.25);
         border-bottom: 1px solid rgba(255,255,255,0.08);
       }
       .academic-page-nav .nav-menu.active { display: flex; opacity: 1; pointer-events: auto; transform: translateY(0); }
-      .academic-page-nav .nav-menu a { width: 100%; padding: 10px 4px; font-size: 14px; }
+      .academic-page-nav .nav-menu a {
+        width: 100%; padding: 11px 12px; font-size: 14px;
+        border-radius: 10px; display: flex; align-items: center; gap: 10px;
+      }
+      .academic-page-nav .nav-menu a::after { display: none; }
+      .academic-page-nav .nav-menu a:hover,
+      .academic-page-nav .nav-menu a.active-link {
+        background: rgba(255,255,255,0.08);
+      }
+      .academic-page-nav .nav-menu a.nav-action-link {
+        border-color: rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.06);
+      }
       .academic-page-nav .hamburger {
         display: inline-flex !important; align-items: center; justify-content: center;
         width: 38px; height: 38px; border-radius: 9px;
@@ -294,14 +318,33 @@
       }
     }
     @media (max-width: 600px) {
-      .academic-page-nav.navbar { padding: 0 16px; }
-      .academic-page-nav .nav-container { display: grid; grid-template-columns: auto 1fr; align-items: start; column-gap: 10px; position: relative; min-height: 60px; }
-      .academic-page-nav .logo { align-self: center; }
-      .academic-page-nav .nav-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; width: 100%; padding: 8px 0; }
-      .academic-page-nav .hamburger { order: -1; margin-left: auto; display: inline-flex !important; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); flex-shrink: 0; }
-      .academic-page-nav .search-box { order: 1; flex: 1 1 120px; min-width: 0; border-radius: 9px; }
-      .academic-page-nav .auth-nav { order: 2; flex-shrink: 0; }
-      .academic-page-nav .btn-nav-outline, .academic-page-nav .btn-nav-primary { padding: 6px 10px; font-size: 11px; white-space: nowrap; }
+      .academic-page-nav.navbar { padding: 8px 14px 10px; }
+      .academic-page-nav .nav-container {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-areas:
+          "logo auth menu"
+          "search search search";
+        align-items: center;
+        column-gap: 8px;
+        row-gap: 8px;
+        position: relative;
+        min-height: 0;
+      }
+      .academic-page-nav .logo { grid-area: logo; align-self: center; min-width: 0; }
+      .academic-page-nav .nav-right { display: contents; }
+      .academic-page-nav .hamburger {
+        grid-area: menu; margin-left: 0; display: inline-flex !important;
+        align-items: center; justify-content: center; width: 36px; height: 36px;
+        border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.08); flex-shrink: 0;
+      }
+      .academic-page-nav .search-box {
+        grid-area: search; width: 100%; flex: none; min-width: 0;
+        border-radius: 10px; padding: 8px 12px;
+      }
+      .academic-page-nav .auth-nav { grid-area: auth; flex-shrink: 0; justify-self: end; gap: 6px; }
+      .academic-page-nav .btn-nav-outline, .academic-page-nav .btn-nav-primary { padding: 7px 10px; font-size: 11px; white-space: nowrap; }
       .academic-page-nav .user-chip-name { display: none; }
       .academic-page-nav .user-chip-caret { display: none; }
       .academic-page-nav .user-chip { padding: 3px; gap: 0; }
@@ -381,6 +424,59 @@
       line-height: 1.1; margin-bottom: 4px;
     }
     .stat-item .stat-label { font-size: 12px; color: #94A3B8; font-weight: 500; letter-spacing: 0.3px; }
+
+    /* ===== ACADEMIC HUB MENU ===== */
+    .hub-menu {
+      background: var(--cream);
+      margin-top: 0;
+      padding: 30px 40px 34px;
+      position: relative;
+      z-index: 2;
+    }
+    .hub-menu-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
+    }
+    .hub-menu-item {
+      min-height: 86px;
+      display: grid; grid-template-columns: 44px 1fr; align-items: center; column-gap: 13px;
+      text-decoration: none; color: var(--navy);
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 16px;
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    }
+    .hub-menu-item:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,122,24,0.34);
+      box-shadow: var(--shadow-md);
+    }
+    .hub-menu-item.is-active {
+      border-color: rgba(255,122,24,0.42);
+      background: linear-gradient(135deg, rgba(255,122,24,0.08), #fff 58%);
+    }
+    .hub-menu-item--upload {
+      background: linear-gradient(135deg, var(--navy), var(--navy2));
+      color: #fff;
+      border-color: rgba(255,255,255,0.08);
+    }
+    .hub-menu-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: var(--orange); background: rgba(255,122,24,0.1);
+      font-size: 18px;
+    }
+    .hub-menu-item--upload .hub-menu-icon {
+      color: #fff;
+      background: linear-gradient(135deg, var(--orange), var(--orange2));
+    }
+    .hub-menu-text strong {
+      display: block; font-size: 14.5px; line-height: 1.2; margin-bottom: 4px;
+    }
+    .hub-menu-text span {
+      display: block; font-size: 12.5px; color: var(--muted); line-height: 1.45;
+    }
+    .hub-menu-item--upload .hub-menu-text span { color: rgba(255,255,255,0.72); }
 
     /* ===== FILTER / CATEGORY BAR ===== */
     .filter-section {
@@ -834,6 +930,9 @@
     /* ===== RESPONSIVE ===== */
     @media (max-width: 900px) {
       .academic-hero { padding: 64px 28px 56px; }
+      .hub-menu { padding: 22px 28px 26px; }
+      .hub-menu-inner { grid-template-columns: 1fr; }
+      .hub-menu-item { min-height: 80px; }
       .form-row { grid-template-columns: 1fr; }
       .filter-inner { flex-direction: column; align-items: stretch; }
       .filter-subject-sort { margin-left: 0; width: 100%; justify-content: space-between; }
@@ -844,9 +943,18 @@
 
     @media (max-width: 600px) {
       .academic-hero { padding: 52px 20px 44px; }
+      .hub-menu { padding: 18px 20px 22px; }
+      .hub-menu-inner { gap: 10px; }
+      .hub-menu-item {
+        min-height: 70px; grid-template-columns: 38px 1fr;
+        padding: 13px 14px; border-radius: 12px;
+      }
+      .hub-menu-icon { width: 38px; height: 38px; border-radius: 10px; font-size: 16px; }
+      .hub-menu-text strong { font-size: 13.5px; }
+      .hub-menu-text span { font-size: 12px; }
       .hero-stats { border-radius: 12px; }
       .stat-item { padding: 16px 12px; }
-      .filter-section { padding: 14px 20px; top: 60px; }
+      .filter-section { padding: 14px 20px; top: 104px; }
       .resources-section, .upload-section { padding: 44px 20px; }
       .contributors { padding: 44px 20px; }
       .my-notes-section { padding: 32px 20px 12px; }
@@ -893,13 +1001,10 @@
         <img src="assets/emporium-logo.svg" alt="Emporium Library" class="logo-img" />
       </a>
       <nav class="nav-menu" id="navMenu" aria-label="Main navigation">
-        <a href="index.html">Home</a>
         <a href="genre.html?genre=all">Library</a>
-        <a href="academic.html" class="active-link">Academic Hub</a>
-        <a href="my-purchases.html">My Purchases</a>
-        <a href="about.html">About</a>
-        <a href="faq.html">FAQ</a>
-        <a href="index.html#feedbackForm">Feedback</a>
+        <a href="#resourcesList" class="nav-action-link active-link"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> All Notes</a>
+        <a href="my-notes.html" class="nav-action-link"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> My Notes</a>
+        <a href="#uploadPanel" class="nav-action-link nav-upload-link"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Upload</a>
       </nav>
       <div class="nav-right">
         <div class="search-box">
@@ -938,6 +1043,33 @@
           <div class="stat-label">Downloads</div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ===== ACADEMIC HUB MENU ===== -->
+  <section class="hub-menu" aria-label="Academic Hub menu">
+    <div class="hub-menu-inner">
+      <a href="#resourcesList" class="hub-menu-item is-active">
+        <span class="hub-menu-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+        <span class="hub-menu-text">
+          <strong>All Notes</strong>
+          <span>Browse shared notes, papers, textbooks, and assignments.</span>
+        </span>
+      </a>
+      <a href="my-notes.html" class="hub-menu-item">
+        <span class="hub-menu-icon"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></span>
+        <span class="hub-menu-text">
+          <strong>My Notes</strong>
+          <span>See and manage the resources you have uploaded.</span>
+        </span>
+      </a>
+      <a href="#uploadPanel" class="hub-menu-item hub-menu-item--upload">
+        <span class="hub-menu-icon"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></span>
+        <span class="hub-menu-text">
+          <strong>Upload</strong>
+          <span>Add a helpful file for other students.</span>
+        </span>
+      </a>
     </div>
   </section>
 
@@ -987,7 +1119,7 @@
   </section>
 
   <!-- ===== RESOURCES GRID ===== -->
-  <section class="resources-section">
+  <section class="resources-section" id="resourcesList">
     <div class="section-header">
       <h2>Available Resources</h2>
       <p>Download PDFs and slides shared by students — sign in to upload your own.</p>

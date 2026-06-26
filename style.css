@@ -311,6 +311,61 @@ body {
   background: linear-gradient(135deg, var(--color-orange), var(--color-orange-2));
 }
 
+/* Book loading skeletons */
+.book-card-skeleton {
+  display: none;
+  min-height: 392px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 14px;
+  overflow: hidden;
+  position: relative;
+}
+.book-card-skeleton::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-orange), var(--color-orange-2));
+}
+html.book-skeletons-visible .books-grid > .book-card-skeleton,
+.books-grid.is-loading > .book-card-skeleton,
+.external-books-grid.is-loading > .book-card-skeleton {
+  display: block;
+}
+.book-skeleton-shimmer {
+  background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 37%, #eef2f7 63%);
+  background-size: 400% 100%;
+  animation: skeletonShimmer 1.2s ease-in-out infinite;
+}
+.book-skeleton-cover {
+  width: 100%;
+  height: 250px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.book-skeleton-line {
+  height: 13px;
+  border-radius: 999px;
+  margin: 0 auto 9px;
+}
+.book-skeleton-line.title { width: 78%; }
+.book-skeleton-line.author { width: 52%; }
+.book-skeleton-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.book-skeleton-pill {
+  width: 94px;
+  height: 34px;
+  border-radius: 999px;
+}
+.book-skeleton-pill.small { width: 78px; }
+
 .genre-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -487,6 +542,11 @@ body {
   .section > .academic-container,
   .section > .feedback-container { width: 94%; }
   .book-cover img, .book-card img { height: 170px; }
+  .book-card-skeleton { min-height: 302px; padding: 12px; }
+  .book-skeleton-cover { height: 170px; }
+  .book-skeleton-actions { flex-direction: column; align-items: center; gap: 7px; }
+  .book-skeleton-pill { width: 82%; height: 30px; }
+  .book-skeleton-pill.small { width: 68%; }
   .book-info h3, .book-card h3 { font-size: 0.82rem; line-height: 1.3; }
   .author { font-size: 0.74rem; }
   .download-btn { font-size: 0.75rem; padding: 7px 10px; }
@@ -1055,14 +1115,6 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 24px;
-}
-.external-skeleton {
-  height: 368px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
-  background-size: 400% 100%;
-  animation: skeletonShimmer 1.2s ease-in-out infinite;
 }
 @keyframes skeletonShimmer {
   from { background-position: 100% 50%; }

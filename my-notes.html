@@ -13,15 +13,17 @@
   <style>
     body { background: #f8fafc; color: #2e2e2e; }
     .navbar { background: #1b2a41; padding: 15px 40px; position: sticky; top: 0; z-index: 220; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
-    .nav-container { display: flex; align-items: center; justify-content: space-between; gap: clamp(12px,2vw,26px); position: relative; }
+    .nav-container { display: flex; align-items: center; justify-content: space-between; gap: clamp(14px,2vw,28px); position: relative; }
     .logo { font-family: "Playfair Display", serif; font-size: 24px; font-weight: 700; color: #fff; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
-    .nav-menu { display: flex; align-items: center; justify-content: center; gap: clamp(12px,1.8vw,22px); min-width: 0; }
+    .nav-menu { display: flex; align-items: center; justify-content: center; gap: clamp(10px,1.4vw,18px); min-width: 0; }
     .nav-menu a { color: #d1d5db; text-decoration: none; font-size: 14px; font-weight: 500; white-space: nowrap; transition: color .25s; }
     .nav-menu a:hover { color: #fff; }
     .nav-menu a.active-link { color: #ff9f43; }
+    .nav-menu a.nav-action-link { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.07); }
+    .nav-menu a.nav-upload-link { color: #fff; border-color: rgba(255,159,67,.34); background: linear-gradient(135deg, rgba(255,122,24,.28), rgba(255,159,67,.18)); }
     .nav-right { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; min-width: 0; }
     .auth-nav { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: 0; }
-    .search-box { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.08); flex: 0 1 210px; min-width: 150px; }
+    .search-box { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.08); flex: 0 0 clamp(300px,26vw,380px); min-width: 280px; }
     .search-box input { width: 100%; min-width: 0; border: none; outline: none; background: transparent; color: #fff; font-size: 13px; }
     .search-box i { color: #9ca3af; font-size: 13px; flex-shrink: 0; }
     .btn-nav-outline, .btn-nav-primary { border: none; border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
@@ -54,25 +56,39 @@
     /* Hamburger */
     .hamburger { display: none; font-size: 20px; color: #fff; cursor: pointer; padding: 0; margin: 0; border: none; background: transparent; line-height: 1; flex-shrink: 0; }
     /* ── 900px: collapse nav links into hamburger dropdown ── */
-    @media (max-width: 900px) {
-      .nav-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; width: 100%; background: #1b2a41; flex-direction: column; align-items: center; padding: 18px 0 22px; gap: 16px; opacity: 0; pointer-events: none; transform: translateY(-8px); transition: opacity .25s, transform .25s; z-index: 199; box-shadow: 0 16px 32px rgba(0,0,0,0.25); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    @media (max-width: 1180px) {
+      .nav-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; width: 100%; background: #243b55; flex-direction: column; align-items: flex-start; padding: 14px; gap: 6px; opacity: 0; pointer-events: none; transform: translateY(-8px); transition: opacity .25s, transform .25s; z-index: 199; box-shadow: 0 16px 32px rgba(0,0,0,0.25); border-bottom: 1px solid rgba(255,255,255,0.08); }
       .nav-menu.active { display: flex; opacity: 1; pointer-events: auto; transform: translateY(0); }
+      .nav-menu a { width: 100%; padding: 11px 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; }
+      .nav-menu a:hover, .nav-menu a.active-link { background: rgba(255,255,255,.08); }
+      .nav-menu a.nav-action-link { border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.06); }
       .hamburger { display: inline-flex !important; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); flex-shrink: 0; }
     }
     /* ── 600px: 2-row mobile layout ── */
     @media (max-width: 600px) {
-      .navbar { padding: 10px 14px; }
-      .nav-container { display: grid; grid-template-columns: auto 1fr; align-items: start; column-gap: 10px; }
-      .logo { align-self: center; }
-      .nav-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; width: 100%; }
-      .hamburger { order: -1; margin-left: auto; display: inline-flex !important; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); }
-      .search-box { order: 1; flex: 1 1 120px; min-width: 0; padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
-      .auth-nav { order: 2; flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
-      .btn-nav-outline, .btn-nav-primary { padding: 6px 10px; font-size: 11px; white-space: nowrap; }
+      .navbar { padding: 8px 14px 10px; }
+      .nav-container { display: grid; grid-template-columns: minmax(0,1fr) auto auto; grid-template-areas: "logo auth menu" "search search search"; align-items: center; column-gap: 8px; row-gap: 8px; }
+      .logo { grid-area: logo; align-self: center; min-width: 0; }
+      .nav-right { display: contents; }
+      .hamburger { grid-area: menu; margin-left: 0; display: inline-flex !important; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); }
+      .search-box { grid-area: search; width: 100%; flex: none; min-width: 0; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+      .auth-nav { grid-area: auth; justify-self: end; flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+      .btn-nav-outline, .btn-nav-primary { padding: 7px 10px; font-size: 11px; white-space: nowrap; }
       .user-chip-name, .user-chip-caret { display: none; }
       .user-chip { padding: 3px; gap: 0; }
       .user-dropdown { right: 0; left: auto; min-width: 190px; }
     }
+    .hub-menu { background: #f8fafc; padding: 22px 40px 0; }
+    .hub-menu-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+    .hub-menu-item { min-height: 92px; display: grid; grid-template-columns: 44px 1fr; align-items: center; column-gap: 13px; text-decoration: none; color: #1b2a41; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; box-shadow: 0 8px 20px rgba(15,23,42,.06); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .hub-menu-item:hover { transform: translateY(-2px); border-color: rgba(255,122,24,.34); box-shadow: 0 14px 28px rgba(15,23,42,.09); }
+    .hub-menu-item.is-active { border-color: rgba(255,122,24,.42); background: linear-gradient(135deg, rgba(255,122,24,.08), #fff 58%); }
+    .hub-menu-item--upload { background: linear-gradient(135deg,#1b2a41,#243b55); color: #fff; border-color: rgba(255,255,255,.08); }
+    .hub-menu-icon { width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; color: #ff7a18; background: rgba(255,122,24,.1); font-size: 18px; }
+    .hub-menu-item--upload .hub-menu-icon { color: #fff; background: linear-gradient(135deg,#ff7a18,#ff9f43); }
+    .hub-menu-text strong { display: block; font-size: 14.5px; line-height: 1.2; margin-bottom: 4px; }
+    .hub-menu-text span { display: block; font-size: 12.5px; color: #64748b; line-height: 1.45; }
+    .hub-menu-item--upload .hub-menu-text span { color: rgba(255,255,255,.72); }
     .my-notes-section { padding: 28px 40px 8px; }
     .my-notes-head { max-width: 1100px; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; text-align: center; flex-direction: column; }
     .my-notes-head h2 { font-family: "Playfair Display", serif; font-size: 34px; color: #1b2a41; }
@@ -152,11 +168,22 @@
     .auth-form input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: inherit; }
     .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280; }
     @media (max-width: 900px) {
+      .hub-menu { padding: 18px 20px 0; }
+      .hub-menu-inner { grid-template-columns: 1fr; }
+      .hub-menu-item { min-height: 78px; }
       .my-notes-section, .upload-section { padding: 28px 20px 8px; }
       .upload-wrapper { padding: 28px 22px; }
       .my-notes-head h2 { font-size: 28px; }
       .my-notes-head p { font-size: 13px; }
       .form-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .hub-menu { padding: 14px 20px 0; }
+      .hub-menu-inner { gap: 10px; }
+      .hub-menu-item { min-height: 70px; grid-template-columns: 38px 1fr; padding: 13px 14px; border-radius: 12px; }
+      .hub-menu-icon { width: 38px; height: 38px; border-radius: 10px; font-size: 16px; }
+      .hub-menu-text strong { font-size: 13.5px; }
+      .hub-menu-text span { font-size: 12px; }
     }
   </style>
 </head>
@@ -165,12 +192,10 @@
     <div class="nav-container">
       <a href="index.html" class="logo"><img src="assets/emporium-logo.svg" alt="Emporium Library" class="logo-img"></a>
       <nav class="nav-menu" id="navMenu" aria-label="Main navigation">
-        <a href="index.html">Home</a>
         <a href="genre.html?genre=all">Library</a>
-        <a href="academic.html">Academic Hub</a>
-        <a href="my-notes.html" class="active-link">My Notes</a>
-        <a href="my-purchases.html">My Purchases</a>
-        <a href="index.html#feedbackForm">Feedback</a>
+        <a href="academic.html#resourcesList" class="nav-action-link"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> All Notes</a>
+        <a href="my-notes.html" class="active-link nav-action-link"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> My Notes</a>
+        <a href="#uploadPanel" class="nav-action-link nav-upload-link"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Upload</a>
       </nav>
       <div class="nav-right">
         <div class="search-box">
@@ -184,6 +209,32 @@
       </div>
     </div>
   </header>
+
+  <section class="hub-menu" aria-label="Academic Hub menu">
+    <div class="hub-menu-inner">
+      <a href="academic.html#resourcesList" class="hub-menu-item">
+        <span class="hub-menu-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+        <span class="hub-menu-text">
+          <strong>All Notes</strong>
+          <span>Browse shared notes, papers, textbooks, and assignments.</span>
+        </span>
+      </a>
+      <a href="my-notes.html" class="hub-menu-item is-active">
+        <span class="hub-menu-icon"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></span>
+        <span class="hub-menu-text">
+          <strong>My Notes</strong>
+          <span>See and manage the resources you have uploaded.</span>
+        </span>
+      </a>
+      <a href="#uploadPanel" class="hub-menu-item hub-menu-item--upload">
+        <span class="hub-menu-icon"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></span>
+        <span class="hub-menu-text">
+          <strong>Upload</strong>
+          <span>Add a helpful file for other students.</span>
+        </span>
+      </a>
+    </div>
+  </section>
 
   <section class="my-notes-section" id="myNotesSection" style="display:none;">
     <div class="my-notes-head">
