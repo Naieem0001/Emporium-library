@@ -14,9 +14,9 @@ Emporium Library is a modern digital e-library web platform that provides free a
 
 ## Tech Stack
 
-- HTML, CSS, JavaScript
+- HTML, CSS, JavaScript, Typescript, Nodejs
 - Firebase Firestore (Academic Hub backend)
-- Netlify (Hosting and Forms)
+- Netlify and Render (Hosting and Forms)
 
 ## Developed By
 
