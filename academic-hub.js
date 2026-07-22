@@ -340,6 +340,11 @@
     const driveHint = document.getElementById("uploadDriveHint");
     const uploadForm = document.getElementById("uploadNotesForm");
     const myNotesSection = document.getElementById("myNotesSection");
+    // Reveal upload panel after auth resolves. On my-notes.html it starts
+    // hidden so the upload form does not dominate the viewport while Firebase
+    // auth resolves asynchronously (the root cause of the My Notes nav bug).
+    const uploadPanel = document.getElementById("uploadPanel");
+    if (uploadPanel) uploadPanel.style.display = "";
     if (guestHint) guestHint.style.display = user ? "none" : "block";
     if (driveHint) driveHint.style.display = user ? "flex" : "none";
     if (uploadForm) uploadForm.style.display = user ? "block" : "none";
