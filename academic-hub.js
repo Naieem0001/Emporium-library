@@ -7,7 +7,7 @@
   const ACADEMIC_API = String(window.EMPORIUM_ACADEMIC_API || "").replace(/\/$/, "");
   const viewMode = new URLSearchParams(window.location.search).get("view") || "all";
   const pageName = String(window.location.pathname || "").split("/").pop().toLowerCase();
-  const isMyNotesView = viewMode === "my-notes" || pageName === "my-notes.html";
+  const isMyNotesView = viewMode === "my-notes" || pageName === "my-notes.html" || pageName === "my-notes";
   const redirectParam = String(new URLSearchParams(window.location.search).get("redirect") || "").trim();
   function safeRedirectUrl(url) {
     try {
