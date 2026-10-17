@@ -543,6 +543,122 @@ app.get("/api/external/genre", async (req, res) => {
   }
 });
 
+
+// =====================================================================
+// IN-BROWSER READER: CORS-safe file streaming (free books / Gutenberg only)
+// =====================================================================
+const READER_MAX_BYTES = 80 * 1024 * 1024;          // own Drive books
+const READER_EXTERNAL_MAX_BYTES = 40 * 1024 * 1024; // Gutenberg files
+
+function driveFileIdFromLink(link) {
+  const m = String(link || "").match(/\/file\/d\/([-\w]{20,})|[?&]id=([-\w]{20,})/);
+  return m ? (m[1] || m[2]) : "";
+}
+
+function readerKindFromDriveMeta(meta) {
+  const mime = String(meta?.mimeType || "").toLowerCase();
+  const name = String(meta?.name || "").toLowerCase();
+  if (mime === "application/pdf" || name.endsWith(".pdf")) return "pdf";
+  if (mime === "application/epub+zip" || name.endsWith(".epub")) return "epub";
+  if (/\.(docx?|pptx?|mobi|txt)$/.test(name)) return null;
+  if (!mime || mime === "application/octet-stream") return "unknown";
+  return null;
+}
+
+// Free books only: looks the book up in Firestore, never trusts a client-sent file id.
+app.get("/api/read/:bookId", async (req, res) => {
+  try {
+    const bookId = String(req.params.bookId || "").trim();
+    if (!bookId || bookId.length > 200) return res.status(400).json({ error: "Invalid book." });
+
+    initFirebaseAdmin();
+    const snap = await admin.firestore().collection("books").doc(bookId).get();
+    if (!snap.exists) return res.status(404).json({ error: "Book not found." });
+    const book = snap.data() || {};
+    if ((Number(book.price) || 0) > 0) {
+      return res.status(403).json({ error: "This is a paid book and can't be read online." });
+    }
+
+    const fileId = driveFileIdFromLink(book.driveLink);
+    if (!fileId) return res.status(404).json({ error: "No readable file is linked to this book." });
+
+    const { drive } = getDriveClient();
+    const meta = await drive.files.get({ fileId, fields: "name,mimeType,size", supportsAllDrives: true });
+    const kind = readerKindFromDriveMeta(meta.data);
+    if (!kind) {
+      return res.status(415).json({ error: "This file type can't be opened in the reader. Please download it instead." });
+    }
+    const size = Number(meta.data.size) || 0;
+    if (size > READER_MAX_BYTES) {
+      return res.status(413).json({ error: "This file is too large for the reader. Please download it instead." });
+    }
+
+    const fileRes = await drive.files.get(
+      { fileId, alt: "media", supportsAllDrives: true },
+      { responseType: "stream" }
+    );
+    res.setHeader(
+      "Content-Type",
+      kind === "pdf" ? "application/pdf" : kind === "epub" ? "application/epub+zip" : "application/octet-stream"
+    );
+    if (size) res.setHeader("Content-Length", String(size));
+    res.setHeader("Cache-Control", "private, max-age=3600");
+    fileRes.data.on("error", () => res.destroy());
+    fileRes.data.pipe(res);
+  } catch (err) {
+    console.error("[reader] drive stream failed:", driveApiDetail(err) || err?.message || err);
+    if (!res.headersSent) return res.status(500).json({ error: "Could not load this book right now." });
+    res.destroy();
+  }
+});
+
+function isGutenbergHost(hostname) {
+  const h = String(hostname || "").toLowerCase();
+  return h === "gutenberg.org" || h.endsWith(".gutenberg.org");
+}
+
+// Gutenberg only (allowlist re-checked on every redirect hop).
+app.get("/api/read-external", async (req, res) => {
+  try {
+    let target;
+    try { target = new URL(String(req.query.url || "")); }
+    catch { return res.status(400).json({ error: "Invalid link." }); }
+
+    let response = null;
+    for (let hop = 0; hop < 5; hop++) {
+      if (target.protocol !== "https:" || !isGutenbergHost(target.hostname)) {
+        return res.status(403).json({ error: "This source is not allowed." });
+      }
+      response = await fetch(target, {
+        redirect: "manual",
+        headers: { "User-Agent": "EmporiumLibrary/1.0 (https://emporiumlibrary.me)" }
+      });
+      const loc = response.headers.get("location");
+      if (response.status >= 300 && response.status < 400 && loc) {
+        target = new URL(loc, target);
+        continue;
+      }
+      break;
+    }
+    if (!response || !response.ok) {
+      return res.status(502).json({ error: "The book source could not be reached right now." });
+    }
+    if ((Number(response.headers.get("content-length")) || 0) > READER_EXTERNAL_MAX_BYTES) {
+      return res.status(413).json({ error: "This file is too large for the reader." });
+    }
+    const buf = Buffer.from(await response.arrayBuffer());
+    if (buf.length > READER_EXTERNAL_MAX_BYTES) {
+      return res.status(413).json({ error: "This file is too large for the reader." });
+    }
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.send(buf);
+  } catch (err) {
+    console.error("[reader] external fetch failed:", err?.message || err);
+    return res.status(500).json({ error: "Could not load this book right now." });
+  }
+});
+
 const upload = multer({
   dest: os.tmpdir(),
   limits: { fileSize: NOTES_MAX_BYTES },
