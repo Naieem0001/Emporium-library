@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="reviews.css">
+    <link rel="stylesheet" href="reader/reader.css">
 
     <!-- ================= FIREBASE ================= -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -118,6 +119,9 @@
             <p class="book-detail-author" id="bookAuthor"></p>
             <span class="book-detail-genre" id="bookGenre"></span>
             <div class="book-detail-actions">
+                <button type="button" id="readBtn" class="btn btn-primary" style="display:none;">
+                    <i class="fa-solid fa-book-open-reader"></i> Read
+                </button>
                 <a href="#" id="downloadBtn" class="btn btn-primary">
                     <i class="fa-solid fa-download"></i> Download
                 </a>
@@ -194,6 +198,7 @@
     window.auth = firebase.auth();
 </script>
 
+<script src="reader/reader.js?v=reader-v1"></script>
 <script src="script.js"></script>
 <script src="reviews.js"></script>
 
@@ -262,8 +267,19 @@
                 : book.driveLink;
             downloadBtn.href = url;
             downloadBtn.target = '_blank';
+                
         } else {
             downloadBtn.style.display = 'none';
+        }
+
+        // Inbuilt reader: only shown when this book can be read online
+        const readBtn = document.getElementById('readBtn');
+        if (readBtn && window.EmporiumReader) {
+            const readable = { ...book, id: bookId };
+            if (window.EmporiumReader.canRead(readable)) {
+                readBtn.style.display = '';
+                readBtn.onclick = () => window.EmporiumReader.open(readable, readBtn);
+            }
         }
     }
 

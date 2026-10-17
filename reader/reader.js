@@ -9,8 +9,11 @@
 
   function noop() {}
   function friendly(msg) { var e = new Error(msg); e.friendly = true; return e; }
-  function apiBase() {
+    function apiBase() {
     if (typeof API_BASE !== "undefined" && API_BASE) return API_BASE; // defined in script.js
+    if (window.EMPORIUM_ACADEMIC_API) return String(window.EMPORIUM_ACADEMIC_API).replace(/\/$/, "");
+    var h = location.hostname;
+    if (h === "localhost" || h === "127.0.0.1") return "http://127.0.0.1:3000";
     return "https://emporium-academic-api.onrender.com";
   }
 
