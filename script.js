@@ -250,7 +250,11 @@ function renderCard(book) {
   const isExternal = !!book.externalSource;
   const price = Number(book.price) || 0;
   const isPaid = !isExternal && price > 0;
-  if (book.id) bookCache.set(book.id, book);
+    if (book.id) bookCache.set(book.id, book);
+  const canRead = !!(window.EmporiumReader && window.EmporiumReader.canRead(book));
+  const readBtn = canRead
+    ? `<button type="button" class="eml-read-btn" data-read-id="${escapeHTML(book.id || "")}" onclick="EmporiumReader.openFromButton(this)"><i class="fa-solid fa-book-open-reader"></i> Read</button>`
+    : "";
   const cardClass = `book-card${isPaid ? " is-paid" : ""}${isExternal ? " is-external" : ""}`;
   const paidBadge = isPaid
     ? `<span class="paid-badge"><i class="fa-solid fa-lock"></i> Paid</span>`
@@ -304,7 +308,8 @@ function renderCard(book) {
         <a href="${detailUrl}" class="book-title-link"><h3>${escapeHTML(book.title)}</h3></a>
         ${avgStars}
         <p class="author">${escapeHTML(book.author)}</p>
-        <div class="book-card-actions">
+                <div class="book-card-actions">
+          ${readBtn}
           ${action}
           ${reviewLink}
         </div>
@@ -321,8 +326,8 @@ function renderCard(book) {
       </div>
       <div class="book-info">
         <h3>${escapeHTML(book.title)}</h3>
-        <p class="author">${escapeHTML(book.author)}</p>
-        ${action}
+                <p class="author">${escapeHTML(book.author)}</p>
+        ${readBtn ? `<div class="book-card-actions">${readBtn}${action}</div>` : action}
       </div>
     </div>`;
 }
